@@ -209,11 +209,10 @@ const WheelCardFront = ({
         </div>
       </div>
 
-      {/* Navigation overlay - doesn't block wheel rotation */}
       {linkToDetail && (
         <Link
           to={`/wheel/${wheel.id}`}
-          className="absolute inset-0 cursor-pointer pointer-events-none"
+          className="absolute inset-0 cursor-pointer z-[5]"
           onClick={(e) => {
             e.stopPropagation();
           }}

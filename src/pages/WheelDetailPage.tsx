@@ -18,7 +18,7 @@ import GallerySection from "@/components/vehicle/GallerySection";
 const WheelDetailPage = () => {
   const { wheelName } = useParams<{ wheelName: string }>();
   const [activeTab, setActiveTab] = useState("fitment");
-  
+
   // Fetch wheel with related vehicles from Supabase
   const { data: wheel, isLoading, error } = useWheelByName(wheelName || "");
 
@@ -87,19 +87,19 @@ const WheelDetailPage = () => {
 
   // Generate available sizes based on the wheel model
   const availableSizes = [
-    { 
-      diameter: wheel.diameter || "18\"", 
-      width: wheel.width || "8.5J", 
-      offset: wheel.wheel_offset || "ET40", 
-      finish: wheel.color || "Silver", 
-      price: "$249.99", 
-      inStock: wheel.status === "Ready for website" 
+    {
+      diameter: wheel.diameter || "18\"",
+      width: wheel.width || "8.5J",
+      offset: wheel.wheel_offset || "ET40",
+      finish: wheel.color || "Silver",
+      price: "$249.99",
+      inStock: wheel.status === "Ready for website"
     }
   ];
 
   return (
     <DashboardLayout title={`${wheel.wheel_name} Details`}>
-      <div className="p-3 space-y-6 overflow-hidden">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4 overflow-hidden">
         {/* Hero section with gradient background */}
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 mb-6">
           <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />
@@ -144,12 +144,12 @@ const WheelDetailPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Wheel header section with ad space */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Wheel Header - Takes 2 columns on desktop */}
           <div className="lg:col-span-2">
-            <WheelHeader 
+            <WheelHeader
               name={wheel.wheel_name}
               brand={wheel.brand_name || "Unknown"}
               price="$249.99"
@@ -158,7 +158,7 @@ const WheelDetailPage = () => {
               specs={wheelSpecs}
             />
           </div>
-          
+
           {/* Ad Space Block */}
           <div className="lg:col-span-1">
             <Card className="h-full min-h-[400px] bg-muted/30 border-dashed flex items-center justify-center">
@@ -172,19 +172,19 @@ const WheelDetailPage = () => {
             </Card>
           </div>
         </div>
-        
+
         {/* Optional Horizontal Ad Banner */}
         <Card className="p-4 bg-muted/20 border-dashed">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Horizontal Ad Banner Space - 728x90</p>
           </div>
         </Card>
-        
+
         {/* Tabbed content with enhanced design */}
-        <Tabs 
-          defaultValue="fitment" 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
+        <Tabs
+          defaultValue="fitment"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="w-full"
         >
           <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6 bg-muted/30 p-1">
@@ -205,35 +205,35 @@ const WheelDetailPage = () => {
               Cool Board
             </TabsTrigger>
           </TabsList>
-          
+
           {/* Fixed height content area to prevent layout shifts */}
           <div className="min-h-[50vh]">
-            
-            
+
+
             {/* Fitment content */}
             <TabsContent value="fitment" className="space-y-6 mt-0">
-              <FitmentSection 
+              <FitmentSection
                 wheelName={wheel.wheel_name}
                 compatibleVehicles={compatibleVehicles}
               />
             </TabsContent>
-            
+
             {/* Comments content */}
             <TabsContent value="comments" className="mt-0">
-              <CommentsSection 
+              <CommentsSection
                 vehicleName={wheel.wheel_name}
                 comments={comments}
               />
             </TabsContent>
-            
+
             {/* Gallery content */}
             <TabsContent value="gallery" className="mt-0">
-              <GallerySection 
+              <GallerySection
                 vehicleName={wheel.wheel_name}
                 images={galleryImages}
               />
             </TabsContent>
-            
+
             {/* Market content */}
             <TabsContent value="market" className="mt-0">
               <Card className="p-8 bg-muted/30 border-dashed">
@@ -244,7 +244,7 @@ const WheelDetailPage = () => {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Market Listings</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      Browse current market listings for {wheel.wheel_name} wheels. 
+                      Browse current market listings for {wheel.wheel_name} wheels.
                       Find deals from verified sellers and compare prices.
                     </p>
                   </div>
@@ -254,7 +254,7 @@ const WheelDetailPage = () => {
                 </div>
               </Card>
             </TabsContent>
-            
+
             {/* Cool Board content */}
             <TabsContent value="coolboard" className="mt-0">
               <Card className="p-8 bg-muted/30 border-dashed">
@@ -265,7 +265,7 @@ const WheelDetailPage = () => {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Cool Board Ratings</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      See how the community rates these {wheel.wheel_name} wheels. 
+                      See how the community rates these {wheel.wheel_name} wheels.
                       Vote and share your experience with other enthusiasts.
                     </p>
                   </div>

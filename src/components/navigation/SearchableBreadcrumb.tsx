@@ -18,18 +18,18 @@ const SearchableBreadcrumb: React.FC = () => {
   // Determine which items to show based on history length
   const MAX_VISIBLE_ITEMS = 6;
   const COLLAPSED_VISIBLE = 3;
-  
+
   const shouldCollapse = history.length > MAX_VISIBLE_ITEMS;
-  const collapsedItems = shouldCollapse 
+  const collapsedItems = shouldCollapse
     ? history.slice(COLLAPSED_VISIBLE, history.length - COLLAPSED_VISIBLE)
     : [];
-  
+
   const visibleItems = shouldCollapse
     ? [
-        ...history.slice(0, COLLAPSED_VISIBLE),
-        null, // Placeholder for collapsed items
-        ...history.slice(history.length - COLLAPSED_VISIBLE)
-      ]
+      ...history.slice(0, COLLAPSED_VISIBLE),
+      null, // Placeholder for collapsed items
+      ...history.slice(history.length - COLLAPSED_VISIBLE)
+    ]
     : history;
 
   if (history.length === 0) {
@@ -76,7 +76,7 @@ const SearchableBreadcrumb: React.FC = () => {
             </div>
           );
         }
-        
+
         const actualIndex = history.findIndex(h => h.timestamp === item.timestamp);
         const isLast = actualIndex === history.length - 1;
         const Icon = item.icon;
@@ -87,17 +87,17 @@ const SearchableBreadcrumb: React.FC = () => {
             {index > 0 && (
               <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             )}
-            
-            <div 
+
+            <div
               className="relative group"
               onMouseEnter={() => setHoveredIndex(actualIndex)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
               {isLast ? (
                 // Last item - always fully visible with primary styling
-                <span 
+                <span
                   className={cn(
-                    "inline-flex items-center px-2 py-1 rounded-md font-medium whitespace-nowrap",
+                    "inline-flex items-center px-2 h-9 rounded-lg font-medium whitespace-nowrap",
                     "bg-primary/10 text-primary border border-primary/20"
                   )}
                 >
@@ -109,7 +109,7 @@ const SearchableBreadcrumb: React.FC = () => {
                 <button
                   onClick={() => handleItemClick(item, actualIndex)}
                   className={cn(
-                    "inline-flex items-center px-2 py-1 rounded-md font-medium whitespace-nowrap",
+                    "inline-flex items-center px-2 h-9 rounded-lg font-medium whitespace-nowrap",
                     "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
                     "border border-border hover:border-border/80",
                     "transition-all duration-200"
@@ -124,7 +124,7 @@ const SearchableBreadcrumb: React.FC = () => {
                   </span>
                 </button>
               )}
-              
+
               {/* Remove button on hover */}
               {hoveredIndex === actualIndex && !isLast && (
                 <button
@@ -141,7 +141,7 @@ const SearchableBreadcrumb: React.FC = () => {
           </div>
         );
       })}
-      
+
       {/* Clear all button when there are many items */}
       {history.length > 3 && (
         <>

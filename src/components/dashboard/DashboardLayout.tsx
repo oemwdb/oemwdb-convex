@@ -80,7 +80,7 @@ const DashboardLayout = ({
           topSuggestion={topSuggestion}
           sidebarCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto pt-[60px]">
+        <main className="flex-1 overflow-y-auto pt-[68px]">
           {children}
         </main>
       </div>
