@@ -26,15 +26,15 @@ const WheelCardButtons = ({
           "absolute top-2 h-8 border border-transparent hover:bg-background/80 hover:backdrop-blur-sm hover:border-border/50 rounded-full transition-[left,right,width,background-color,border-color] duration-300 ease-out flex items-center overflow-hidden z-10",
           isSourceExpanded && "bg-background/80 backdrop-blur-sm border-border/50",
           isSourceExpanded ? "left-2 right-2 pr-10" : "w-8 left-2",
-          !isFlipped 
-            ? "opacity-100 translate-y-0 transition-[opacity,transform] duration-300 delay-200 ease-out" 
+          !isFlipped
+            ? "opacity-100 translate-y-0 transition-[opacity,transform] duration-300 delay-200 ease-out"
             : "opacity-0 -translate-y-2 pointer-events-none"
         )}
       >
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-transparent pointer-events-auto"
+          className="h-8 w-8 p-0 rounded-full flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-transparent pointer-events-auto flex items-center justify-center"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

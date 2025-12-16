@@ -72,7 +72,7 @@ const Index = () => {
   // Default home page view
   return (
     <DashboardLayout title="OEM Wheel Database">
-      <div className="p-4 space-y-4 overflow-hidden">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4 overflow-hidden">
         {/* Dashboard Metrics */}
         <HomeDashboard />
 

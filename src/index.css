@@ -199,11 +199,11 @@
     @apply text-muted-foreground transition-colors duration-200;
   }
 
-  /* Card hover effect - visible border */
+  /* Card hover effect - white outline in all modes */
   .card:hover,
   .theme-card:hover {
-    @apply border-border;
-    border-width: 1px;
+    @apply border-white;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
   }
 
   /* Theme transition */

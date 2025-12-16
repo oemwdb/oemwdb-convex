@@ -232,9 +232,9 @@ const Header = ({
   };
 
   return (
-    <header className={cn("fixed top-0 right-0 z-40 pointer-events-none pt-4", sidebarCollapsed ? "left-[88px]" : "left-[272px]", className)}>
+    <header className={cn("fixed top-4 right-0 z-40 pointer-events-none", sidebarCollapsed ? "left-[88px]" : "left-[272px]", className)}>
       <div className="relative">
-        <div className="flex h-14 items-center pl-2 pr-4 relative pointer-events-auto">
+        <div className="flex items-start pl-0 pr-4 relative pointer-events-auto">
           {/* Breadcrumb navigation */}
           <div className={cn(
             "transition-all duration-300 ease-out whitespace-nowrap overflow-hidden",
@@ -257,7 +257,7 @@ const Header = ({
                 : "w-9 ml-auto mr-2"
           )}>
             {isSearchExpanded ? (
-              <div className="flex items-center border border-border rounded-md bg-card w-full hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
+              <div className="flex items-center border border-border rounded-md bg-card w-full h-9 hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
                 <Search className="ml-3 text-muted-foreground flex-shrink-0" size={16} />
 
                 {/* Search input container with ghost text overlay */}
@@ -354,7 +354,7 @@ const Header = ({
                   setIsSearchExpanded(true);
                   onFilterClick?.();
                 }}
-                className="flex items-center gap-1 px-2 py-1.5 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
+                className="flex items-center gap-1 px-2 h-9 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
                 data-filter-button
               >
                 <Search className="text-muted-foreground flex-shrink-0" size={14} />
@@ -405,7 +405,7 @@ const Header = ({
                 isProfileExpanded ? "bg-card border border-border rounded-lg" : ""
               )}>
                 {isProfileExpanded ? (
-                  <div className="flex items-center gap-2 px-3 py-2">
+                  <div className="flex items-center gap-2 px-3 h-9">
                     <div className="flex flex-col items-end mr-2">
                       <span className="text-sm font-medium">
                         {profile?.display_name || user.email?.split('@')[0]}

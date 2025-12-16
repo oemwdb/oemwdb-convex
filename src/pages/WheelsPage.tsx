@@ -316,7 +316,7 @@ const WheelsPage = () => {
         )
       }
     >
-      <div className="p-4 space-y-4">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Content area */}
           {error ? (
           <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
