@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Package, Car, CircleEllipsis } from "lucide-react";
+import { Search, X, Filter, Package, Car, CircleEllipsis, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -416,7 +416,7 @@ const Header = ({
                   console.log('Copy YAML clicked');
                 }}
               >
-                <CircleEllipsis className="h-5 w-5" />
+                <Copy className="h-5 w-5" />
               </Button>
             )}
           </div>

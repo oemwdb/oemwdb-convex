@@ -112,7 +112,7 @@ const WheelItemPage = () => {
   ];
 
   return (
-    <DashboardLayout title={pageTitle}>
+    <DashboardLayout title={pageTitle} showFilterButton={false}>
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Grid layout with wheel header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
