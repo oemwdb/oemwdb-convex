@@ -35,11 +35,12 @@ interface HeaderProps {
   onAddSearchTag?: (tag: string) => void;
   onRemoveSearchTag?: (tag: string) => void;
   topSuggestion?: string;
+  sidebarCollapsed?: boolean;
 }
 
-const Header = ({ 
-  title = "Overview", 
-  onFilterClick, 
+const Header = ({
+  title = "Overview",
+  onFilterClick,
   showFilterButton = true,
   searchValue = '',
   onSearchChange,
@@ -53,11 +54,13 @@ const Header = ({
   searchTags = [],
   onAddSearchTag,
   onRemoveSearchTag,
-  topSuggestion = ""
+  topSuggestion = "",
+  sidebarCollapsed = true
 }: HeaderProps) => {
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<CollectionType>('all');
   const [tempSearchValue, setTempSearchValue] = useState("");
   const [ghostSuggestion, setGhostSuggestion] = useState("");
@@ -71,18 +74,18 @@ const Header = ({
   // Determine if we're on a collection page
   const collectionPages = {
     '/brands': 'brands',
-    '/vehicles': 'vehicles', 
+    '/vehicles': 'vehicles',
     '/wheels': 'wheels'
   };
   const currentCollection = collectionPages[location.pathname as keyof typeof collectionPages];
   const isCollectionPage = !!currentCollection;
 
   // Check if there are any active tags/filters
-  const hasActiveTags = 
+  const hasActiveTags =
     Object.values(parsedFilters).some(arr => arr && arr.length > 0);
 
   // Count total tags for "+N more" indicator
-  const totalTagCount = 
+  const totalTagCount =
     Object.values(parsedFilters).reduce((sum, arr) => sum + (arr?.length || 0), 0);
 
   // Get dynamic placeholder based on selected collection
@@ -90,7 +93,7 @@ const Header = ({
     if (isCollectionPage) {
       return searchPlaceholder;
     }
-    switch(selectedCollection) {
+    switch (selectedCollection) {
       case 'brands':
         return 'Search brands...';
       case 'vehicles':
@@ -116,7 +119,7 @@ const Header = ({
 
   const toggleSearch = () => {
     const newExpandedState = !isSearchExpanded;
-    
+
     if (newExpandedState) {
       // Always open dropdown when expanding search bar
       onFilterClick?.();
@@ -162,12 +165,12 @@ const Header = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tempSearchValue.trim()) {
       const input = tempSearchValue.trim();
-      
+
       // On collection pages (wheels, vehicles), use smart categorization
       if (location.pathname === '/wheels' || location.pathname === '/vehicles') {
         // Split by comma to handle multiple tags at once
         const tags = input.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        
+
         tags.forEach(tag => {
           if (isSpecPattern(tag)) {
             // It's a spec filter - route to filter handler
@@ -177,7 +180,7 @@ const Header = ({
             onAddSearchTag?.(tag);
           }
         });
-        
+
         setTempSearchValue("");
         setGhostSuggestion("");
       } else {
@@ -192,7 +195,7 @@ const Header = ({
     if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostSuggestion) {
       const input = e.currentTarget;
       const cursorAtEnd = input.selectionStart === tempSearchValue.length;
-      
+
       if (e.key === 'Tab' || (e.key === 'ArrowRight' && cursorAtEnd)) {
         e.preventDefault();
         setTempSearchValue(ghostSuggestion);
@@ -204,17 +207,17 @@ const Header = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setTempSearchValue(value);
-    
+
     // Update ghost suggestion from dropdown or matched tags
     if (value && value.length >= 2) {
       // Priority 1: Use topSuggestion from dropdown if available
       if (topSuggestion && topSuggestion.toLowerCase().startsWith(value.toLowerCase()) && topSuggestion.toLowerCase() !== value.toLowerCase()) {
         setGhostSuggestion(topSuggestion);
-      } 
+      }
       // Priority 2: Search through existing search tags
       else {
         const inputLower = value.toLowerCase();
-        const tagMatch = searchTags.find(tag => 
+        const tagMatch = searchTags.find(tag =>
           tag.toLowerCase().startsWith(inputLower) && tag.toLowerCase() !== inputLower
         );
         if (tagMatch) {
@@ -229,220 +232,254 @@ const Header = ({
   };
 
   return (
-    <header className={cn("border-b border-border bg-card sticky top-0 z-40", className)}>
+    <header className={cn("fixed top-0 right-0 z-40 pointer-events-none pt-4", sidebarCollapsed ? "left-[88px]" : "left-[272px]", className)}>
       <div className="relative">
-         <div className="flex h-14 items-center pl-2 pr-4 -mt-px relative">
-        {/* Breadcrumb navigation */}
-        <div className={cn(
-          "transition-all duration-300 ease-out whitespace-nowrap overflow-hidden",
-          isSearchExpanded 
-            ? "w-auto flex-shrink-0 mr-3"
-            : hasActiveTags
-              ? "flex-1 mr-4"
-              : "flex-1 mr-4"
-        )}>
-          <SearchableBreadcrumb />
-        </div>
-        
-        {/* Unified Search Bar */}
-        <div className={cn(
-          "flex items-center transition-all duration-300 ease-out search-container",
-          isSearchExpanded 
-            ? "flex-1 mr-2" 
-            : hasActiveTags 
-              ? "w-auto ml-auto mr-2"
-              : "w-9 ml-auto mr-2"
-        )}>
-          {isSearchExpanded ? (
-            <div className="flex items-center border border-border rounded-md bg-card w-full hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
-              <Search className="ml-3 text-muted-foreground flex-shrink-0" size={16} />
-              
-              {/* Search input container with ghost text overlay */}
-              <div className="relative flex-1 min-w-[100px]">
-                {/* Ghost suggestion overlay */}
-                {ghostSuggestion && tempSearchValue && (
-                  <div 
-                    className="absolute inset-0 flex items-center px-3 pointer-events-none"
-                    style={{ zIndex: 0 }}
-                  >
-                    <span className="text-sm opacity-0 select-none">{tempSearchValue}</span>
-                    <span className="text-sm text-muted-foreground/40 select-none">
-                      {ghostSuggestion.slice(tempSearchValue.length)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Actual input */}
-                <Input
-                  ref={searchInputRef}
-                  placeholder={
-                    searchTags.length === 0 && Object.keys(parsedFilters).length === 0
-                      ? getSearchPlaceholder()
-                      : "Add more..."
-                  }
-                  className="h-9 flex-1 min-w-[100px] text-sm border-0 bg-transparent focus:ring-0 focus:outline-none px-3 relative z-10"
-                  value={tempSearchValue}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  onKeyPress={handleKeyPress}
-              onBlur={(e) => {
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                const isClickingDropdown = relatedTarget?.closest('[data-filter-dropdown]');
-                const isClickingBreadcrumb = relatedTarget?.closest('[data-breadcrumb-popover]') || relatedTarget?.closest('[data-breadcrumb-popover-trigger]');
-                const isClickingSearchContainer = relatedTarget?.closest('.search-container');
-                const isClickingFilterButton = relatedTarget?.closest('[data-filter-button]');
-                
-                // Only auto-collapse if:
-                // 1. Input is empty
-                // 2. No active filter tags exist
-                // 3. Not clicking on any related UI elements
-                if (!tempSearchValue && 
-                    !hasActiveTags && 
-                    !isClickingBreadcrumb && 
-                    !isClickingSearchContainer && 
-                    !isClickingFilterButton &&
-                    !isClickingDropdown) {
-                  setTimeout(() => setIsSearchExpanded(false), 200);
-                }
-              }}
-                  data-search-input
-                />
-              </div>
-              
-              {/* Filter tags display */}
-              <div className="flex items-center gap-1 px-2 py-2 flex-wrap min-w-0 max-w-[500px]">
-                {/* Filter tags (spec-based) */}
-                {Object.entries(parsedFilters).map(([category, values]) => 
-                  values?.map((value, index) => (
-                    <span
-                      key={`${category}-${index}`}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-xs font-medium whitespace-nowrap"
+        <div className="flex h-14 items-center pl-2 pr-4 relative pointer-events-auto">
+          {/* Breadcrumb navigation */}
+          <div className={cn(
+            "transition-all duration-300 ease-out whitespace-nowrap overflow-hidden",
+            isSearchExpanded
+              ? "w-auto flex-shrink-0 mr-3"
+              : hasActiveTags
+                ? "flex-1 mr-4"
+                : "flex-1 mr-4"
+          )}>
+            <SearchableBreadcrumb />
+          </div>
+
+          {/* Unified Search Bar */}
+          <div className={cn(
+            "flex items-center transition-all duration-300 ease-out search-container",
+            isSearchExpanded
+              ? "flex-1 mr-2"
+              : hasActiveTags
+                ? "w-auto ml-auto mr-2"
+                : "w-9 ml-auto mr-2"
+          )}>
+            {isSearchExpanded ? (
+              <div className="flex items-center border border-border rounded-md bg-card w-full hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
+                <Search className="ml-3 text-muted-foreground flex-shrink-0" size={16} />
+
+                {/* Search input container with ghost text overlay */}
+                <div className="relative flex-1 min-w-[100px]">
+                  {/* Ghost suggestion overlay */}
+                  {ghostSuggestion && tempSearchValue && (
+                    <div
+                      className="absolute inset-0 flex items-center px-3 pointer-events-none"
+                      style={{ zIndex: 0 }}
                     >
-                      {value}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveFilter?.(category as keyof ParsedFilters, value);
-                        }}
-                        className="hover:text-primary/70 transition-colors"
-                        aria-label={`Remove ${value} filter`}
+                      <span className="text-sm opacity-0 select-none">{tempSearchValue}</span>
+                      <span className="text-sm text-muted-foreground/40 select-none">
+                        {ghostSuggestion.slice(tempSearchValue.length)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Actual input */}
+                  <Input
+                    ref={searchInputRef}
+                    placeholder={
+                      searchTags.length === 0 && Object.keys(parsedFilters).length === 0
+                        ? getSearchPlaceholder()
+                        : "Add more..."
+                    }
+                    className="h-9 flex-1 min-w-[100px] text-sm border-0 bg-transparent focus:ring-0 focus:outline-none px-3 relative z-10"
+                    value={tempSearchValue}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onKeyPress={handleKeyPress}
+                    onBlur={(e) => {
+                      const relatedTarget = e.relatedTarget as HTMLElement;
+                      const isClickingDropdown = relatedTarget?.closest('[data-filter-dropdown]');
+                      const isClickingBreadcrumb = relatedTarget?.closest('[data-breadcrumb-popover]') || relatedTarget?.closest('[data-breadcrumb-popover-trigger]');
+                      const isClickingSearchContainer = relatedTarget?.closest('.search-container');
+                      const isClickingFilterButton = relatedTarget?.closest('[data-filter-button]');
+
+                      // Only auto-collapse if:
+                      // 1. Input is empty
+                      // 2. No active filter tags exist
+                      // 3. Not clicking on any related UI elements
+                      if (!tempSearchValue &&
+                        !hasActiveTags &&
+                        !isClickingBreadcrumb &&
+                        !isClickingSearchContainer &&
+                        !isClickingFilterButton &&
+                        !isClickingDropdown) {
+                        setTimeout(() => setIsSearchExpanded(false), 200);
+                      }
+                    }}
+                    data-search-input
+                  />
+                </div>
+
+                {/* Filter tags display */}
+                <div className="flex items-center gap-1 px-2 py-2 flex-wrap min-w-0 max-w-[500px]">
+                  {/* Filter tags (spec-based) */}
+                  {Object.entries(parsedFilters).map(([category, values]) =>
+                    values?.map((value, index) => (
+                      <span
+                        key={`${category}-${index}`}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-xs font-medium whitespace-nowrap"
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))
-                )}
-              </div>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-9 w-9 flex-shrink-0 hover:bg-transparent" 
-                onClick={toggleSearch}
-              >
-                <X className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-              </Button>
-            </div>
-          ) : hasActiveTags ? (
-            // COMPRESSED STATE WITH TAGS
-            <button
-              onClick={() => {
-                // Expand search bar and ensure dropdown is open
-                setIsSearchExpanded(true);
-                onFilterClick?.();
-              }}
-              className="flex items-center gap-1 px-2 py-1.5 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
-              data-filter-button
-            >
-              <Search className="text-muted-foreground flex-shrink-0" size={14} />
-              
-              {/* Show compressed filter tags */}
-              <div className="flex items-center gap-1 max-w-[400px] overflow-hidden">
-                {/* Filter tags */}
-                {Object.entries(parsedFilters).flatMap(([category, values]) => 
-                  values?.slice(0, 3).map((value, index) => (
-                    <span
-                      key={`${category}-${index}`}
-                      className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium whitespace-nowrap"
-                    >
-                      {value}
-                    </span>
-                  ))
-                )}
-                
-                {/* Show +N more if there are additional tags */}
-                {totalTagCount > 3 && (
-                  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
-                    +{totalTagCount - 3}
-                  </span>
-                )}
-              </div>
-            </button>
-          ) : (
-            // COLLAPSED STATE WITHOUT TAGS
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="h-9 w-9 transition-transform duration-200 hover:scale-105 text-muted-foreground hover:text-foreground"
-              onClick={toggleSearch}
-              data-filter-button
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-        
-        {/* Right buttons section - User menu */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          
-          {/* User menu */}
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <User className="h-5 w-5" />
+                        {value}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveFilter?.(category as keyof ParsedFilters, value);
+                          }}
+                          className="hover:text-primary/70 transition-colors"
+                          aria-label={`Remove ${value} filter`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 flex-shrink-0 hover:bg-transparent"
+                  onClick={toggleSearch}
+                >
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  {profile?.display_name || user.email}
-                  {role === 'admin' && <span className="ml-2 text-xs text-primary">(Admin)</span>}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  Profile
-                </DropdownMenuItem>
-                {role === 'admin' && (
-                  <DropdownMenuItem onClick={() => navigate('/dev')}>
-                    Admin Dashboard
-                  </DropdownMenuItem>
+              </div>
+            ) : hasActiveTags ? (
+              // COMPRESSED STATE WITH TAGS
+              <button
+                onClick={() => {
+                  // Expand search bar and ensure dropdown is open
+                  setIsSearchExpanded(true);
+                  onFilterClick?.();
+                }}
+                className="flex items-center gap-1 px-2 py-1.5 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
+                data-filter-button
+              >
+                <Search className="text-muted-foreground flex-shrink-0" size={14} />
+
+                {/* Show compressed filter tags */}
+                <div className="flex items-center gap-1 max-w-[400px] overflow-hidden">
+                  {/* Filter tags */}
+                  {Object.entries(parsedFilters).flatMap(([category, values]) =>
+                    values?.slice(0, 3).map((value, index) => (
+                      <span
+                        key={`${category}-${index}`}
+                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium whitespace-nowrap"
+                      >
+                        {value}
+                      </span>
+                    ))
+                  )}
+
+                  {/* Show +N more if there are additional tags */}
+                  {totalTagCount > 3 && (
+                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                      +{totalTagCount - 3}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ) : (
+              // COLLAPSED STATE WITHOUT TAGS
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-card hover:border hover:border-border rounded-lg"
+                onClick={toggleSearch}
+                data-filter-button
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+
+          {/* Right buttons section - User menu */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+
+            {/* User menu - expanding panel */}
+            {user ? (
+              <div className={cn(
+                "flex items-center transition-all duration-300 ease-out",
+                isProfileExpanded ? "bg-card border border-border rounded-lg" : ""
+              )}>
+                {isProfileExpanded ? (
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <div className="flex flex-col items-end mr-2">
+                      <span className="text-sm font-medium">
+                        {profile?.display_name || user.email?.split('@')[0]}
+                        {role === 'admin' && <span className="ml-1 text-xs text-primary">(Admin)</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 border-l border-border pl-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-sm hover:bg-accent"
+                        onClick={() => { navigate('/profile'); setIsProfileExpanded(false); }}
+                      >
+                        Profile
+                      </Button>
+                      {role === 'admin' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-sm hover:bg-accent"
+                          onClick={() => { navigate('/dev'); setIsProfileExpanded(false); }}
+                        >
+                          Admin Dashboard
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-sm hover:bg-accent"
+                        onClick={() => { signOut(); setIsProfileExpanded(false); }}
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        Sign Out
+                      </Button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 ml-1 hover:bg-transparent"
+                      onClick={() => setIsProfileExpanded(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
+                    onClick={() => setIsProfileExpanded(true)}
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/login')}
-            >
-              Sign In
-            </Button>
-          )}
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/login')}
+              >
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Unified dropdown - positioned below search bar */}
+        {(searchDropdown || filterSearchDropdown) && (
+          <div className="relative" data-filter-dropdown>
+            {filterSearchDropdown || searchDropdown}
+          </div>
+        )}
       </div>
-      
-      {/* Unified dropdown - positioned below search bar */}
-      {(searchDropdown || filterSearchDropdown) && (
-        <div className="relative" data-filter-dropdown>
-          {filterSearchDropdown || searchDropdown}
-        </div>
-      )}
-    </div>
     </header>
   );
 };

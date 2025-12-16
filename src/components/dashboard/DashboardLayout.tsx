@@ -25,8 +25,8 @@ interface DashboardLayoutProps {
   topSuggestion?: string;
 }
 
-const DashboardLayout = ({ 
-  children, 
+const DashboardLayout = ({
+  children,
   title = "OEM Wheel Database",
   onFilterClick,
   showFilterButton = true,
@@ -46,9 +46,9 @@ const DashboardLayout = ({
   topSuggestion
 }: DashboardLayoutProps) => {
   const [internalSidebarCollapsed, setInternalSidebarCollapsed] = useState(true);
-  
+
   const sidebarCollapsed = externalSidebarCollapsed ?? internalSidebarCollapsed;
-  
+
   const toggleSidebar = () => {
     const newCollapsed = !sidebarCollapsed;
     if (onSidebarToggle) {
@@ -59,10 +59,10 @@ const DashboardLayout = ({
   };
 
   return (
-    <div className="flex h-[100dvh] bg-background transition-colors duration-200">
+    <div className="h-[100dvh] bg-background transition-colors duration-200">
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header 
+      <div className={`h-full flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'ml-[88px]' : 'ml-[272px]'}`}>
+        <Header
           title={title}
           onFilterClick={onFilterClick}
           showFilterButton={showFilterButton}
@@ -78,8 +78,9 @@ const DashboardLayout = ({
           onAddSearchTag={onAddSearchTag}
           onRemoveSearchTag={onRemoveSearchTag}
           topSuggestion={topSuggestion}
+          sidebarCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-[72px]">
           {children}
         </main>
       </div>

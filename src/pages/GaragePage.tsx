@@ -57,7 +57,7 @@ const GaragePage: React.FC = () => {
 
   return (
     <DashboardLayout title="Garage">
-      <main className="p-3 space-y-6">
+      <main className="p-4 space-y-4">
         <section aria-labelledby="garage-builder">
           <h1 id="garage-builder" className="text-xl font-semibold">Build a combo</h1>
           <p className="text-muted-foreground text-sm">Select a vehicle and an OEM wheel to save the combo to your garage.</p>

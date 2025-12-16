@@ -146,7 +146,7 @@ const WheelDetailPage = () => {
         </div>
         
         {/* Wheel header section with ad space */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Wheel Header - Takes 2 columns on desktop */}
           <div className="lg:col-span-2">
             <WheelHeader 

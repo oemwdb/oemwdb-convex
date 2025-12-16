@@ -107,10 +107,10 @@ const BrandDetailPage = () => {
 
   return (
     <DashboardLayout title={`${formattedBrandName}`}>
-      <div className="p-3 space-y-6">
+      <div className="p-4 space-y-4">
         <Card>
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-3xl font-bold">
                 {formattedBrandName.charAt(0)}
               </div>

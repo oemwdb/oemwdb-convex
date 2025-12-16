@@ -327,7 +327,7 @@ const VehiclesPage = () => {
         sidebarCollapsed={sidebarCollapsed}
       />
       
-      <div className="p-3 space-y-6">
+      <div className="p-4 space-y-4">
           {isLoading ? (
           <div className="text-center py-10 text-muted-foreground">Loading vehicles...</div>
         ) : isError ? (

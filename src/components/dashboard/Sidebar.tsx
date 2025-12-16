@@ -100,25 +100,19 @@ const Sidebar = ({
 
   return (
     <aside
-      className={cn("sidebar-container h-[100dvh] bg-card transition-all duration-300 flex flex-col relative", collapsed ? "w-20" : "w-64", className)}
+      className={cn(
+        "sidebar-container fixed left-4 top-4 bottom-4 bg-card border border-border rounded-2xl transition-all duration-300 flex flex-col z-50",
+        collapsed ? "w-[56px]" : "w-[240px]",
+        className
+      )}
       data-component="sidebar"
       data-collapsed={collapsed}
+      onClick={onToggle}
     >
-      {/* Sidebar Edge Divider - Clickable vertical line for expanding/collapsing */}
-      <div
-        className="sidebar-edge-divider absolute top-0 -right-[5px] w-3 h-full hover:bg-accent/10 transition-colors duration-200 cursor-pointer z-10 flex items-center justify-center group"
-        data-element="edge-divider"
-        onClick={onToggle}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        role="button"
-        tabIndex={0}
-      >
-        <div className="w-px h-full bg-border group-hover:bg-white transition-colors duration-200" />
-      </div>
 
       {/* Sidebar Header - Contains brand/logo */}
       <header
-        className="sidebar-header flex items-center h-14 px-4 border-b border-border relative"
+        className="sidebar-header flex items-center h-14 px-4 relative"
         data-element="sidebar-header"
       >
         {!collapsed ? (
@@ -318,15 +312,15 @@ const Sidebar = ({
 
       {/* Sidebar Footer - User controls and theme toggle */}
       <footer
-        className="sidebar-footer p-4 border-t border-border pb-safe"
+        className="sidebar-footer p-4 pb-safe"
         data-element="sidebar-footer"
       >
         {/* Theme Toggle Wrapper */}
         <div
-          className="theme-toggle-wrapper flex justify-center"
+          className="theme-toggle-wrapper flex items-center justify-center"
           data-element="theme-toggle"
         >
-          <ThemeToggle className={cn("w-full", collapsed ? "justify-center" : "justify-start")} />
+          <ThemeToggle className="justify-center" />
         </div>
       </footer>
     </aside>

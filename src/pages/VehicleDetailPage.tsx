@@ -97,7 +97,7 @@ const VehicleDetailPage = () => {
 
   return (
     <DashboardLayout title={`${vehicleDisplayName} Details`}>
-      <div className="p-3 space-y-6">
+      <div className="p-4 space-y-4">
         <VehicleHeader 
           name={vehicleDisplayName || "Unknown Vehicle"}
           generation={vehicleData.lineage || "Current Generation"}

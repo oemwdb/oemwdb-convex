@@ -36,7 +36,7 @@ const DevPage = () => {
 
   return (
     <DashboardLayout title="Admin Dashboard" showFilterButton={false}>
-      <div className="p-3 space-y-6">
+      <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
