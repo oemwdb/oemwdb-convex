@@ -20,10 +20,10 @@ const WheelItemPage = () => {
   const { wheelId } = useParams<{ wheelId: string }>();
   const [activeTab, setActiveTab] = useState("fitment");
   const { updateCurrentLabel } = useNavigation();
-  
+
   // Fetch wheel with related vehicles from Supabase
   const { data: wheel, isLoading, error } = useWheelWithVehicles(wheelId || "");
-  
+
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {
     if (wheel?.wheel_name) {
@@ -61,7 +61,7 @@ const WheelItemPage = () => {
       </DashboardLayout>
     );
   }
-  
+
   // Use wheel name for the dashboard title
   const pageTitle = wheel.wheel_name || `Wheel #${wheelId}`;
 
@@ -101,34 +101,51 @@ const WheelItemPage = () => {
 
   // Generate available sizes based on the wheel model
   const availableSizes = [
-    { 
-      diameter: wheel.diameter || "18\"", 
-      width: wheel.width || "8.5J", 
-      offset: wheel.wheel_offset || "ET40", 
-      finish: wheel.color || "Silver", 
-      price: "$249.99", 
-      inStock: wheel.status === "Ready for website" 
+    {
+      diameter: wheel.diameter || "18\"",
+      width: wheel.width || "8.5J",
+      offset: wheel.wheel_offset || "ET40",
+      finish: wheel.color || "Silver",
+      price: "$249.99",
+      inStock: wheel.status === "Ready for website"
     }
   ];
 
   return (
     <DashboardLayout title={pageTitle}>
-      <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
-        {/* Wheel Header - Full width */}
-        <WheelHeader 
-          name={wheel.wheel_name}
-          brand={wheel.brand_name || "Unknown Brand"}
-          price="$249.99"
-          description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
-          image={wheel.good_pic_url || wheel.bad_pic_url || "/placeholder.svg"}
-          specs={wheelSpecs}
-        />
-        
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+        {/* Grid layout with wheel header and ad */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Wheel Header - Takes 2 columns on large screens */}
+          <div className="lg:col-span-2">
+            <WheelHeader
+              name={wheel.wheel_name}
+              brand={wheel.brand_name || "Unknown Brand"}
+              price="$249.99"
+              description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
+              image={wheel.good_pic_url || wheel.bad_pic_url || "/placeholder.svg"}
+              specs={wheelSpecs}
+            />
+          </div>
+
+          {/* Ad Box - Takes 1 column on large screens */}
+          <div className="lg:col-span-1">
+            <Card className="h-full min-h-[240px] bg-muted/30 border-dashed flex items-center justify-center">
+              <div className="text-center space-y-3 p-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
+                  <Package className="h-8 w-8 text-primary/50" />
+                </div>
+                <h3 className="text-lg font-semibold text-muted-foreground">Ad Box Here</h3>
+                <p className="text-sm text-muted-foreground/70">Advertisement Space</p>
+              </div>
+            </Card>
+          </div>
+        </div>
         {/* Tabbed content */}
-        <Tabs 
-          defaultValue="fitment" 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
+        <Tabs
+          defaultValue="fitment"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="w-full"
         >
           <TabsList className="flex w-full h-auto gap-2 bg-muted/50 p-2 rounded-lg overflow-x-auto">
@@ -154,26 +171,26 @@ const WheelItemPage = () => {
               <span>Cool Board</span>
             </TabsTrigger>
           </TabsList>
-          
+
           {/* Fitment content */}
           <TabsContent value="fitment" className="mt-6 animate-fade-in">
-            <FitmentSection 
+            <FitmentSection
               wheelName={wheel.wheel_name}
               compatibleVehicles={compatibleVehicles}
             />
           </TabsContent>
-          
+
           {/* Gallery content */}
           <TabsContent value="gallery" className="mt-6 animate-fade-in">
-            <GallerySection 
+            <GallerySection
               vehicleName={wheel.wheel_name}
               images={galleryImages}
             />
           </TabsContent>
-          
+
           {/* Comments content */}
           <TabsContent value="comments" className="mt-6 animate-fade-in">
-            <CommentsSection 
+            <CommentsSection
               vehicleName={wheel.wheel_name}
               comments={comments}
             />
@@ -245,7 +262,7 @@ const WheelItemPage = () => {
                         #1 Trending
                       </Badge>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div className="p-4 rounded-lg bg-muted/50">
                         <p className="text-2xl font-bold text-primary">92%</p>
@@ -272,19 +289,6 @@ const WheelItemPage = () => {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* Subtle Ad Banner at Bottom */}
-        <Card className="bg-muted/30 border-border/30">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-              <Megaphone className="h-4 w-4" />
-              <span>Limited Time: Free Shipping on Orders Over $500</span>
-              <Button variant="link" size="sm" className="p-0 h-auto">
-                Shop Now →
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

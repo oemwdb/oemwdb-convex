@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, User, LogOut, Package, Car, CircleEllipsis } from "lucide-react";
+import { Search, X, Filter, Package, Car, CircleEllipsis } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -395,79 +395,28 @@ const Header = ({
             )}
           </div>
 
-          {/* Right buttons section - User menu */}
+          {/* Right buttons section - Context actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
-
-            {/* User menu - expanding panel */}
-            {user ? (
-              <div className={cn(
-                "flex items-center transition-all duration-300 ease-out",
-                isProfileExpanded ? "bg-card border border-border rounded-lg" : ""
-              )}>
-                {isProfileExpanded ? (
-                  <div className="flex items-center gap-2 px-3 h-9">
-                    <div className="flex flex-col items-end mr-2">
-                      <span className="text-sm font-medium">
-                        {profile?.display_name || user.email?.split('@')[0]}
-                        {role === 'admin' && <span className="ml-1 text-xs text-primary">(Admin)</span>}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 border-l border-border pl-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-sm hover:bg-accent"
-                        onClick={() => { navigate('/profile'); setIsProfileExpanded(false); }}
-                      >
-                        Profile
-                      </Button>
-                      {role === 'admin' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-sm hover:bg-accent"
-                          onClick={() => { navigate('/dev'); setIsProfileExpanded(false); }}
-                        >
-                          Admin Dashboard
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-sm hover:bg-accent"
-                        onClick={() => { signOut(); setIsProfileExpanded(false); }}
-                      >
-                        <LogOut className="h-4 w-4 mr-1" />
-                        Sign Out
-                      </Button>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 ml-1 hover:bg-transparent"
-                      onClick={() => setIsProfileExpanded(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
-                    onClick={() => setIsProfileExpanded(true)}
-                  >
-                    <User className="h-5 w-5" />
-                  </Button>
-                )}
-              </div>
+            {showFilterButton ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
+                onClick={onFilterClick}
+              >
+                <Filter className="h-5 w-5" />
+              </Button>
             ) : (
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={() => navigate('/login')}
+                size="icon"
+                className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
+                onClick={() => {
+                  // TODO: Implement copy YAML functionality
+                  console.log('Copy YAML clicked');
+                }}
               >
-                Sign In
+                <CircleEllipsis className="h-5 w-5" />
               </Button>
             )}
           </div>

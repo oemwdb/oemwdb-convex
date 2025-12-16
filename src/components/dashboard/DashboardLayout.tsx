@@ -81,7 +81,9 @@ const DashboardLayout = ({
           sidebarCollapsed={sidebarCollapsed}
         />
         <main className="flex-1 overflow-y-auto pt-[68px]">
-          {children}
+          <div className="max-w-[1920px] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>
