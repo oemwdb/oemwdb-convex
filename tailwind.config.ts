@@ -95,8 +95,8 @@ export default {
 				},
 				'ghost-float': {
 					'0%': { transform: 'translateX(0) scaleX(1)' },
-					'49.9%': { transform: 'translateX(198px) scaleX(1)' },
-					'50%': { transform: 'translateX(198px) scaleX(-1)' },
+					'49.9%': { transform: 'translateX(184px) scaleX(1)' },
+					'50%': { transform: 'translateX(184px) scaleX(-1)' },
 					'99.9%': { transform: 'translateX(0) scaleX(-1)' },
 					'100%': { transform: 'translateX(0) scaleX(1)' }
 				},

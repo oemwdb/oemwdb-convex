@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Package, Car, CircleEllipsis, Copy } from "lucide-react";
+import { Search, X, Filter, Package, Car, CircleEllipsis, Copy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -397,7 +397,37 @@ const Header = ({
 
           {/* Right buttons section - Context actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {showFilterButton ? (
+            {/* Profile page - Logout button */}
+            {location.pathname === '/profile' ? (
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-9 transition-all duration-300 rounded-lg overflow-hidden",
+                  "bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground",
+                  "border border-destructive/20 hover:border-destructive",
+                  "group"
+                )}
+                onClick={async () => {
+                  await signOut();
+                  navigate('/');
+                }}
+                onMouseEnter={() => setIsProfileExpanded(true)}
+                onMouseLeave={() => setIsProfileExpanded(false)}
+                style={{ width: isProfileExpanded ? '110px' : '36px' }}
+              >
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <LogOut className="h-5 w-5 flex-shrink-0" />
+                  <span
+                    className={cn(
+                      "text-sm font-medium transition-all duration-300 overflow-hidden",
+                      isProfileExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Logout
+                  </span>
+                </div>
+              </Button>
+            ) : showFilterButton ? (
               <Button
                 variant="ghost"
                 size="icon"

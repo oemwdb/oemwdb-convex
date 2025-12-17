@@ -39,6 +39,7 @@ import CoolBoardPage from "./pages/CoolBoardPage";
 import RegisteredVehiclesPage from "./pages/RegisteredVehiclesPage";
 import ChartComparison from "./pages/ChartComparison";
 import VINDecoderPage from "./pages/VINDecoderPage";
+import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/dev/templates/collections" element={<ProtectedRoute requireAdmin={true}><CollectionTemplatesPage /></ProtectedRoute>} />
                 <Route path="/dev/registered-vehicles" element={<ProtectedRoute><RegisteredVehiclesPage /></ProtectedRoute>} />
                 <Route path="/dev/vin-decoder" element={<ProtectedRoute requireAdmin={true}><VINDecoderPage /></ProtectedRoute>} />
+                <Route path="/dev/shadcn-workshop" element={<ProtectedRoute requireAdmin={true}><ShadcnWorkshopPage /></ProtectedRoute>} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/chart-comparison" element={<ChartComparison />} />
