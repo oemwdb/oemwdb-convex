@@ -20,10 +20,10 @@ const fetchBrands = async () => {
   const brandsWithCounts = await Promise.all(
     ((data ?? []) as any[]).map(async (brand: any) => {
       const { data: vehicleCount } = await supabase
-        .rpc('get_brand_vehicle_count', { 
-          brand_name_param: brand.brand_title 
+        .rpc('get_brand_vehicle_count', {
+          brand_name_param: brand.brand_title
         });
-      
+
       return {
         name: brand.brand_title || "Unknown",
         description: brand.brand_description ?? null,
@@ -33,7 +33,7 @@ const fetchBrands = async () => {
       };
     })
   );
-  
+
   return brandsWithCounts;
 };
 
@@ -43,7 +43,7 @@ const BrandsPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
-  
+
   const {
     searchText,
     updateSearchText,
@@ -85,17 +85,17 @@ const BrandsPage = () => {
       if (filters.hasWheels && brand.wheelCount === 0) return false;
       if (filters.hasImage && (!brand.imagelink || brand.imagelink.trim() === '')) return false;
       if (filters.hasVehicles) return true; // Placeholder - will connect to actual data later
-      
+
       return true;
     })
     .sort((a, b) => {
       // First, sort by whether they have images (brands with images first)
       const aHasImage = a.imagelink && a.imagelink.trim() !== '';
       const bHasImage = b.imagelink && b.imagelink.trim() !== '';
-      
+
       if (aHasImage && !bHasImage) return -1;
       if (!aHasImage && bHasImage) return 1;
-      
+
       // If both have images or both don't have images, sort alphabetically
       return a.name.localeCompare(b.name);
     });
@@ -109,7 +109,7 @@ const BrandsPage = () => {
   };
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Brands"
       searchValue={searchText}
       onSearchChange={updateSearchText}
@@ -129,9 +129,22 @@ const BrandsPage = () => {
         onClearFilters={clearFilters}
         sidebarCollapsed={sidebarCollapsed}
       />
-      
+
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
-          {isLoading ? (
+        {/* Ad Panel */}
+        <div className="w-full bg-muted/30 border border-dashed border-border rounded-lg p-6 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
+              <svg className="h-6 w-6 text-primary/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9h6v6H9z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground">Advertisement</h3>
+          </div>
+        </div>
+
+        {isLoading ? (
           <div className="text-center py-10 text-muted-foreground">Loading brands...</div>
         ) : isError ? (
           <div className="text-center py-10 text-red-500">Failed to load brands from Supabase.</div>

@@ -73,13 +73,14 @@ const Sidebar = ({
       )}
       data-component="sidebar"
       data-collapsed={collapsed}
-      onClick={onToggle}
+      onClick={() => collapsed && onToggle?.()}
     >
 
       {/* Sidebar Header - Contains brand/logo or user profile */}
       <header
         className="sidebar-header flex items-center h-14 px-4 relative"
         data-element="sidebar-header"
+        onClick={(e) => e.stopPropagation()}
       >
         <Link
           to={user ? "/profile" : "/login"}
@@ -105,15 +106,20 @@ const Sidebar = ({
               )}
             </>
           ) : (
-            // Not logged in - show ghost
-            <img
-              src="/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"
-              alt="Login"
-              className={cn(
-                "w-6 h-6 relative z-10",
-                !collapsed && "animate-ghost-float"
-              )}
-            />
+            // Not logged in - show ghost with extended click area for animation
+            <div
+              className="relative p-4 -m-4 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src="/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"
+                alt="Login"
+                className={cn(
+                  "w-6 h-6 relative z-10",
+                  !collapsed && "animate-ghost-float"
+                )}
+              />
+            </div>
           )}
         </Link>
       </header>
@@ -139,7 +145,10 @@ const Sidebar = ({
               <li key={item.label}>
                 <Button
                   variant="ghost"
-                  className={cn("group w-full justify-start gap-3 mb-1 hover:bg-accent hover:text-accent-foreground", collapsed ? "justify-center px-1" : "px-3")}
+                  className={cn(
+                    "group w-full justify-start gap-3 mb-1 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg",
+                    collapsed ? "justify-center px-1" : "px-3"
+                  )}
                   asChild
                   onClick={() => startNewHistory(item.path)}
                 >

@@ -14,6 +14,10 @@ interface VehicleCardProps {
     brand: string;
     wheels: number;
     image?: string;
+    bolt_pattern_ref?: any;
+    center_bore_ref?: any;
+    wheel_diameter_ref?: any;
+    wheel_width_ref?: any;
   };
   isFlipped: boolean;
   onFlip: (name: string) => void;
@@ -91,6 +95,17 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
     }
   }, [isFlipped]);
 
+  // Helper to remove brand name from vehicle name
+  const getDisplayName = () => {
+    if (!vehicle.brand || !vehicle.name) return vehicle.name;
+
+    // Remove brand name from the beginning of the vehicle name
+    const brandRegex = new RegExp(`^${vehicle.brand}\\s*[-–—]?\\s*`, 'i');
+    return vehicle.name.replace(brandRegex, '').trim() || vehicle.name;
+  };
+
+  const displayName = getDisplayName();
+
   const toggleSource = () => {
     setIsSourceExpanded(!isSourceExpanded);
   };
@@ -138,9 +153,9 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
                     isTextOverflowing && isHovering ? "animate-text-scroll" : ""
                   )}
                 >
-                  {vehicle.name}
+                  {displayName}
                   {isTextOverflowing && isHovering && (
-                    <span className="pl-4 inline-block">{vehicle.name}</span>
+                    <span className="pl-4 inline-block">{displayName}</span>
                   )}
                 </p>
               </div>
@@ -168,60 +183,84 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
       {/* Back of card */}
       <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 hover:shadow-md overflow-hidden">
         <CardContent className="p-0 flex flex-col h-full">
-          <div className="relative h-full w-full bg-muted flex flex-col">
+          <div className="relative h-full w-full flex flex-col">
 
             {/* Content section - takes remaining space */}
-            <div className="flex-1 flex flex-col">
-              <div className="px-4 pt-4 pb-2">
-                <h4 className="font-medium text-foreground text-sm">Vehicle Information</h4>
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="pl-4 pr-12 pt-4 pb-2 flex-shrink-0">
+                <h4 className="font-medium text-foreground text-sm">
+                  {vehicle.brand || "Vehicle Specifications"}
+                </h4>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                {dataMapping && dataMapping.length > 0 ? (
-                  // Use dataMapping if provided
-                  dataMapping
-                    .filter(item => item.location === 'back')
-                    .sort((a, b) => a.order - b.order)
-                    .map((mapping, idx, arr) => {
-                      // Use the label from mapping if available
-                      const label = mapping.label || mapping.field.replace(/([A-Z])/g, ' $1').trim()
-                        .split(' ')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ');
+              <div
+                className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-2 min-h-0"
+                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+              >
+                {(() => {
+                  // Helper to extract values from JSONB array
+                  const extractValues = (jsonb: any): string[] => {
+                    if (!jsonb) return [];
+                    if (typeof jsonb === 'string') {
+                      try {
+                        jsonb = JSON.parse(jsonb);
+                      } catch {
+                        return [];
+                      }
+                    }
+                    if (Array.isArray(jsonb)) {
+                      return jsonb.map(item => typeof item === 'string' ? item : item.toString());
+                    }
+                    return [];
+                  };
 
-                      // Always display the label in brackets
-                      const displayValue = `[${label}]`;
+                  // Add any vehicle ref fields here - adapt from wheel card structure
+                  const vehicleData: any = vehicle;
 
-                      return (
-                        <div
-                          key={mapping.id}
-                          className={cn(
-                            "h-8 flex items-center px-4 border-b border-border/50",
-                            idx === arr.length - 1 && "border-b-0"
-                          )}
-                        >
-                          <span className="text-xs truncate">
-                            {displayValue}
-                          </span>
-                        </div>
-                      );
-                    })
-                ) : (
-                  // Fallback to default display - removed brand, only showing chassis code
-                  <div className="h-8 flex items-center px-4 border-b-0">
-                    <span className="text-xs truncate">Chassis Code: {vehicle.name}</span>
-                  </div>
-                )}
+                  // Define fields to display with labels
+                  const fields = [
+                    { label: 'Bolt Pattern', values: extractValues(vehicleData.bolt_pattern_ref) },
+                    { label: 'Center Bore', values: extractValues(vehicleData.center_bore_ref) },
+                    { label: 'Wheel Diameter', values: extractValues(vehicleData.wheel_diameter_ref) },
+                    { label: 'Wheel Width', values: extractValues(vehicleData.wheel_width_ref) },
+                  ];
+
+                  return fields.map((field, idx) => (
+                    <div
+                      key={idx}
+                      className={cn(
+                        "py-2 border-b border-border/50",
+                        idx === fields.length - 1 && "border-b-0"
+                      )}
+                    >
+                      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+                        {field.values.length > 0 ? (
+                          field.values.map((value, valueIdx) => (
+                            <Badge
+                              key={valueIdx}
+                              variant="secondary"
+                              className="text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0"
+                            >
+                              {value}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0 text-muted-foreground"
+                          >
+                            {field.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
-            {/* Footer with brand badge, vehicle name and favorite button - matches front card */}
+            {/* Footer with vehicle name and favorite button - matches front card */}
             <div className="bg-card p-3 border-t border-border flex items-center justify-between gap-2 flex-shrink-0">
-              <div className="relative overflow-hidden flex-1 flex items-center gap-2">
-                {vehicle.brand && (
-                  <Badge variant="outline" className="text-xs rounded-sm px-1.5 py-0.5 flex-shrink-0">
-                    {vehicle.brand}
-                  </Badge>
-                )}
+              <div className="relative overflow-hidden flex-1">
                 <p
                   ref={backTextRef}
                   className={cn(

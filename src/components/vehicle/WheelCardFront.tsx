@@ -70,6 +70,18 @@ const WheelCardFront = ({
   };
 
   const brandName = extractBrandName();
+
+  // Helper to remove brand name from wheel name
+  const getDisplayName = () => {
+    if (!brandName || !wheel.name) return wheel.name;
+
+    // Remove brand name from the beginning of the wheel name
+    const brandRegex = new RegExp(`^${brandName}\\s*[-–—]?\\s*`, 'i');
+    return wheel.name.replace(brandRegex, '').trim() || wheel.name;
+  };
+
+  const displayName = getDisplayName();
+
   return (
     <Card className="absolute inset-0 w-full h-full backface-hidden hover:shadow-md cursor-pointer overflow-hidden">
       <CardContent className="p-0 flex flex-col h-full">
@@ -99,33 +111,21 @@ const WheelCardFront = ({
             )}
           </div>
 
-          {/* Footer with brand badge, wheel name and favorite button */}
+          {/* Footer with wheel name and favorite button */}
           <div className="relative bg-card p-3 border-t border-border flex items-center justify-between flex-shrink-0 h-[52px] z-10">
             <div className="relative overflow-hidden flex-1">
-              <div
+              <p
                 ref={textRef}
                 className={cn(
-                  "text-foreground text-sm font-medium whitespace-nowrap flex items-center gap-2",
+                  "text-foreground text-sm font-medium whitespace-nowrap",
                   isTextOverflowing && isHovering ? "animate-text-scroll" : ""
                 )}
               >
-                {brandName && (
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5 flex-shrink-0">
-                    {brandName}
-                  </Badge>
-                )}
-                <span>{wheel.name}</span>
+                {displayName}
                 {isTextOverflowing && isHovering && (
-                  <>
-                    {brandName && (
-                      <Badge variant="secondary" className="text-xs px-2 py-0.5 flex-shrink-0 ml-4">
-                        {brandName}
-                      </Badge>
-                    )}
-                    <span className={brandName ? "" : "pl-4"}>{wheel.name}</span>
-                  </>
+                  <span className="pl-4 inline-block">{displayName}</span>
                 )}
-              </div>
+              </p>
             </div>
             <Button
               variant="ghost"
@@ -167,14 +167,14 @@ const WheelCardFront = ({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-full flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-transparent pointer-events-auto"
+            className="h-8 w-8 p-0 rounded-full flex-shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-transparent pointer-events-auto"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onToggleSource();
             }}
           >
-            <Info className="h-4 w-4" />
+            <Info className="h-4 w-4 -ml-0.5" />
             <span className="sr-only">Image source</span>
           </Button>
 

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone } from "lucide-react";
+import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
 import { useWheelWithVehicles } from "@/hooks/useWheelWithVehicles";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -154,6 +154,10 @@ const WheelItemPage = () => {
               <span>Vehicles</span>
               <Badge variant="secondary" className="ml-1 text-xs">{compatibleVehicles.length}</Badge>
             </TabsTrigger>
+            <TabsTrigger value="variants" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
+              <Layers className="h-4 w-4" />
+              <span>Variants</span>
+            </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
               <Image className="h-4 w-4" />
               <span>Gallery</span>
@@ -178,6 +182,114 @@ const WheelItemPage = () => {
               wheelName={wheel.wheel_name}
               compatibleVehicles={compatibleVehicles}
             />
+          </TabsContent>
+
+          {/* Variants content */}
+          <TabsContent value="variants" className="mt-6 animate-fade-in">
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layers className="h-5 w-5" />
+                    Wheel Variants
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {/* Variant Card - part number centered */}
+                    {[
+                      {
+                        partNumber: 'T4N26858',
+                        manufId: 'LX731007AA',
+                        color: 'Sparkle Silver',
+                        size: '6.5Jx17 ET43.5',
+                        pcd: '5x108.0',
+                        available: true
+                      },
+                      {
+                        partNumber: 'T4N26859',
+                        manufId: 'LX731008AA',
+                        color: 'Gloss Black',
+                        size: '6.5Jx17 ET43.5',
+                        pcd: '5x108.0',
+                        available: true
+                      },
+                      {
+                        partNumber: 'T4N26860',
+                        manufId: 'LX731009AA',
+                        color: 'Diamond Turned',
+                        size: '7Jx18 ET45',
+                        pcd: '5x108.0',
+                        available: false
+                      }
+                    ].map((variant, idx) => (
+                      <Card key={idx} className="flex flex-col hover:shadow-md transition-shadow">
+                        <CardContent className="p-4 flex flex-col gap-2">
+                          {/* Header - Part Number */}
+                          <h4 className="font-semibold text-foreground text-base">
+                            {wheel.brand_name} Part Number & Sizes
+                          </h4>
+
+                          {/* Content */}
+                          <div className="space-y-1 text-sm">
+                            <p className="text-foreground">
+                              <span className="text-muted-foreground">Colour:</span> {variant.color}
+                            </p>
+                            <p className="text-foreground">
+                              {variant.size} PCD {variant.pcd}
+                            </p>
+                            <p className="text-foreground">
+                              <span className="text-muted-foreground">Manuf ID:</span> {variant.manufId}
+                            </p>
+                            <p className="text-foreground">
+                              <span className="text-muted-foreground">P/N:</span>{' '}
+                              <span className="text-blue-500">{variant.partNumber}</span>
+                            </p>
+                            <p className={variant.available ? "text-green-500" : "text-muted-foreground"}>
+                              {variant.available ? 'Available' : 'Unavailable'}
+                            </p>
+                          </div>
+
+                          {/* Buy at section */}
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-xs text-muted-foreground mb-2">Buy at</p>
+                            <div className="flex gap-2">
+                              <a
+                                href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(variant.partNumber)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                                title="Search on eBay"
+                              >
+                                eBay
+                              </a>
+                              <a
+                                href={`https://www.tirerack.com/content/tirerack/desktop/en/wheels.html?filterByKeyword=${encodeURIComponent(variant.partNumber)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                                title="Search on Tire Rack"
+                              >
+                                TR
+                              </a>
+                              <a
+                                href={`https://www.amazon.com/s?k=${encodeURIComponent(variant.partNumber + ' wheel')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                                title="Search on Amazon"
+                              >
+                                AMZ
+                              </a>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Gallery content */}

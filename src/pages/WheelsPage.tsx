@@ -10,6 +10,7 @@ import { useSupabaseWheels } from "@/hooks/useSupabaseWheels";
 import { CircleSlash2, Loader2 } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseFilterString, ParsedFilters } from "@/utils/filterParser";
+import { cn } from "@/lib/utils";
 
 const WheelsPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
@@ -30,7 +31,7 @@ const WheelsPage = () => {
     filterOptions,
     config,
   } = useCollectionSearch('wheels');
-  
+
   // Fetch wheels from Supabase
   const { data: wheels, isLoading, error } = useSupabaseWheels();
 
@@ -39,31 +40,31 @@ const WheelsPage = () => {
     // Parse multi-tag search from URL params
     const searchQueries = searchParams.getAll('search');
     setSearchTags(searchQueries);
-    
+
     // Parse multi-value filters from URL params
     const newParsedFilters: ParsedFilters = {};
-    
+
     const brands = searchParams.getAll('brand');
     if (brands.length > 0) newParsedFilters.brand = brands;
-    
+
     const diameters = searchParams.getAll('diameter');
     if (diameters.length > 0) newParsedFilters.diameter = diameters;
-    
+
     const widths = searchParams.getAll('width');
     if (widths.length > 0) newParsedFilters.width = widths;
-    
+
     const boltPatterns = searchParams.getAll('boltPattern');
     if (boltPatterns.length > 0) newParsedFilters.boltPattern = boltPatterns;
-    
+
     const centerBores = searchParams.getAll('centerBore');
     if (centerBores.length > 0) newParsedFilters.centerBore = centerBores;
-    
+
     const colors = searchParams.getAll('color');
     if (colors.length > 0) newParsedFilters.color = colors;
-    
+
     console.log('[WheelsPage] Parsed filters from URL:', newParsedFilters);
     setParsedFilters(newParsedFilters);
-    
+
     // Update legacy filters for dropdown compatibility
     if (diameters[0]) updateFilter('Diameter Tag', diameters[0]);
     if (boltPatterns[0]) updateFilter('Bolt-Pattern .tag', boltPatterns[0]);
@@ -78,15 +79,15 @@ const WheelsPage = () => {
   const handleFilterSearchSubmit = (filterString: string) => {
     // Smart parsing
     const parsed = parseFilterString(filterString);
-    
+
     // Build URL params from parsed filters
     const params = new URLSearchParams(searchParams);
-    
+
     // Clear existing filter params
     ['brand', 'diameter', 'width', 'boltPattern', 'centerBore', 'color'].forEach(key => {
       params.delete(key);
     });
-    
+
     // Add new filter params
     if (parsed.brand?.length) {
       parsed.brand.forEach(b => params.append('brand', b));
@@ -106,7 +107,7 @@ const WheelsPage = () => {
     if (parsed.color?.length) {
       parsed.color.forEach(c => params.append('color', c));
     }
-    
+
     navigate(`/wheels?${params.toString()}`);
   };
 
@@ -120,11 +121,11 @@ const WheelsPage = () => {
       centerBore: 'centerBore',
       color: 'color',
     };
-    
+
     const param = paramMap[category];
     if (param) {
       const params = new URLSearchParams(searchParams);
-      
+
       // Toggle behavior: check if tag already exists
       const existingValues = params.getAll(param);
       if (existingValues.includes(tag)) {
@@ -135,7 +136,7 @@ const WheelsPage = () => {
         // Add the tag if it's not selected
         params.append(param, tag);
       }
-      
+
       navigate(`/wheels?${params.toString()}`);
     }
   };
@@ -181,20 +182,20 @@ const WheelsPage = () => {
   const filteredWheels = (wheels || []).filter(wheel => {
     // Apply multi-tag search filter (OR logic - match any tag)
     if (searchTags.length > 0) {
-      const specsString = wheel.specifications 
+      const specsString = wheel.specifications
         ? JSON.stringify(wheel.specifications).toLowerCase()
         : '';
-      
+
       const matchesAnyTag = searchTags.some(tag => {
         const searchLower = tag.toLowerCase();
         return wheel.wheel_name?.toLowerCase().includes(searchLower) ||
-               wheel.brand_name?.toLowerCase().includes(searchLower) ||
-               specsString.includes(searchLower);
+          wheel.brand_name?.toLowerCase().includes(searchLower) ||
+          specsString.includes(searchLower);
       });
-      
+
       if (!matchesAnyTag) return false;
     }
-    
+
     // Apply parsed multi-value filters (OR logic within each category)
     if (parsedFilters.brand?.length) {
       const matches = parsedFilters.brand.some(b => {
@@ -204,16 +205,16 @@ const WheelsPage = () => {
       });
       if (!matches) return false;
     }
-    
+
     if (parsedFilters.diameter?.length) {
       const matches = parsedFilters.diameter.some(d => {
         const cleanFilter = d.replace(' inch', '').replace('"', '').trim();
         const wheelDiameter = wheel.diameter?.toLowerCase().trim() || '';
         // Match if wheel diameter contains the number (handles "20", "20 inch", "20\"", etc.)
-        const result = wheelDiameter.includes(cleanFilter.toLowerCase()) || 
-               wheelDiameter === cleanFilter.toLowerCase() ||
-               wheelDiameter.startsWith(cleanFilter.toLowerCase());
-        
+        const result = wheelDiameter.includes(cleanFilter.toLowerCase()) ||
+          wheelDiameter === cleanFilter.toLowerCase() ||
+          wheelDiameter.startsWith(cleanFilter.toLowerCase());
+
         if (result) {
           console.log(`[Filter Match] Diameter: "${d}" matches wheel diameter: "${wheel.diameter}"`);
         }
@@ -224,49 +225,49 @@ const WheelsPage = () => {
         return false;
       }
     }
-    
+
     if (parsedFilters.width?.length) {
       const matches = parsedFilters.width.some(w => {
         const cleanFilter = w.replace('J', '').trim();
         const wheelWidth = wheel.width?.toLowerCase().trim() || '';
         // Match width flexibly (handles "9.0", "9.0J", "9", etc.)
         return wheelWidth.includes(cleanFilter.toLowerCase()) ||
-               wheelWidth === cleanFilter.toLowerCase() ||
-               wheelWidth.startsWith(cleanFilter.toLowerCase());
+          wheelWidth === cleanFilter.toLowerCase() ||
+          wheelWidth.startsWith(cleanFilter.toLowerCase());
       });
       if (!matches) return false;
     }
-    
+
     if (parsedFilters.boltPattern?.length) {
       const matches = parsedFilters.boltPattern.some(bp => {
         const cleanFilter = bp.toLowerCase().trim();
         const wheelBoltPattern = wheel.bolt_pattern?.toLowerCase().trim() || '';
         return wheelBoltPattern.includes(cleanFilter) ||
-               wheelBoltPattern === cleanFilter;
+          wheelBoltPattern === cleanFilter;
       });
       if (!matches) return false;
     }
-    
+
     if (parsedFilters.centerBore?.length) {
       const matches = parsedFilters.centerBore.some(cb => {
         const cleanFilter = cb.replace('mm', '').trim();
         const wheelCenterBore = wheel.center_bore?.toLowerCase().trim() || '';
         return wheelCenterBore.includes(cleanFilter.toLowerCase()) ||
-               wheelCenterBore === cleanFilter.toLowerCase();
+          wheelCenterBore === cleanFilter.toLowerCase();
       });
       if (!matches) return false;
     }
-    
+
     if (parsedFilters.color?.length) {
       const matches = parsedFilters.color.some(c => {
         const cleanFilter = c.toLowerCase().trim();
         const wheelColor = wheel.color?.toLowerCase().trim() || '';
         return wheelColor.includes(cleanFilter) ||
-               wheelColor === cleanFilter;
+          wheelColor === cleanFilter;
       });
       if (!matches) return false;
     }
-    
+
     // Apply brand filter
     if (filters['Brand Rel.'] && wheel.brand_name !== filters['Brand Rel.']) {
       return false;
@@ -275,7 +276,7 @@ const WheelsPage = () => {
     if (filters['Status'] && wheel.status !== filters['Status']) {
       return false;
     }
-    
+
     return true;
   });
 
@@ -289,7 +290,7 @@ const WheelsPage = () => {
 
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Wheels"
       searchPlaceholder="Search wheels..."
       showFilterButton={true}
@@ -305,20 +306,53 @@ const WheelsPage = () => {
       topSuggestion={topDropdownSuggestion}
       filterSearchDropdown={
         showDropdown && (
-          <TagSuggestionDropdown
-            searchText=""
-            allWheels={wheels || []}
-            onTagClick={handleTagClick}
-            isOpen={showDropdown}
-            selectedTags={parsedFilters}
-            onTopSuggestionChange={setTopDropdownSuggestion}
-          />
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            {[
+              { label: 'Bolt Pattern', category: 'boltPattern', values: [...new Set((wheels || []).map(w => w.bolt_pattern).filter(Boolean))] },
+              { label: 'Center Bore', category: 'centerBore', values: [...new Set((wheels || []).map(w => w.center_bore).filter(Boolean))] },
+              { label: 'Wheel Diameter', category: 'diameter', values: [...new Set((wheels || []).map(w => w.diameter).filter(Boolean))].sort((a, b) => parseFloat(a) - parseFloat(b)) },
+              { label: 'Wheel Width', category: 'width', values: [...new Set((wheels || []).map(w => w.width).filter(Boolean))].sort((a, b) => parseFloat(a) - parseFloat(b)) },
+            ].map((field, idx) => (
+              <div key={idx} className="py-2 border-b border-border/50 last:border-b-0">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <span className="text-xs text-muted-foreground py-1 min-w-[100px]">{field.label}:</span>
+                  {field.values.map((value: string, valueIdx: number) => (
+                    <button
+                      key={valueIdx}
+                      onClick={() => handleTagClick(value, field.category)}
+                      className={cn(
+                        "text-xs px-2 py-0.5 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors",
+                        parsedFilters[field.category as keyof typeof parsedFilters]?.includes(value)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:bg-muted"
+                      )}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )
       }
     >
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+        {/* Ad Panel */}
+        <div className="w-full bg-muted/30 border border-dashed border-border rounded-lg p-6 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
+              <svg className="h-6 w-6 text-primary/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9h6v6H9z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground">Advertisement</h3>
+          </div>
+        </div>
+
         {/* Content area */}
-          {error ? (
+        {error ? (
           <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
             <CircleSlash2 className="h-12 w-12 mx-auto mb-4 text-destructive/50" />
             <h3 className="text-lg font-semibold text-destructive mb-2">Failed to Load Wheels</h3>

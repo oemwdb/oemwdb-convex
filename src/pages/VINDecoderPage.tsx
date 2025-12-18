@@ -5,7 +5,7 @@ import VINDecoder from '@/components/dev/VINDecoder';
 const VINDecoderPage = () => {
   return (
     <DashboardLayout title="VIN Decoder" showFilterButton={false}>
-      <div className="p-3 space-y-6">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">VIN Decoder</h1>
           <p className="text-muted-foreground mt-1">

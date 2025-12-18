@@ -56,25 +56,25 @@ const VehiclesPage = () => {
     // Parse multi-tag search from URL params
     const searchQueries = searchParams.getAll('search');
     setSearchTags(searchQueries);
-    
+
     // Parse multi-value filters from URL params
     const newParsedFilters: ParsedVehicleFilters = {};
-    
+
     const brands = searchParams.getAll('brand');
     if (brands.length > 0) newParsedFilters.brand = brands;
-    
+
     const boltPatterns = searchParams.getAll('boltPattern');
     if (boltPatterns.length > 0) newParsedFilters.boltPattern = boltPatterns;
-    
+
     const centerBores = searchParams.getAll('centerBore');
     if (centerBores.length > 0) newParsedFilters.centerBore = centerBores;
-    
+
     const productionYears = searchParams.getAll('productionYears');
     if (productionYears.length > 0) newParsedFilters.productionYears = productionYears;
-    
+
     console.log('[VehiclesPage] Parsed filters from URL:', newParsedFilters);
     setParsedFilters(newParsedFilters);
-    
+
     // Update legacy filters for dropdown compatibility
     if (brands[0]) updateFilter('Brand Name', brands[0]);
   }, [searchParams]);
@@ -88,15 +88,15 @@ const VehiclesPage = () => {
   const handleFilterSearchSubmit = (filterString: string) => {
     // Smart parsing
     const parsed = parseVehicleFilterString(filterString);
-    
+
     // Build URL params from parsed filters
     const params = new URLSearchParams(searchParams);
-    
+
     // Clear existing filter params
     ['brand', 'boltPattern', 'centerBore', 'productionYears'].forEach(key => {
       params.delete(key);
     });
-    
+
     // Add new filter params
     if (parsed.brand?.length) {
       parsed.brand.forEach(b => params.append('brand', b));
@@ -110,7 +110,7 @@ const VehiclesPage = () => {
     if (parsed.productionYears?.length) {
       parsed.productionYears.forEach(py => params.append('productionYears', py));
     }
-    
+
     navigate(`/vehicles?${params.toString()}`);
   };
 
@@ -122,11 +122,11 @@ const VehiclesPage = () => {
       centerBore: 'centerBore',
       productionYears: 'productionYears',
     };
-    
+
     const param = paramMap[category];
     if (param) {
       const params = new URLSearchParams(searchParams);
-      
+
       // Toggle behavior: check if tag already exists
       const existingValues = params.getAll(param);
       if (existingValues.includes(tag)) {
@@ -137,7 +137,7 @@ const VehiclesPage = () => {
         // Add the tag if it's not selected
         params.append(param, tag);
       }
-      
+
       navigate(`/vehicles?${params.toString()}`);
     }
   };
@@ -179,7 +179,7 @@ const VehiclesPage = () => {
     })
     .filter(vehicle => {
       // Apply parsed multi-value filters (OR logic within each category)
-      
+
       // Brand filter
       if (parsedFilters.brand?.length) {
         const matches = parsedFilters.brand.some(filterBrand => {
@@ -189,10 +189,10 @@ const VehiclesPage = () => {
         });
         if (!matches) return false;
       }
-      
+
       // Bolt Pattern filter - need to get from supabaseVehicles
       if (parsedFilters.boltPattern?.length) {
-        const supabaseVehicle = (supabaseVehicles || []).find(v => 
+        const supabaseVehicle = (supabaseVehicles || []).find(v =>
           (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
         );
         if (supabaseVehicle) {
@@ -206,54 +206,54 @@ const VehiclesPage = () => {
           return false;
         }
       }
-      
+
       // Center Bore filter
       if (parsedFilters.centerBore?.length) {
-        const supabaseVehicle = (supabaseVehicles || []).find(v => 
+        const supabaseVehicle = (supabaseVehicles || []).find(v =>
           (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
         );
         if (supabaseVehicle) {
           const matches = parsedFilters.centerBore.some(filterCb => {
             const cleanFilter = filterCb.replace('mm', '').trim();
             const vehicleCenterBore = supabaseVehicle.center_bore?.toLowerCase().trim() || '';
-            return vehicleCenterBore.includes(cleanFilter.toLowerCase()) || 
-                   vehicleCenterBore === cleanFilter.toLowerCase();
+            return vehicleCenterBore.includes(cleanFilter.toLowerCase()) ||
+              vehicleCenterBore === cleanFilter.toLowerCase();
           });
           if (!matches) return false;
         } else {
           return false;
         }
       }
-      
+
       // Production Years filter
       if (parsedFilters.productionYears?.length) {
-        const supabaseVehicle = (supabaseVehicles || []).find(v => 
+        const supabaseVehicle = (supabaseVehicles || []).find(v =>
           (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
         );
         if (supabaseVehicle) {
           const matches = parsedFilters.productionYears.some(filterYears => {
             const vehicleYears = supabaseVehicle.production_years?.toLowerCase().trim() || '';
-            return vehicleYears.includes(filterYears.toLowerCase()) || 
-                   vehicleYears === filterYears.toLowerCase();
+            return vehicleYears.includes(filterYears.toLowerCase()) ||
+              vehicleYears === filterYears.toLowerCase();
           });
           if (!matches) return false;
         } else {
           return false;
         }
       }
-      
+
       // Apply legacy brand filter
       if (filters['Brand Name'] && vehicle.brand !== filters['Brand Name']) {
         return false;
       }
-      
+
       return true;
     })
     .sort((a, b) => {
       // Sort by brand first (alphabetically)
       const brandCompare = (a.brand || 'Unknown').localeCompare(b.brand || 'Unknown');
       if (brandCompare !== 0) return brandCompare;
-      
+
       // Then sort by vehicle name (alphabetically)
       return (a.name || '').localeCompare(b.name || '');
     });
@@ -290,7 +290,7 @@ const VehiclesPage = () => {
   };
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Vehicles"
       searchPlaceholder="Search vehicles..."
       onFilterClick={() => setShowDropdown(prev => !prev)}
@@ -326,9 +326,22 @@ const VehiclesPage = () => {
         onClearFilters={clearFilters}
         sidebarCollapsed={sidebarCollapsed}
       />
-      
+
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
-          {isLoading ? (
+        {/* Ad Panel */}
+        <div className="w-full bg-muted/30 border border-dashed border-border rounded-lg p-6 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
+              <svg className="h-6 w-6 text-primary/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9h6v6H9z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground">Advertisement</h3>
+          </div>
+        </div>
+
+        {isLoading ? (
           <div className="text-center py-10 text-muted-foreground">Loading vehicles...</div>
         ) : isError ? (
           <div className="text-center py-10 text-red-500">
@@ -342,24 +355,24 @@ const VehiclesPage = () => {
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
             />
-            
+
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
-                      <PaginationPrevious 
+                      <PaginationPrevious
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
-                    
+
                     {/* First page */}
                     {currentPage > 2 && (
                       <>
                         <PaginationItem>
-                          <PaginationLink 
+                          <PaginationLink
                             onClick={() => setCurrentPage(1)}
                             className="cursor-pointer"
                           >
@@ -369,13 +382,13 @@ const VehiclesPage = () => {
                         {currentPage > 3 && <PaginationEllipsis />}
                       </>
                     )}
-                    
+
                     {/* Current page and neighbors */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(page => {
-                        return page === currentPage || 
-                               page === currentPage - 1 || 
-                               page === currentPage + 1;
+                        return page === currentPage ||
+                          page === currentPage - 1 ||
+                          page === currentPage + 1;
                       })
                       .map(page => (
                         <PaginationItem key={page}>
@@ -389,13 +402,13 @@ const VehiclesPage = () => {
                         </PaginationItem>
                       ))
                     }
-                    
+
                     {/* Last page */}
                     {currentPage < totalPages - 1 && (
                       <>
                         {currentPage < totalPages - 2 && <PaginationEllipsis />}
                         <PaginationItem>
-                          <PaginationLink 
+                          <PaginationLink
                             onClick={() => setCurrentPage(totalPages)}
                             className="cursor-pointer"
                           >
@@ -404,9 +417,9 @@ const VehiclesPage = () => {
                         </PaginationItem>
                       </>
                     )}
-                    
+
                     <PaginationItem>
-                      <PaginationNext 
+                      <PaginationNext
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />

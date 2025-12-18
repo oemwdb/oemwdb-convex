@@ -64,8 +64,10 @@ const Header = ({
   const [selectedCollection, setSelectedCollection] = useState<CollectionType>('all');
   const [tempSearchValue, setTempSearchValue] = useState("");
   const [ghostSuggestion, setGhostSuggestion] = useState("");
+  const [searchBarWidth, setSearchBarWidth] = useState(0);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { user, signOut, profile, role } = useAuth();
   const navigate = useNavigate();
@@ -117,16 +119,36 @@ const Header = ({
     }
   }, [isSearchExpanded]);
 
+  // Track search bar width for dropdown alignment
+  useEffect(() => {
+    const updateWidth = () => {
+      if (searchContainerRef.current) {
+        setSearchBarWidth(searchContainerRef.current.offsetWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+
+    const resizeObserver = new ResizeObserver(updateWidth);
+    if (searchContainerRef.current) {
+      resizeObserver.observe(searchContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      resizeObserver.disconnect();
+    };
+  }, [isSearchExpanded]);
+
   const toggleSearch = () => {
     const newExpandedState = !isSearchExpanded;
 
     if (newExpandedState) {
-      // Always open dropdown when expanding search bar
-      onFilterClick?.();
+      // Only expand search bar
       setIsSearchExpanded(true);
     } else {
-      // Always close dropdown when collapsing via X button
-      onFilterClick?.();
+      // Only collapse search bar
       setTempSearchValue("");
       setIsSearchExpanded(false);
     }
@@ -248,14 +270,17 @@ const Header = ({
           </div>
 
           {/* Unified Search Bar */}
-          <div className={cn(
-            "flex items-center transition-all duration-300 ease-out search-container",
-            isSearchExpanded
-              ? "flex-1 mr-2"
-              : hasActiveTags
-                ? "w-auto ml-auto mr-2"
-                : "w-9 ml-auto mr-2"
-          )}>
+          <div
+            ref={searchContainerRef}
+            className={cn(
+              "flex items-center transition-all duration-300 ease-out search-container",
+              isSearchExpanded
+                ? "flex-1 mr-2"
+                : hasActiveTags
+                  ? "w-auto ml-auto mr-2"
+                  : "w-9 ml-auto mr-2"
+            )}
+          >
             {isSearchExpanded ? (
               <div className="flex items-center border border-border rounded-md bg-card w-full h-9 hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
                 <Search className="ml-3 text-muted-foreground flex-shrink-0" size={16} />
@@ -350,9 +375,8 @@ const Header = ({
               // COMPRESSED STATE WITH TAGS
               <button
                 onClick={() => {
-                  // Expand search bar and ensure dropdown is open
+                  // Only expand search bar
                   setIsSearchExpanded(true);
-                  onFilterClick?.();
                 }}
                 className="flex items-center gap-1 px-2 h-9 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
                 data-filter-button
@@ -433,6 +457,7 @@ const Header = ({
                 size="icon"
                 className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
                 onClick={onFilterClick}
+                data-filter-button
               >
                 <Filter className="h-5 w-5" />
               </Button>
@@ -452,9 +477,9 @@ const Header = ({
           </div>
         </div>
 
-        {/* Unified dropdown - positioned below search bar */}
+        {/* Unified dropdown - aligned with page content */}
         {(searchDropdown || filterSearchDropdown) && (
-          <div className="relative" data-filter-dropdown>
+          <div className="w-full mt-2 pl-0 pr-4">
             {filterSearchDropdown || searchDropdown}
           </div>
         )}

@@ -69,7 +69,7 @@ const RegisteredVehiclesPage = () => {
 
   return (
     <DashboardLayout title="Registered Vehicles" showFilterButton={false}>
-      <div className="min-h-[calc(100vh-120px)] p-3">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>

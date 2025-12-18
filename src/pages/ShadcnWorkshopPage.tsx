@@ -1142,7 +1142,7 @@ const ShadcnWorkshopPage = () => {
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <DashboardLayout title="shadcn Workshop" showFilterButton={false}>
-        <div className="p-6 space-y-6">
+        <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
           {/* Header */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">

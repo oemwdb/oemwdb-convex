@@ -28,7 +28,6 @@ import DatabasePage from "./pages/DatabasePage";
 import DatabaseRecordPage from "./pages/DatabaseRecordPage";
 import InteractiveSiteMapPage from "./pages/InteractiveSiteMapPage";
 import MasterItemTemplatesPage from "./pages/templates/MasterItemTemplatesPage";
-import RelationMakerPage from "./pages/RelationMakerPage";
 import CollectionTemplatesPage from "./pages/templates/CollectionTemplatesPage";
 import UsersPage from "./pages/UsersPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
@@ -40,6 +39,7 @@ import RegisteredVehiclesPage from "./pages/RegisteredVehiclesPage";
 import ChartComparison from "./pages/ChartComparison";
 import VINDecoderPage from "./pages/VINDecoderPage";
 import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
+import GaragePage from "./pages/GaragePage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -60,7 +60,7 @@ const App = () => (
                 <Route path="/wheels" element={<WheelsPage />} />
                 <Route path="/wheels/:wheelName" element={<WheelDetailPage />} />
                 <Route path="/wheel/:wheelId" element={<WheelItemPage />} />
-                <Route path="/garage" element={<RelationMakerPage />} />
+                <Route path="/garage" element={<GaragePage />} />
                 <Route path="/users" element={<ProtectedRoute requireAdmin={true}><UsersPage /></ProtectedRoute>} />
                 <Route path="/users/:username" element={<PublicProfilePage />} />
                 <Route path="/market" element={<ProtectedRoute requireAdmin={true}><MarketPage /></ProtectedRoute>} />
@@ -71,13 +71,13 @@ const App = () => (
                 <Route path="/dev" element={<ProtectedRoute requireAdmin={true}><DevPage /></ProtectedRoute>} />
                 <Route path="/dev/database" element={<ProtectedRoute requireAdmin={true}><DatabasePage /></ProtectedRoute>} />
                 <Route path="/dev/database/:tableName/:recordId" element={<ProtectedRoute requireAdmin={true}><DatabaseRecordPage /></ProtectedRoute>} />
-                <Route path="/dev/relation-maker" element={<ProtectedRoute requireAdmin={true}><RelationMakerPage /></ProtectedRoute>} />
                 <Route path="/dev/site-map" element={<ProtectedRoute requireAdmin={true}><InteractiveSiteMapPage /></ProtectedRoute>} />
                 <Route path="/dev/templates" element={<ProtectedRoute requireAdmin={true}><MasterItemTemplatesPage /></ProtectedRoute>} />
                 <Route path="/dev/templates/collections" element={<ProtectedRoute requireAdmin={true}><CollectionTemplatesPage /></ProtectedRoute>} />
                 <Route path="/dev/registered-vehicles" element={<ProtectedRoute><RegisteredVehiclesPage /></ProtectedRoute>} />
                 <Route path="/dev/vin-decoder" element={<ProtectedRoute requireAdmin={true}><VINDecoderPage /></ProtectedRoute>} />
                 <Route path="/dev/shadcn-workshop" element={<ProtectedRoute requireAdmin={true}><ShadcnWorkshopPage /></ProtectedRoute>} />
+                <Route path="/dev/garage" element={<ProtectedRoute requireAdmin={true}><GaragePage /></ProtectedRoute>} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/chart-comparison" element={<ChartComparison />} />

@@ -6,6 +6,7 @@ interface VehicleItem {
   name: string;
   brand?: string;
   wheels?: number;
+  image?: string;
 }
 
 interface FitmentSectionProps {
@@ -15,7 +16,7 @@ interface FitmentSectionProps {
 
 const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
-  
+
   // Toggle card flip
   const toggleCardFlip = (name: string) => {
     setFlippedCards((prev) => ({
@@ -36,7 +37,8 @@ const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) 
               vehicle={{
                 name: vehicle.name,
                 brand: vehicle.brand || "Unknown",
-                wheels: vehicle.wheels || 0
+                wheels: vehicle.wheels || 0,
+                image: vehicle.image
               }}
               isFlipped={flippedCards[vehicle.name] || false}
               onFlip={toggleCardFlip}

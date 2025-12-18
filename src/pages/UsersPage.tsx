@@ -143,7 +143,7 @@ const UsersPage = () => {
       searchPlaceholder="Search users..."
       showFilterButton={false}
     >
-      <div className="p-4">
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Card className="p-3 border-border/50">

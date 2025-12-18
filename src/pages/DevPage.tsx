@@ -120,6 +120,25 @@ const DevPage = () => {
           </div>
         </div>
 
+        {/* Data Management Section */}
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Data Management</h2>
+          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <AppIcon
+              to="/dev/garage"
+              icon={Package}
+              label="Garage"
+              description="Vehicle & wheel combinations"
+            />
+            <AppIcon
+              to="/dev/relation-maker"
+              icon={Link2}
+              label="Relation Maker"
+              description="Build data relationships"
+            />
+          </div>
+        </div>
+
         {/* Experimental Content Section */}
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">Experimental Content</h2>

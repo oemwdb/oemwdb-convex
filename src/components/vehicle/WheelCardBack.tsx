@@ -55,90 +55,73 @@ const WheelCardBack = ({
     return [];
   };
 
-  // Collect all ref fields - vehicle_ref first
-  const refFields: Array<string[]> = [];
-
-  if (wheel.vehicle_ref) {
-    const values = extractValues(wheel.vehicle_ref).map(v =>
-      v.replace(/^.*?\s-\s/, '') // Remove "Brand Name - " prefix
-    );
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.diameter_ref) {
-    const values = extractValues(wheel.diameter_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.width_ref) {
-    const values = extractValues(wheel.width_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.bolt_pattern_ref) {
-    const values = extractValues(wheel.bolt_pattern_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.center_bore_ref) {
-    const values = extractValues(wheel.center_bore_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.color_ref) {
-    const values = extractValues(wheel.color_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.tire_size_ref) {
-    const values = extractValues(wheel.tire_size_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.brand_ref) {
-    const values = extractValues(wheel.brand_ref);
-    if (values.length > 0) refFields.push(values);
-  }
-  if (wheel.design_style_ref && wheel.design_style_ref.length > 0) {
-    refFields.push(wheel.design_style_ref);
-  }
-
   return (
     <>
       <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 hover:shadow-md overflow-hidden cursor-pointer">
         <CardContent className="p-0 flex flex-col h-full">
           <div className="relative h-full w-full flex flex-col">
+
             {/* Content section - takes remaining space */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="pl-4 pr-12 pt-4 pb-2 flex-shrink-0">
-                <h4 className="font-medium text-foreground text-sm">Specifications</h4>
+                <h4 className="font-medium text-foreground text-sm">
+                  {wheel.brand_ref && extractValues(wheel.brand_ref).length > 0
+                    ? extractValues(wheel.brand_ref)[0]
+                    : "Specifications"}
+                </h4>
               </div>
-              <div className="flex-1 overflow-y-auto px-4 pb-2">
-                {refFields.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground text-xs">
-                    No specifications available
-                  </div>
-                ) : (
-                  refFields.map((values, idx) => (
+              <div
+                className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-2 min-h-0"
+                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+              >
+                {(() => {
+                  // Define fields to display with labels
+                  const fields = [
+                    { label: 'Vehicle', values: wheel.vehicle_ref ? extractValues(wheel.vehicle_ref).map(v => v.replace(/^.*?\s-\s/, '')) : [] },
+                    { label: 'Diameter', values: wheel.diameter_ref ? extractValues(wheel.diameter_ref) : [] },
+                    { label: 'Width', values: wheel.width_ref ? extractValues(wheel.width_ref) : [] },
+                    { label: 'Bolt Pattern', values: wheel.bolt_pattern_ref ? extractValues(wheel.bolt_pattern_ref) : [] },
+                    { label: 'Center Bore', values: wheel.center_bore_ref ? extractValues(wheel.center_bore_ref) : [] },
+                    { label: 'Color', values: wheel.color_ref ? extractValues(wheel.color_ref) : [] },
+                    { label: 'Tire Size', values: wheel.tire_size_ref ? extractValues(wheel.tire_size_ref) : [] },
+                  ];
+
+                  return fields.map((field, idx) => (
                     <div
                       key={idx}
                       className={cn(
                         "py-2 border-b border-border/50",
-                        idx === refFields.length - 1 && "border-b-0"
+                        idx === fields.length - 1 && "border-b-0"
                       )}
                     >
                       <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-                        {values.map((value, valueIdx) => (
+                        {field.values.length > 0 ? (
+                          field.values.map((value, valueIdx) => (
+                            <Badge
+                              key={valueIdx}
+                              variant="secondary"
+                              className="text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0"
+                            >
+                              {value}
+                            </Badge>
+                          ))
+                        ) : (
                           <Badge
-                            key={valueIdx}
-                            variant="secondary"
-                            className="text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0"
+                            variant="outline"
+                            className="text-xs px-2 py-0.5 whitespace-nowrap flex-shrink-0 text-muted-foreground"
                           >
-                            {value}
+                            {field.label}
                           </Badge>
-                        ))}
+                        )}
                       </div>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
             </div>
 
             {/* Footer with wheel name and favorite button - matches front card */}
-            <div className="relative p-3 border-t border-border flex items-center justify-between flex-shrink-0 h-[52px] z-10">
+            <div className="bg-card p-3 border-t border-border flex items-center justify-between gap-2 flex-shrink-0">
               <div className="relative overflow-hidden flex-1">
                 <p
                   ref={backTextRef}
