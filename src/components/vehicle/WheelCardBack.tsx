@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +56,7 @@ const WheelCardBack = ({
 
   return (
     <>
-      <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 hover:shadow-md overflow-hidden cursor-pointer">
+      <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 hover:shadow-md overflow-hidden">
         <CardContent className="p-0 flex flex-col h-full">
           <div className="relative h-full w-full flex flex-col">
 
@@ -155,17 +154,6 @@ const WheelCardBack = ({
             </div>
           </div>
         </CardContent>
-
-        {/* Navigation overlay - behind all buttons */}
-        {linkToDetail && (
-          <Link
-            to={`/wheel/${wheel.id}`}
-            className="absolute inset-0 cursor-pointer z-0"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          />
-        )}
       </Card>
 
       {/* Flip button - positioned outside Card to avoid overflow-hidden clipping */}

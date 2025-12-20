@@ -1,5 +1,5 @@
 import React from "react";
-import WheelCard from "@/components/vehicle/WheelCard";
+import WheelCard from "@/components/wheel/WheelCard";
 import { Card } from "@/components/ui/card";
 import { CircleSlash2 } from "lucide-react";
 import type { SupabaseWheel } from "@/hooks/useSupabaseWheels";
@@ -32,8 +32,6 @@ const WheelsGrid = ({ wheels, flippedCards, onFlip }: WheelsGridProps) => {
               wheel={{
                 id: wheel.id.toString(),
                 name: wheel.wheel_name,
-                diameter: wheel.diameter || undefined,
-                boltPattern: wheel.bolt_pattern || undefined,
                 imageUrl: wheel.good_pic_url || wheel.bad_pic_url,
                 // Pass all reference fields
                 diameter_ref: wheel.diameter_ref,
@@ -44,11 +42,9 @@ const WheelsGrid = ({ wheels, flippedCards, onFlip }: WheelsGridProps) => {
                 tire_size_ref: wheel.tire_size_ref,
                 vehicle_ref: wheel.vehicle_ref,
                 brand_ref: wheel.brand_ref,
-                design_style_ref: wheel.design_style_ref,
               }}
               isFlipped={flippedCards[wheel.id.toString()] || false}
               onFlip={onFlip}
-              linkToDetail={true}
             />
           </div>
         );

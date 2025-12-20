@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { CollectionFilterDropdown } from "@/components/collection/CollectionFilterDropdown";
-import { VehicleTagSuggestionDropdown } from "@/components/vehicle/VehicleTagSuggestionDropdown";
+import { cn } from "@/lib/utils";
 import { useCollectionSearch } from "@/hooks/useCollectionSearch";
 import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -306,13 +306,50 @@ const VehiclesPage = () => {
       topSuggestion={topDropdownSuggestion}
       filterSearchDropdown={
         showDropdown && (
-          <VehicleTagSuggestionDropdown
-            allVehicles={supabaseVehicles || []}
-            onTagClick={handleTagClick}
-            isOpen={showDropdown}
-            selectedTags={parsedFilters}
-            onTopSuggestionChange={setTopDropdownSuggestion}
-          />
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            {[
+              { label: 'Brand', category: 'brand', values: [...new Set((supabaseVehicles || []).map(v => v.brand_name).filter(Boolean))] as string[] },
+              {
+                label: 'Bolt Pattern', category: 'boltPattern', values: [...new Set((supabaseVehicles || []).flatMap(v => {
+                  const bp = v.bolt_pattern;
+                  if (!bp) return [];
+                  if (Array.isArray(bp)) return bp.filter(Boolean);
+                  if (typeof bp === 'string') return [bp];
+                  return [];
+                }).filter(Boolean))] as string[]
+              },
+              {
+                label: 'Center Bore', category: 'centerBore', values: [...new Set((supabaseVehicles || []).flatMap(v => {
+                  const cb = v.center_bore;
+                  if (!cb) return [];
+                  if (Array.isArray(cb)) return cb.filter(Boolean);
+                  if (typeof cb === 'string') return [cb];
+                  return [];
+                }).filter(Boolean))] as string[]
+              },
+              { label: 'Production Years', category: 'productionYears', values: [...new Set((supabaseVehicles || []).map(v => v.production_years).filter(Boolean))] as string[] },
+            ].map((field, idx) => (
+              <div key={idx} className="py-2 border-b border-border/50 last:border-b-0">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <span className="text-xs text-muted-foreground py-1 min-w-[100px]">{field.label}:</span>
+                  {field.values.map((value: string, valueIdx: number) => (
+                    <button
+                      key={valueIdx}
+                      onClick={() => handleTagClick(value, field.category)}
+                      className={cn(
+                        "text-xs px-2 py-0.5 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors",
+                        parsedFilters[field.category as keyof typeof parsedFilters]?.includes(value)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:bg-muted"
+                      )}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )
       }
     >

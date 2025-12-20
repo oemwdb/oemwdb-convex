@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BrandCard from "@/components/brand/BrandCard";
-import { CollectionFilterDropdown } from "@/components/collection/CollectionFilterDropdown";
 import { useCollectionSearch } from "@/hooks/useCollectionSearch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
@@ -118,18 +117,48 @@ const BrandsPage = () => {
       showFilterButton={true}
       sidebarCollapsed={sidebarCollapsed}
       onSidebarToggle={setSidebarCollapsed}
+      filterSearchDropdown={
+        isFilterDropdownOpen && (
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            {[
+              { label: 'Has Wheels', category: 'hasWheels', values: ['Yes', 'No'], isBoolean: true },
+              { label: 'Has Image', category: 'hasImage', values: ['Yes', 'No'], isBoolean: true },
+              { label: 'Has Vehicles', category: 'hasVehicles', values: ['Yes', 'No'], isBoolean: true },
+              { label: 'Wheel Count', category: 'wheelCount', values: ['1-10', '11-50', '51-100', '100+'] },
+            ].map((field, idx) => (
+              <div key={idx} className="py-2 border-b border-border/50 last:border-b-0">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <span className="text-xs text-muted-foreground py-1 min-w-[100px]">{field.label}:</span>
+                  {field.values.map((value: string, valueIdx: number) => {
+                    const isSelected = field.isBoolean
+                      ? (value === 'Yes' && filters[field.category]) || (value === 'No' && filters[field.category] === false)
+                      : filters[field.category] === value;
+                    return (
+                      <button
+                        key={valueIdx}
+                        onClick={() => {
+                          if (field.isBoolean) {
+                            updateFilter(field.category, value === 'Yes' ? true : false);
+                          } else {
+                            updateFilter(field.category, filters[field.category] === value ? '' : value);
+                          }
+                        }}
+                        className={`text-xs px-2 py-0.5 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${isSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:bg-muted"
+                          }`}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
     >
-      <CollectionFilterDropdown
-        isOpen={isFilterDropdownOpen}
-        onClose={() => setIsFilterDropdownOpen(false)}
-        config={config}
-        filters={filters}
-        filterOptions={filterOptions}
-        onUpdateFilter={updateFilter}
-        onClearFilters={clearFilters}
-        sidebarCollapsed={sidebarCollapsed}
-      />
-
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Ad Panel */}
         <div className="w-full bg-muted/30 border border-dashed border-border rounded-lg p-6 flex items-center justify-center">

@@ -212,7 +212,10 @@ const WheelCardFront = ({
       {linkToDetail && (
         <Link
           to={`/wheel/${wheel.id}`}
-          className="absolute inset-0 cursor-pointer z-[5]"
+          className={cn(
+            "absolute inset-0 cursor-pointer z-[5]",
+            isFlipped && "pointer-events-none"
+          )}
           onClick={(e) => {
             e.stopPropagation();
           }}
