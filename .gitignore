@@ -3,3 +3,9 @@ dist/
 .env
 *.log
 .DS_Store
+
+# iCloud sync conflicts (prevents duplicate files from being tracked)
+* [0-9]*
+* [0-9][0-9]*
+*-conflict*
+*.icloud
