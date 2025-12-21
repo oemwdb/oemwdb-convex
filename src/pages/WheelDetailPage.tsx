@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDevMode } from "@/hooks/useDevMode";
 import { useParams, Link } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,7 @@ import CommentsSection from "@/components/vehicle/CommentsSection";
 import GallerySection from "@/components/vehicle/GallerySection";
 
 const WheelDetailPage = () => {
+  const { isDevMode } = useDevMode();
   const { wheelName } = useParams<{ wheelName: string }>();
   const [activeTab, setActiveTab] = useState("fitment");
 
@@ -204,6 +206,11 @@ const WheelDetailPage = () => {
             <TabsTrigger value="coolboard" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Cool Board
             </TabsTrigger>
+            {isDevMode && (
+              <TabsTrigger value="dev" className="text-xs sm:text-sm text-green-600 data-[state=active]:bg-background data-[state=active]:shadow-sm font-mono">
+                [DEV]
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Fixed height content area to prevent layout shifts */}
@@ -272,6 +279,42 @@ const WheelDetailPage = () => {
                   <div className="flex gap-3 justify-center mt-4">
                     <Button variant="outline">View Ratings</Button>
                     <Button variant="default">Rate This Wheel</Button>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Dev content */}
+            <TabsContent value="dev" className="mt-0">
+              <Card className="p-6 bg-slate-950 border-slate-800 text-slate-200 font-mono text-sm overflow-hidden">
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-green-400 mb-2 border-b border-slate-800 pb-1">GOOD PIC URL</h4>
+                      <div className="bg-slate-900/50 p-2 rounded break-all min-h-[3rem] text-xs text-muted-foreground">{wheel.good_pic_url || "NULL"}</div>
+                    </div>
+                    <div>
+                      <h4 className="text-red-400 mb-2 border-b border-slate-800 pb-1">BAD PIC URL / RAW REF</h4>
+                      <div className="bg-slate-900/50 p-2 rounded break-all min-h-[3rem] text-xs text-muted-foreground">{wheel.bad_pic_url || "NULL"}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="border border-slate-800 rounded p-2 bg-black/20">
+                      <p className="text-xs text-center mb-2 text-slate-500">Rendered Good</p>
+                      <img src={wheel.good_pic_url || "/placeholder.svg"} className="w-full object-contain h-48" alt="good" />
+                    </div>
+                    <div className="border border-slate-800 rounded p-2 bg-black/20">
+                      <p className="text-xs text-center mb-2 text-slate-500">Rendered Bad (Attempt)</p>
+                      <img src={wheel.bad_pic_url ? wheel.bad_pic_url.replace('![[', '').replace(']]', '') : "/placeholder.svg"} className="w-full object-contain h-48 opacity-70" alt="bad" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-blue-400 mb-2 border-b border-slate-800 pb-1">FULL RECORD JSON</h4>
+                    <pre className="bg-slate-900 p-4 rounded overflow-auto max-h-[500px] text-xs">
+                      {JSON.stringify(wheel, null, 2)}
+                    </pre>
                   </div>
                 </div>
               </Card>

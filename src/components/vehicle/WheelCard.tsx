@@ -5,6 +5,7 @@ import { useWheelRotation } from "@/hooks/useWheelRotation";
 import { useWheelImageLoader } from "@/components/vehicle/hooks/useWheelImageLoader";
 import WheelCardFront from "./WheelCardFront";
 import WheelCardBack from "./WheelCardBack";
+import { useDevMode } from "@/hooks/useDevMode";
 
 interface WheelCardProps {
   wheel: {
@@ -50,8 +51,28 @@ const WheelCard = ({ wheel, isFlipped, onFlip, linkToDetail = false, dataMapping
   const isMobile = useIsMobile();
   const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, getTransformStyle } = useWheelRotation();
 
-  const rawImage = (wheel.imageUrl ?? (wheel as any).good_pic_url ?? (wheel as any).image ?? null) as string | null;
-  const { imageUrl, handleImageError } = useWheelImageLoader(rawImage);
+  const [viewBadPic, setViewBadPic] = useState(false);
+  const { isDevMode } = useDevMode();
+
+  // Clean raw image path if it's an Obsidian link
+  const cleanObsidianPath = (path: string | null) => {
+    if (!path) return null;
+    const match = path.match(/!\[\[(.*?)\]\]/);
+    return match ? match[1] : path;
+  };
+
+  const badPic = (wheel as any).bad_pic_url;
+  const rawObsidianPath = cleanObsidianPath(badPic);
+  const hasBadPic = !!rawObsidianPath;
+
+  // Decide which image to load
+  // IF dev mode AND viewBadPic is true AND we have a bad pic -> show bad pic
+  // ELSE show standard logic
+  const imageSourceValue = (isDevMode && viewBadPic && rawObsidianPath)
+    ? rawObsidianPath
+    : (wheel.imageUrl ?? (wheel as any).good_pic_url ?? (wheel as any).image ?? null);
+
+  const { imageUrl, handleImageError } = useWheelImageLoader(imageSourceValue);
 
   useEffect(() => {
     const checkOverflow = () => {
@@ -148,6 +169,9 @@ const WheelCard = ({ wheel, isFlipped, onFlip, linkToDetail = false, dataMapping
           handleWheelMouseLeave={handleWheelMouseLeave}
           getTransformStyle={getTransformStyle}
           linkToDetail={linkToDetail}
+          showBadPicToggle={isDevMode && hasBadPic}
+          isBadPicActive={viewBadPic}
+          onToggleBadPic={() => setViewBadPic(!viewBadPic)}
         />
 
         <WheelCardBack

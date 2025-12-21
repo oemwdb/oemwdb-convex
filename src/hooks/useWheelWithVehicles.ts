@@ -55,19 +55,19 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
     .select("*")
     .eq("id", wheelId)  // No parseInt needed - id is text
     .maybeSingle();
-    
+
   if (wheelError) {
     console.error("[Wheel Query] Error:", wheelError);
     throw wheelError;
   }
-  
+
   if (!wheelData) {
     throw new Error("Wheel not found");
   }
-  
+
   // Type assertion to handle the any type
   const wheel = wheelData as any;
-  
+
   // Map the refs to proper values
   const mappedWheel = {
     id: wheel.id,
@@ -97,40 +97,43 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
     tire_size_refs: extractRefValues(wheel.tire_size_ref),
     vehicle_refs: wheel.vehicle_ref
   };
-  
+
   // Fetch related vehicles if vehicle_ref exists
   let vehicles: any[] = [];
   if (wheel.vehicle_ref && Array.isArray(wheel.vehicle_ref)) {
-    const vehicleTitles = extractRefValues(wheel.vehicle_ref);
+    // Extract vehicle IDs from JSONB array [{id: "...", title: "..."}]
+    const vehicleIds = wheel.vehicle_ref
+      .filter((ref: any) => ref && ref.id)
+      .map((ref: any) => ref.id);
 
-    if (vehicleTitles.length > 0) {
+    if (vehicleIds.length > 0) {
       const { data: vehicleData } = await supabase
         .from('oem_vehicles' as any)
         .select('*')
-        .in('vehicle_title', vehicleTitles);
+        .in('id', vehicleIds);
 
       if (vehicleData) {
         vehicles = (vehicleData as any[]).map((v: any) => ({
           id: v.id,
-          chassis_code: v.vehicle_id_only,
+          chassis_code: v.vehicle_id_only || v.generation,
           model_name: v.model_name,
           vehicle_title: v.vehicle_title,
           production_years: v.production_years,
           bolt_pattern: getFirstString(v.bolt_pattern_ref),
           center_bore: getFirstString(v.center_bore_ref),
-          hero_image_url: v.hero_image_url,
-          brand_name: getFirstString(v.brand_ref),
+          hero_image_url: v.hero_image_url || v.vehicle_image,
+          brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
           is_oem_fitment: true
         }));
       }
     }
   }
-  
+
   const wheelWithVehicles: WheelWithRelations = {
     ...mappedWheel,
     vehicles
   };
-  
+
   console.log("[Wheel Query] Fetched wheel with vehicles:", wheelWithVehicles);
   return wheelWithVehicles;
 };
@@ -142,19 +145,19 @@ export const fetchWheelByName = async (wheelName: string) => {
     .select("*")
     .eq("id", wheelName)  // Use id directly as it contains the wheel name
     .maybeSingle();
-    
+
   if (wheelError) {
     console.error("[Wheel Query] Error:", wheelError);
     throw wheelError;
   }
-  
+
   if (!wheelData) {
     throw new Error("Wheel not found");
   }
-  
+
   // Type assertion to handle the any type
   const wheel = wheelData as any;
-  
+
   // Map the refs to proper values
   const mappedWheel = {
     id: wheel.id,
@@ -184,40 +187,43 @@ export const fetchWheelByName = async (wheelName: string) => {
     tire_size_refs: extractRefValues(wheel.tire_size_ref),
     vehicle_refs: wheel.vehicle_ref
   };
-  
+
   // Fetch related vehicles if vehicle_ref exists
   let vehicles: any[] = [];
   if (wheel.vehicle_ref && Array.isArray(wheel.vehicle_ref)) {
-    const vehicleTitles = extractRefValues(wheel.vehicle_ref);
+    // Extract vehicle IDs from JSONB array [{id: "...", title: "..."}]
+    const vehicleIds = wheel.vehicle_ref
+      .filter((ref: any) => ref && ref.id)
+      .map((ref: any) => ref.id);
 
-    if (vehicleTitles.length > 0) {
+    if (vehicleIds.length > 0) {
       const { data: vehicleData } = await supabase
         .from('oem_vehicles' as any)
         .select('*')
-        .in('vehicle_title', vehicleTitles);
+        .in('id', vehicleIds);
 
       if (vehicleData) {
         vehicles = (vehicleData as any[]).map((v: any) => ({
           id: v.id,
-          chassis_code: v.vehicle_id_only,
+          chassis_code: v.vehicle_id_only || v.generation,
           model_name: v.model_name,
           vehicle_title: v.vehicle_title,
           production_years: v.production_years,
           bolt_pattern: getFirstString(v.bolt_pattern_ref),
           center_bore: getFirstString(v.center_bore_ref),
-          hero_image_url: v.hero_image_url,
-          brand_name: getFirstString(v.brand_ref),
+          hero_image_url: v.hero_image_url || v.vehicle_image,
+          brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
           is_oem_fitment: true
         }));
       }
     }
   }
-  
+
   const wheelWithVehicles: WheelWithRelations = {
     ...mappedWheel,
     vehicles
   };
-  
+
   console.log("[Wheel Query] Fetched wheel by name:", wheelWithVehicles);
   return wheelWithVehicles;
 };

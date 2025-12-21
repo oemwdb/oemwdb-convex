@@ -308,6 +308,7 @@ const WheelsPage = () => {
         showDropdown && (
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
             {[
+              { label: 'Brand', category: 'brand', values: [...new Set((wheels || []).map(w => w.brand_name).filter(Boolean))].sort() },
               { label: 'Bolt Pattern', category: 'boltPattern', values: [...new Set((wheels || []).map(w => w.bolt_pattern).filter(Boolean))] },
               { label: 'Center Bore', category: 'centerBore', values: [...new Set((wheels || []).map(w => w.center_bore).filter(Boolean))] },
               { label: 'Wheel Diameter', category: 'diameter', values: [...new Set((wheels || []).map(w => w.diameter).filter(Boolean))].sort((a, b) => parseFloat(a) - parseFloat(b)) },

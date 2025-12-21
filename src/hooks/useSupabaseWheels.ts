@@ -31,21 +31,18 @@ export interface SupabaseWheel {
 const fetchWheels = async () => {
   // Use the new database function with proper JSONB handling
   const { data, error } = await supabase.rpc('get_wheels_with_brands');
-    
+
   if (error) {
     console.error("[Wheels Query] Error:", error);
     throw error;
   }
-  
-  // Filter to only show wheels with images and map the data
-  const wheelsWithImages = (data as any[] | null)?.filter(wheel => wheel.good_pic_url) ?? [];
-  
-  console.log("[Wheels Query] Fetched wheels with brands:", wheelsWithImages.length);
-  
-  return wheelsWithImages.map((d) => ({
-    ...d,
-    bad_pic_url: null
-  })) as SupabaseWheel[];
+
+  // No longer filter by good_pic_url, let the UI decide based on Dev Mode
+  const wheels = data ?? [];
+
+  console.log("[Wheels Query] Fetched wheels:", wheels.length);
+
+  return wheels as SupabaseWheel[];
 };
 
 export function useSupabaseWheels() {

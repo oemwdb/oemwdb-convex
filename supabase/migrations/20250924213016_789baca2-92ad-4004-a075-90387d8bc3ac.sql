@@ -13,17 +13,20 @@ ALTER TABLE public.saved_wheels ADD CONSTRAINT unique_user_wheel UNIQUE (user_id
 ALTER TABLE public.saved_wheels ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
-CREATE POLICY "Users can view own saved wheels" 
-ON public.saved_wheels 
-FOR SELECT 
+DROP POLICY IF EXISTS "Users can view own saved wheels" ON public.saved_wheels;
+CREATE POLICY "Users can view own saved wheels"
+ON public.saved_wheels
+FOR SELECT
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can save wheels" 
-ON public.saved_wheels 
-FOR INSERT 
+DROP POLICY IF EXISTS "Users can save wheels" ON public.saved_wheels;
+CREATE POLICY "Users can save wheels"
+ON public.saved_wheels
+FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can unsave wheels" 
-ON public.saved_wheels 
-FOR DELETE 
+DROP POLICY IF EXISTS "Users can unsave wheels" ON public.saved_wheels;
+CREATE POLICY "Users can unsave wheels"
+ON public.saved_wheels
+FOR DELETE
 USING (auth.uid() = user_id);

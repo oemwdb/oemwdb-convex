@@ -18,19 +18,41 @@ export interface SupabaseVehicle {
 }
 
 const fetchVehicles = async () => {
-  // Use the new database function with proper JSONB handling
-  const { data, error } = await supabase.rpc('get_vehicles_with_brands');
-    
+  // Query vehicles directly from oem_vehicles table
+  const { data, error } = await supabase
+    .from('oem_vehicles' as any)
+    .select('*')
+    .order('vehicle_title');
+
   if (error) {
     console.error("[Vehicles Query] Error:", error);
     throw error;
   }
-  
-  // Filter to only show vehicles with images
-  const vehiclesWithImages = (data ?? []).filter(vehicle => vehicle.vehicle_image);
-  
-  console.log("[Vehicles Query] Fetched vehicles with brands:", vehiclesWithImages.length);
-  return vehiclesWithImages as SupabaseVehicle[];
+
+  // Map to expected format with brand_name from brand_ref JSONB
+  const vehicles = (data ?? []).map((v: any) => ({
+    id: v.id,
+    chassis_code: v.vehicle_id_only || v.generation || '',
+    model_name: v.model_name,
+    vehicle_title: v.vehicle_title,
+    brand_name: v.brand_ref?.[0]?.value || 'Unknown',
+    brand_id: v.brand_ref?.[0]?.value?.toLowerCase() || null,
+    production_years: v.production_years,
+    platform: v.platform,
+    engine_details: v.oem_engine_ref,
+    bolt_pattern: v.bolt_pattern_ref?.[0]?.value || null,
+    center_bore: v.center_bore_ref?.[0]?.value || null,
+    vehicle_image: v.hero_image_url || v.vehicle_image,
+    status: 'active',
+    // Include full JSONB refs for card display
+    bolt_pattern_ref: v.bolt_pattern_ref,
+    center_bore_ref: v.center_bore_ref,
+    wheel_diameter_ref: v.diameter_ref,
+    wheel_width_ref: v.width_ref
+  }));
+
+  console.log("[Vehicles Query] Fetched vehicles:", vehicles.length);
+  return vehicles as SupabaseVehicle[];
 };
 
 export function useSupabaseVehicles() {

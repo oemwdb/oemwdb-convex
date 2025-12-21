@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
+import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
 import { useWheelWithVehicles } from "@/hooks/useWheelWithVehicles";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -162,6 +162,10 @@ const WheelItemPage = () => {
               <Image className="h-4 w-4" />
               <span>Gallery</span>
             </TabsTrigger>
+            <TabsTrigger value="badpic" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
+              <ImageOff className="h-4 w-4" />
+              <span>Bad Pic</span>
+            </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
               <MessageSquare className="h-4 w-4" />
               <span>Comments</span>
@@ -191,95 +195,92 @@ const WheelItemPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Layers className="h-5 w-5" />
-                    Wheel Variants
+                    Wheel Variants & Part Numbers
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* Main variant from wheel data */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {/* Variant Card - part number centered */}
-                    {[
-                      {
-                        partNumber: 'T4N26858',
-                        manufId: 'LX731007AA',
-                        color: 'Sparkle Silver',
-                        size: '6.5Jx17 ET43.5',
-                        pcd: '5x108.0',
+                    {/* Generate variants based on available colors and sizes */}
+                    {(() => {
+                      const variants: any[] = [];
+                      const colors = wheel.color ? wheel.color.split(',').map((c: string) => c.trim()) : ['Standard'];
+                      const diameters = (wheel.diameter_refs || []) as any[];
+                      const widths = (wheel.width_ref || []) as any[];
+                      const boltPatterns = (wheel.bolt_pattern_refs || []) as any[];
+                      const partNumbersText = wheel.part_numbers || '';
+
+                      // Parse part numbers from text
+                      const partNumbers = partNumbersText
+                        .split(/[,;]/)
+                        .map((p: string) => p.trim())
+                        .filter((p: string) => p && p.length > 0);
+
+                      // Create variants for each color with available specs
+                      colors.slice(0, 4).forEach((color: string, idx: number) => {
+                        const diameter = diameters[0]?.raw || diameters[0]?.value || '21"';
+                        const width = widths[idx] || widths[0];
+                        const widthStr = width?.raw || (width?.value ? `${width.value}J` : '8.5J');
+                        const boltPattern = boltPatterns[0]?.value || '5x120';
+                        const partNumber = partNumbers[idx] || partNumbers[0] || wheel.wheel_name?.replace(/\s+/g, '');
+
+                        variants.push({
+                          color,
+                          size: `${widthStr} x ${diameter}`,
+                          pcd: boltPattern,
+                          partNumber: partNumber.substring(0, 30),
+                          offset: wheel.wheel_offset || 'ET35',
+                          available: true
+                        });
+                      });
+
+                      return variants.length > 0 ? variants : [{
+                        color: 'Standard',
+                        size: `${wheel.diameter || '21"'} x ${wheel.width || '8.5J'}`,
+                        pcd: '5x120',
+                        partNumber: wheel.wheel_name?.replace(/\s+/g, '') || 'N/A',
+                        offset: wheel.wheel_offset || 'ET35',
                         available: true
-                      },
-                      {
-                        partNumber: 'T4N26859',
-                        manufId: 'LX731008AA',
-                        color: 'Gloss Black',
-                        size: '6.5Jx17 ET43.5',
-                        pcd: '5x108.0',
-                        available: true
-                      },
-                      {
-                        partNumber: 'T4N26860',
-                        manufId: 'LX731009AA',
-                        color: 'Diamond Turned',
-                        size: '7Jx18 ET45',
-                        pcd: '5x108.0',
-                        available: false
-                      }
-                    ].map((variant, idx) => (
+                      }];
+                    })().map((variant: any, idx: number) => (
                       <Card key={idx} className="flex flex-col hover:shadow-md transition-shadow">
                         <CardContent className="p-4 flex flex-col gap-2">
-                          {/* Header - Part Number */}
                           <h4 className="font-semibold text-foreground text-base">
-                            {wheel.brand_name} Part Number & Sizes
+                            {variant.color}
                           </h4>
-
-                          {/* Content */}
                           <div className="space-y-1 text-sm">
                             <p className="text-foreground">
-                              <span className="text-muted-foreground">Colour:</span> {variant.color}
+                              <span className="text-muted-foreground">Size:</span> {variant.size}
                             </p>
                             <p className="text-foreground">
-                              {variant.size} PCD {variant.pcd}
+                              <span className="text-muted-foreground">PCD:</span> {variant.pcd}
                             </p>
                             <p className="text-foreground">
-                              <span className="text-muted-foreground">Manuf ID:</span> {variant.manufId}
+                              <span className="text-muted-foreground">Offset:</span> {variant.offset}
                             </p>
                             <p className="text-foreground">
                               <span className="text-muted-foreground">P/N:</span>{' '}
-                              <span className="text-blue-500">{variant.partNumber}</span>
-                            </p>
-                            <p className={variant.available ? "text-green-500" : "text-muted-foreground"}>
-                              {variant.available ? 'Available' : 'Unavailable'}
+                              <span className="text-blue-500 font-mono text-xs">{variant.partNumber}</span>
                             </p>
                           </div>
-
-                          {/* Buy at section */}
                           <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs text-muted-foreground mb-2">Buy at</p>
+                            <p className="text-xs text-muted-foreground mb-2">Search</p>
                             <div className="flex gap-2">
                               <a
-                                href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(variant.partNumber)}`}
+                                href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(wheel.wheel_name + ' ' + variant.color)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on eBay"
                               >
                                 eBay
                               </a>
                               <a
-                                href={`https://www.tirerack.com/content/tirerack/desktop/en/wheels.html?filterByKeyword=${encodeURIComponent(variant.partNumber)}`}
+                                href={`https://www.google.com/search?q=${encodeURIComponent(variant.partNumber + ' Rolls-Royce wheel')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on Tire Rack"
                               >
-                                TR
-                              </a>
-                              <a
-                                href={`https://www.amazon.com/s?k=${encodeURIComponent(variant.partNumber + ' wheel')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on Amazon"
-                              >
-                                AMZ
+                                Google
                               </a>
                             </div>
                           </div>
@@ -287,6 +288,14 @@ const WheelItemPage = () => {
                       </Card>
                     ))}
                   </div>
+
+                  {/* Full part numbers text if available */}
+                  {wheel.part_numbers && (
+                    <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                      <h4 className="text-sm font-semibold mb-2">All Part Numbers</h4>
+                      <p className="text-sm text-muted-foreground font-mono">{wheel.part_numbers}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -298,6 +307,42 @@ const WheelItemPage = () => {
               vehicleName={wheel.wheel_name}
               images={galleryImages}
             />
+          </TabsContent>
+
+          {/* Bad Pic content */}
+          <TabsContent value="badpic" className="mt-6 animate-fade-in">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageOff className="h-5 w-5" />
+                  Reference Image (Unprocessed)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {wheel.bad_pic_url ? (
+                  <div className="space-y-4">
+                    <div className="relative rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={wheel.bad_pic_url}
+                        alt={`${wheel.wheel_name} reference`}
+                        className="w-full max-h-[600px] object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      This is the unprocessed reference image from Notion. Path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{wheel.bad_pic_url}</code>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p>No reference image available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Comments content */}

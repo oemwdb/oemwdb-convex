@@ -42,6 +42,8 @@ import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
 import GaragePage from "./pages/GaragePage";
 const queryClient = new QueryClient();
 
+import { DevPanel } from "@/components/common/DevPanel";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -83,6 +85,10 @@ const App = () => (
                 <Route path="/chart-comparison" element={<ChartComparison />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+
+              {/* Global Dev Panel */}
+              <DevPanel />
+
             </AuthProvider>
           </NavigationProvider>
         </BrowserRouter>

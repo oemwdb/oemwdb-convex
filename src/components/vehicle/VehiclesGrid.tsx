@@ -23,7 +23,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             <b>Debugging tips</b>:<br />
             - Ensure you have data in the Supabase <i>OEM Vehicles</i> table.<br />
             - Check the browser dev console for details.<br />
-            - If your database is empty, you'll need to add rows manually via Supabase dashboard.<br/>
+            - If your database is empty, you'll need to add rows manually via Supabase dashboard.<br />
           </span>
         </div>
       </div>
@@ -39,7 +39,11 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             name: vehicle.name,
             brand: vehicle.brand,
             wheels: vehicle.wheels,
-            image: vehicle.image
+            image: vehicle.image,
+            bolt_pattern_ref: (vehicle as any).bolt_pattern_ref,
+            center_bore_ref: (vehicle as any).center_bore_ref,
+            wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
+            wheel_width_ref: (vehicle as any).wheel_width_ref
           }}
           isFlipped={flippedCards[vehicle.name] || false}
           onFlip={onFlip}

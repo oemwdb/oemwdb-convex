@@ -45,11 +45,23 @@ const WheelCardBack = ({
       try {
         jsonb = JSON.parse(jsonb);
       } catch {
-        return [];
+        return [jsonb]; // Return as-is if not parseable
       }
     }
     if (Array.isArray(jsonb)) {
-      return jsonb.map(item => typeof item === 'string' ? item : item.toString());
+      return jsonb.map(item => {
+        if (typeof item === 'string') return item;
+        // Handle JSONB objects with various formats
+        if (typeof item === 'object' && item !== null) {
+          // Try common value fields
+          if (item.value) return String(item.value);
+          if (item.raw) return String(item.raw);
+          if (item.title) return String(item.title);
+          if (item.name) return String(item.name);
+          if (item.id) return String(item.id);
+        }
+        return null;
+      }).filter(Boolean) as string[];
     }
     return [];
   };
@@ -116,6 +128,33 @@ const WheelCardBack = ({
                     </div>
                   ));
                 })()}
+              </div>
+            </div>
+
+            {/* Find at section */}
+            <div className="px-4 py-2 border-t border-border/50 shrink-0">
+              <p className="text-xs text-muted-foreground mb-1">Find online</p>
+              <div className="flex gap-2 flex-wrap">
+                <a
+                  href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(wheel.name + " wheels")}&_sacat=6000`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Search on eBay"
+                >
+                  eBay
+                </a>
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(wheel.name + " wheels price")}&tbm=shop`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Search on Google Shopping"
+                >
+                  Google
+                </a>
               </div>
             </div>
 

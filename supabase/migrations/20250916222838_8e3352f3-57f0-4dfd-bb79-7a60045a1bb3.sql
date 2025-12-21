@@ -1,4 +1,6 @@
 -- Insert demo market listings with various types and conditions
+-- Commented out: Requires users to exist first. Uncomment and run after creating test users.
+/*
 INSERT INTO public.market_listings (
   user_id,
   listing_type,
@@ -11,7 +13,7 @@ INSERT INTO public.market_listings (
   shipping_available,
   images,
   status
-) VALUES 
+) VALUES
 -- Wheel listings
 (
   (SELECT id FROM auth.users LIMIT 1),
@@ -149,3 +151,4 @@ INSERT INTO public.market_listings (
   ARRAY['https://images.unsplash.com/photo-1619405399517-d7fce0f13302?w=800'],
   'active'
 );
+*/

@@ -24,7 +24,7 @@ CREATE TABLE public.profiles (
 CREATE TABLE public.wheel_comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    wheel_id INTEGER REFERENCES public.oem_wheels(id) ON DELETE CASCADE NOT NULL,
+    wheel_id TEXT REFERENCES public.oem_wheels(id) ON DELETE CASCADE NOT NULL,
     comment_text TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -34,7 +34,7 @@ CREATE TABLE public.wheel_comments (
 CREATE TABLE public.vehicle_comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    vehicle_id INTEGER REFERENCES public.oem_vehicles(id) ON DELETE CASCADE NOT NULL,
+    vehicle_id TEXT REFERENCES public.oem_vehicles(id) ON DELETE CASCADE NOT NULL,
     comment_text TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -44,7 +44,7 @@ CREATE TABLE public.vehicle_comments (
 CREATE TABLE public.saved_wheels (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    wheel_id INTEGER REFERENCES public.oem_wheels(id) ON DELETE CASCADE NOT NULL,
+    wheel_id TEXT REFERENCES public.oem_wheels(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, wheel_id)
 );
@@ -53,7 +53,7 @@ CREATE TABLE public.saved_wheels (
 CREATE TABLE public.saved_vehicles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    vehicle_id INTEGER REFERENCES public.oem_vehicles(id) ON DELETE CASCADE NOT NULL,
+    vehicle_id TEXT REFERENCES public.oem_vehicles(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, vehicle_id)
 );
@@ -62,7 +62,7 @@ CREATE TABLE public.saved_vehicles (
 CREATE TABLE public.saved_brands (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    brand_id INTEGER REFERENCES public.oem_brands(id) ON DELETE CASCADE NOT NULL,
+    brand_id TEXT REFERENCES public.oem_brands(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, brand_id)
 );
@@ -177,7 +177,7 @@ CREATE POLICY "Roles are viewable by everyone"
 
 CREATE POLICY "Only admins can manage roles"
     ON public.user_roles FOR INSERT
-    USING (public.has_role(auth.uid(), 'admin'));
+    WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 CREATE POLICY "Only admins can update roles"
     ON public.user_roles FOR UPDATE

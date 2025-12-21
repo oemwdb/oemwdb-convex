@@ -1,11 +1,27 @@
 {
   "mcpServers": {
-    "shadcn": {
-      "command": "npx",
+    "notion": {
+      "command": "/usr/local/bin/npx",
       "args": [
-        "shadcn@latest",
-        "mcp"
-      ]
+        "-y",
+        "@suekou/mcp-notion-server"
+      ],
+      "env": {
+        "NOTION_API_TOKEN": "ntn_V62415588614DljTKXbJOe8o2ZUuvymXCe0PEM1vNNgeoE",
+        "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
+    },
+    "supabase": {
+      "command": "/usr/local/bin/npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@0.4.5",
+        "--project-ref=bclvqqnnyqgzoavgrkke"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_ec891a6d647edf2bda7ef0dc1fd6d99c5d751ea1",
+        "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
     }
   }
 }

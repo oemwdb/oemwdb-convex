@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Heart, RotateCw, Info } from "lucide-react";
+import { Heart, RotateCw, Info, Image as ImageIcon, ImageOff } from "lucide-react";
 
 interface WheelCardFrontProps {
   wheel: {
@@ -28,6 +28,9 @@ interface WheelCardFrontProps {
   handleWheelMouseLeave: () => void;
   getTransformStyle: () => React.CSSProperties;
   linkToDetail?: boolean;
+  showBadPicToggle?: boolean;
+  isBadPicActive?: boolean;
+  onToggleBadPic?: () => void;
 }
 
 const WheelCardFront = ({
@@ -47,6 +50,9 @@ const WheelCardFront = ({
   handleWheelMouseLeave,
   getTransformStyle,
   linkToDetail = false,
+  showBadPicToggle = false,
+  isBadPicActive = false,
+  onToggleBadPic,
 }: WheelCardFrontProps) => {
   // Extract brand name from brand_ref
   const extractBrandName = (): string | null => {
@@ -191,7 +197,35 @@ const WheelCardFront = ({
           )}
         </div>
 
+        {/* Bad Pic Toggle - top center-right (DEV ONLY) */}
+        {showBadPicToggle && (
+          <div className="absolute top-2 right-12 h-8 w-8 border border-transparent hover:bg-background/80 hover:backdrop-blur-sm hover:border-border/50 rounded-full transition-all duration-300 ease-out flex items-center justify-center pointer-events-auto z-30">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 w-7 p-0 hover:bg-transparent",
+                isBadPicActive ? "text-destructive" : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleBadPic?.();
+              }}
+              title={isBadPicActive ? "Switch to Good Pic" : "Switch to Bad Pic"}
+            >
+              {isBadPicActive ? (
+                <ImageOff className="h-4 w-4" />
+              ) : (
+                <ImageIcon className="h-4 w-4" />
+              )}
+              <span className="sr-only">Toggle Bad Pic</span>
+            </Button>
+          </div>
+        )}
+
         {/* Flip button - top right */}
+
         <div className="absolute top-2 right-2 h-8 w-8 border border-transparent hover:bg-background/80 hover:backdrop-blur-sm hover:border-border/50 rounded-full transition-all duration-300 ease-out flex items-center justify-center pointer-events-auto z-30">
           <Button
             variant="ghost"

@@ -73,22 +73,33 @@ END;
 $function$;
 
 -- Populate missing bidirectional wheel_refs in vehicles based on existing vehicle_refs in wheels
-UPDATE oem_vehicles v
-SET wheel_refs = (
-  SELECT COALESCE(jsonb_agg(DISTINCT w.wheel_name), '[]'::jsonb)
-  FROM oem_wheels w
-  WHERE w.vehicle_refs IS NOT NULL 
-    AND v.vehicle_title = ANY(
-      SELECT jsonb_array_elements_text(w.vehicle_refs)
+-- Only run if vehicle_refs column exists in oem_wheels
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'oem_wheels'
+    AND column_name = 'vehicle_refs'
+  ) THEN
+    UPDATE oem_vehicles v
+    SET wheel_refs = (
+      SELECT COALESCE(jsonb_agg(DISTINCT w.wheel_name), '[]'::jsonb)
+      FROM oem_wheels w
+      WHERE w.vehicle_refs IS NOT NULL
+        AND v.vehicle_title = ANY(
+          SELECT jsonb_array_elements_text(w.vehicle_refs)
+        )
     )
-)
-WHERE EXISTS (
-  SELECT 1 FROM oem_wheels w
-  WHERE w.vehicle_refs IS NOT NULL 
-    AND v.vehicle_title = ANY(
-      SELECT jsonb_array_elements_text(w.vehicle_refs)
-    )
-);
+    WHERE EXISTS (
+      SELECT 1 FROM oem_wheels w
+      WHERE w.vehicle_refs IS NOT NULL
+        AND v.vehicle_title = ANY(
+          SELECT jsonb_array_elements_text(w.vehicle_refs)
+        )
+    );
+  END IF;
+END $$;
 
 -- Create trigger function to sync wheel_refs when vehicle_refs changes in wheels
 CREATE OR REPLACE FUNCTION sync_wheel_vehicle_refs()
@@ -126,8 +137,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger on oem_wheels to sync vehicle wheel_refs
-DROP TRIGGER IF EXISTS sync_vehicle_refs_on_wheel_update ON oem_wheels;
-CREATE TRIGGER sync_vehicle_refs_on_wheel_update
-AFTER INSERT OR UPDATE OF vehicle_refs ON oem_wheels
-FOR EACH ROW
-EXECUTE FUNCTION sync_wheel_vehicle_refs();
+-- Only create if vehicle_refs column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'oem_wheels'
+    AND column_name = 'vehicle_refs'
+  ) THEN
+    DROP TRIGGER IF EXISTS sync_vehicle_refs_on_wheel_update ON oem_wheels;
+    CREATE TRIGGER sync_vehicle_refs_on_wheel_update
+    AFTER INSERT OR UPDATE OF vehicle_refs ON oem_wheels
+    FOR EACH ROW
+    EXECUTE FUNCTION sync_wheel_vehicle_refs();
+  END IF;
+END $$;

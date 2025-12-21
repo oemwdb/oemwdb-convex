@@ -7,7 +7,7 @@ import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImageOff } from "lucide-react";
 
 const BrandDetailPage = () => {
   const { brandName } = useParams<{ brandName: string }>();
@@ -23,6 +23,7 @@ const BrandDetailPage = () => {
   // State for vehicles and wheels
   const [brandVehicles, setBrandVehicles] = useState<any[]>([]);
   const [brandWheels, setBrandWheels] = useState<any[]>([]);
+  const [brandData, setBrandData] = useState<any>(null);
   const [wheelsLoading, setWheelsLoading] = useState<boolean>(true);
 
   // Fetch vehicles using the shared hook (cached)
@@ -76,6 +77,18 @@ const BrandDetailPage = () => {
       } else {
         setBrandWheels([]);
       }
+
+      // Fetch brand data for bad pic
+      const { data: brandInfo } = await supabase
+        .from('oem_brands' as any)
+        .select('*')
+        .eq('id', brandName?.toLowerCase())
+        .maybeSingle();
+
+      if (brandInfo) {
+        setBrandData(brandInfo);
+      }
+
       setWheelsLoading(false);
     };
 
@@ -128,6 +141,7 @@ const BrandDetailPage = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
             <TabsTrigger value="wheels">Wheels</TabsTrigger>
+            <TabsTrigger value="badpic">Bad Pic</TabsTrigger>
           </TabsList>
 
           {/* Vehicles Tab */}
@@ -171,6 +185,40 @@ const BrandDetailPage = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Bad Pic Tab */}
+          <TabsContent value="badpic">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <ImageOff className="h-5 w-5" />
+                  Reference Image (Unprocessed)
+                </h3>
+                {brandData?.brand_image_url ? (
+                  <div className="space-y-4">
+                    <div className="relative rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={brandData.brand_image_url}
+                        alt={`${formattedBrandName} reference`}
+                        className="w-full max-h-[600px] object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Reference image path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{brandData.brand_image_url}</code>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p>No reference image available for this brand</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
