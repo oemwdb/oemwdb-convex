@@ -23,6 +23,8 @@ import BrandDetailPage from "./pages/BrandDetailPage";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
 import WheelDetailPage from "./pages/WheelDetailPage";
 import WheelItemPage from "./pages/WheelItemPage";
+import EnginesPage from "./pages/EnginesPage";
+import EngineItemPage from "./pages/EngineItemPage";
 import DevPage from "./pages/DevPage";
 import DatabasePage from "./pages/DatabasePage";
 import DatabaseRecordPage from "./pages/DatabaseRecordPage";
@@ -42,7 +44,6 @@ import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
 import GaragePage from "./pages/GaragePage";
 const queryClient = new QueryClient();
 
-import { DevPanel } from "@/components/common/DevPanel";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -62,7 +63,10 @@ const App = () => (
                 <Route path="/wheels" element={<WheelsPage />} />
                 <Route path="/wheels/:wheelName" element={<WheelDetailPage />} />
                 <Route path="/wheel/:wheelId" element={<WheelItemPage />} />
+                <Route path="/engines" element={<EnginesPage />} />
+                <Route path="/engines/:engineId" element={<EngineItemPage />} />
                 <Route path="/garage" element={<GaragePage />} />
+
                 <Route path="/users" element={<ProtectedRoute requireAdmin={true}><UsersPage /></ProtectedRoute>} />
                 <Route path="/users/:username" element={<PublicProfilePage />} />
                 <Route path="/market" element={<ProtectedRoute requireAdmin={true}><MarketPage /></ProtectedRoute>} />
@@ -85,9 +89,6 @@ const App = () => (
                 <Route path="/chart-comparison" element={<ChartComparison />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-
-              {/* Global Dev Panel */}
-              <DevPanel />
 
             </AuthProvider>
           </NavigationProvider>

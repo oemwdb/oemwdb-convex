@@ -102,11 +102,23 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
             try {
                 jsonb = JSON.parse(jsonb);
             } catch {
-                return [];
+                return [jsonb]; // Return as-is if not parseable
             }
         }
         if (Array.isArray(jsonb)) {
-            return jsonb.map(item => typeof item === 'string' ? item : item.toString());
+            return jsonb.map(item => {
+                if (typeof item === 'string') return item;
+                // Handle JSONB objects with various formats
+                if (typeof item === 'object' && item !== null) {
+                    if (item.value !== undefined) return String(item.value);
+                    if (item.raw !== undefined) return String(item.raw);
+                    if (item.title !== undefined) return String(item.title);
+                    if (item.name !== undefined) return String(item.name);
+                    // For vehicle_ref that has id and title
+                    if (item.id && item.title) return String(item.title);
+                }
+                return null;
+            }).filter(Boolean) as string[];
         }
         return [];
     };

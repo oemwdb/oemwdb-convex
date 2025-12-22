@@ -15,6 +15,11 @@ export interface SupabaseVehicle {
   center_bore: string | null;
   vehicle_image: string | null;
   status: string | null;
+  // JSONB reference fields for card back display
+  bolt_pattern_ref?: any;
+  center_bore_ref?: any;
+  wheel_diameter_ref?: any;
+  wheel_width_ref?: any;
 }
 
 const fetchVehicles = async () => {

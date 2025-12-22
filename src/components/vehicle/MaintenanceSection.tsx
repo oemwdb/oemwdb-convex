@@ -51,14 +51,12 @@ const MaintenanceSection: React.FC<MaintenanceSectionProps> = ({ vehicleId }) =>
         <div className="space-y-6">
             {/* Known Issues */}
             {knownIssues.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                            Known Issues
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
+                <Card className="mb-4">
+                    <CardContent className="pt-4 space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <span className="font-medium">Known Issues</span>
+                        </div>
                         {Object.entries(issuesByCategory).map(([category, items]) => (
                             <div key={category}>
                                 <h4 className="text-sm font-medium text-muted-foreground mb-3 capitalize">
@@ -89,14 +87,12 @@ const MaintenanceSection: React.FC<MaintenanceSectionProps> = ({ vehicleId }) =>
 
             {/* Maintenance Schedule */}
             {schedules.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Calendar className="h-5 w-5 text-blue-500" />
-                            Maintenance Schedule
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
+                <Card className="mb-4">
+                    <CardContent className="pt-4 space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium">Maintenance Schedule</span>
+                        </div>
                         {Object.entries(schedulesByCategory).map(([category, items]) => (
                             <div key={category}>
                                 <h4 className="text-sm font-medium text-muted-foreground mb-3 capitalize">

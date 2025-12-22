@@ -121,13 +121,86 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
           production_years: v.production_years,
           bolt_pattern: getFirstString(v.bolt_pattern_ref),
           center_bore: getFirstString(v.center_bore_ref),
+          bolt_pattern_ref: v.bolt_pattern_ref,
+          center_bore_ref: v.center_bore_ref,
+          wheel_diameter_ref: v.wheel_diameter_ref,
+          wheel_width_ref: v.wheel_width_ref,
           hero_image_url: v.hero_image_url || v.vehicle_image,
           brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
           is_oem_fitment: true
         }));
+
       }
     }
   }
+
+  // Method 2: Spec-based matching - find vehicles with matching bolt pattern AND center bore
+  // This ensures bidirectional linking based on actual compatibility
+  const wheelBoltPatterns = extractRefValues(wheel.bolt_pattern_ref);
+  const wheelCenterBores = extractRefValues(wheel.center_bore_ref);
+
+  if (wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) {
+    console.log("[Wheel Query] Searching vehicles by specs - Bolt Patterns:", wheelBoltPatterns, "Center Bores:", wheelCenterBores);
+
+    // Fetch all vehicles and filter by spec match
+    const { data: allVehiclesData } = await supabase
+      .from("oem_vehicles" as any)
+      .select("*");
+
+    if (allVehiclesData) {
+      const specMatchedVehicles = (allVehiclesData as any[]).filter((v: any) => {
+        // Extract bolt patterns from vehicle
+        const vehicleBoltPatterns = extractRefValues(v.bolt_pattern_ref).map((bp: string) =>
+          bp?.toLowerCase().replace(/\s+/g, '')
+        );
+
+        // Extract center bores from vehicle
+        const vehicleCenterBores = extractRefValues(v.center_bore_ref).map((cb: string) =>
+          cb?.toLowerCase().replace(/[mm\s]/g, '')
+        );
+
+        // Normalize wheel specs for comparison
+        const normalizedWheelBP = wheelBoltPatterns.map((bp: string) => bp?.toLowerCase().replace(/\s+/g, ''));
+        const normalizedWheelCB = wheelCenterBores.map((cb: string) => cb?.toLowerCase().replace(/[mm\s]/g, ''));
+
+        // Match if any bolt pattern matches AND any center bore matches
+        const boltPatternMatch = normalizedWheelBP.length === 0 ||
+          normalizedWheelBP.some((wbp: string) => vehicleBoltPatterns.includes(wbp));
+        const centerBoreMatch = normalizedWheelCB.length === 0 ||
+          normalizedWheelCB.some((wcb: string) => vehicleCenterBores.includes(wcb));
+
+        return boltPatternMatch && centerBoreMatch;
+      }).map((v: any) => ({
+        id: v.id,
+        chassis_code: v.vehicle_id_only || v.generation,
+        model_name: v.model_name,
+        vehicle_title: v.vehicle_title,
+        production_years: v.production_years,
+        bolt_pattern: getFirstString(v.bolt_pattern_ref),
+        center_bore: getFirstString(v.center_bore_ref),
+        bolt_pattern_ref: v.bolt_pattern_ref,
+        center_bore_ref: v.center_bore_ref,
+        wheel_diameter_ref: v.wheel_diameter_ref,
+        wheel_width_ref: v.wheel_width_ref,
+        hero_image_url: v.hero_image_url || v.vehicle_image,
+        brand_name: getFirstString(v.brand_ref) || 'Unknown',
+        is_oem_fitment: false // Mark as spec-matched, not direct OEM fitment
+      }));
+
+
+      // Merge spec-matched vehicles, avoiding duplicates
+      const existingIds = new Set(vehicles.map((v: any) => v.id));
+      for (const v of specMatchedVehicles) {
+        if (!existingIds.has(v.id)) {
+          vehicles.push(v);
+        }
+      }
+
+      console.log("[Wheel Query] Found", specMatchedVehicles.length, "spec-matched vehicles");
+    }
+  }
+
+  console.log("[Wheel Query] Total vehicles for wheel:", vehicles.length);
 
   const wheelWithVehicles: WheelWithRelations = {
     ...mappedWheel,
@@ -215,6 +288,57 @@ export const fetchWheelByName = async (wheelName: string) => {
           brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
           is_oem_fitment: true
         }));
+      }
+    }
+  }
+
+  // Method 2: Spec-based matching - find vehicles with matching bolt pattern AND center bore
+  const wheelBoltPatterns = extractRefValues(wheel.bolt_pattern_ref);
+  const wheelCenterBores = extractRefValues(wheel.center_bore_ref);
+
+  if (wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) {
+    console.log("[Wheel Query] Searching vehicles by specs");
+
+    const { data: allVehiclesData } = await supabase
+      .from("oem_vehicles" as any)
+      .select("*");
+
+    if (allVehiclesData) {
+      const specMatchedVehicles = (allVehiclesData as any[]).filter((v: any) => {
+        const vehicleBoltPatterns = extractRefValues(v.bolt_pattern_ref).map((bp: string) =>
+          bp?.toLowerCase().replace(/\s+/g, '')
+        );
+        const vehicleCenterBores = extractRefValues(v.center_bore_ref).map((cb: string) =>
+          cb?.toLowerCase().replace(/[mm\s]/g, '')
+        );
+
+        const normalizedWheelBP = wheelBoltPatterns.map((bp: string) => bp?.toLowerCase().replace(/\s+/g, ''));
+        const normalizedWheelCB = wheelCenterBores.map((cb: string) => cb?.toLowerCase().replace(/[mm\s]/g, ''));
+
+        const boltPatternMatch = normalizedWheelBP.length === 0 ||
+          normalizedWheelBP.some((wbp: string) => vehicleBoltPatterns.includes(wbp));
+        const centerBoreMatch = normalizedWheelCB.length === 0 ||
+          normalizedWheelCB.some((wcb: string) => vehicleCenterBores.includes(wcb));
+
+        return boltPatternMatch && centerBoreMatch;
+      }).map((v: any) => ({
+        id: v.id,
+        chassis_code: v.vehicle_id_only || v.generation,
+        model_name: v.model_name,
+        vehicle_title: v.vehicle_title,
+        production_years: v.production_years,
+        bolt_pattern: getFirstString(v.bolt_pattern_ref),
+        center_bore: getFirstString(v.center_bore_ref),
+        hero_image_url: v.hero_image_url || v.vehicle_image,
+        brand_name: getFirstString(v.brand_ref) || 'Unknown',
+        is_oem_fitment: false
+      }));
+
+      const existingIds = new Set(vehicles.map((v: any) => v.id));
+      for (const v of specMatchedVehicles) {
+        if (!existingIds.has(v.id)) {
+          vehicles.push(v);
+        }
       }
     }
   }

@@ -18,13 +18,11 @@ interface CommentsSectionProps {
 const CommentsSection = ({ vehicleName, comments }: CommentsSectionProps) => {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Comments</h2>
-      <p className="text-slate-500">Join the discussion about {vehicleName}</p>
-      
+
       <Card>
         <CardContent className="p-4">
-          <textarea 
-            className="w-full border border-slate-300 rounded-md p-3 min-h-[100px]" 
+          <textarea
+            className="w-full border border-slate-300 rounded-md p-3 min-h-[100px]"
             placeholder="Add your comment..."
           />
           <div className="mt-2 flex justify-end">
@@ -32,7 +30,7 @@ const CommentsSection = ({ vehicleName, comments }: CommentsSectionProps) => {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Comments list */}
       <div className="space-y-4">
         {comments.map((comment) => (

@@ -30,8 +30,8 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId }) => {
 
     return (
         <Card>
-            <CardContent className="pt-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <CardContent className="pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {variants.map((variant) => (
                         <Card key={variant.id} className="flex flex-col hover:shadow-md transition-shadow">
                             <CardContent className="p-4 flex flex-col gap-2">

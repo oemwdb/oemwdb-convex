@@ -13,8 +13,10 @@ import { useNavigation } from "@/contexts/NavigationContext";
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
 import FitmentSection from "@/components/wheel/FitmentSection";
+import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
 import CommentsSection from "@/components/vehicle/CommentsSection";
 import GallerySection from "@/components/vehicle/GallerySection";
+
 
 const WheelItemPage = () => {
   const { wheelId } = useParams<{ wheelId: string }>();
@@ -70,8 +72,13 @@ const WheelItemPage = () => {
     name: v.vehicle_title || v.model_name || v.chassis_code,
     brand: v.brand_name || "Unknown",
     wheels: 0, // Will be updated with actual wheel count later
-    image: v.hero_image_url
+    image: v.hero_image_url,
+    bolt_pattern_ref: v.bolt_pattern_ref,
+    center_bore_ref: v.center_bore_ref,
+    wheel_diameter_ref: v.wheel_diameter_ref,
+    wheel_width_ref: v.wheel_width_ref,
   }));
+
 
   // Sample comments
   const comments = [
@@ -148,40 +155,17 @@ const WheelItemPage = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="flex w-full h-auto gap-2 bg-muted/50 p-2 rounded-lg overflow-x-auto">
-            <TabsTrigger value="fitment" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <Car className="h-4 w-4" />
-              <span>Vehicles</span>
-              <Badge variant="secondary" className="ml-1 text-xs">{compatibleVehicles.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="variants" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <Layers className="h-4 w-4" />
-              <span>Variants</span>
-            </TabsTrigger>
-            <TabsTrigger value="gallery" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <Image className="h-4 w-4" />
-              <span>Gallery</span>
-            </TabsTrigger>
-            <TabsTrigger value="badpic" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <ImageOff className="h-4 w-4" />
-              <span>Bad Pic</span>
-            </TabsTrigger>
-            <TabsTrigger value="comments" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <MessageSquare className="h-4 w-4" />
-              <span>Comments</span>
-            </TabsTrigger>
-            <TabsTrigger value="market" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <ShoppingCart className="h-4 w-4" />
-              <span>Market</span>
-            </TabsTrigger>
-            <TabsTrigger value="coolboard" className="flex items-center justify-center gap-2 py-3 whitespace-nowrap flex-shrink-0 data-[state=active]:shadow-sm">
-              <Award className="h-4 w-4" />
-              <span>Cool Board</span>
-            </TabsTrigger>
+          <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-card border border-border rounded-lg p-1">
+            <TabsTrigger value="fitment" className="flex-1 min-w-fit">Vehicles ({compatibleVehicles.length})</TabsTrigger>
+            <TabsTrigger value="variants" className="flex-1 min-w-fit">Variants</TabsTrigger>
+            <TabsTrigger value="gallery" className="flex-1 min-w-fit">Gallery</TabsTrigger>
+            <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
+            <TabsTrigger value="comments" className="flex-1 min-w-fit">Comments</TabsTrigger>
           </TabsList>
 
+
           {/* Fitment content */}
-          <TabsContent value="fitment" className="mt-6 animate-fade-in">
+          <TabsContent value="fitment" className="space-y-4">
             <FitmentSection
               wheelName={wheel.wheel_name}
               compatibleVehicles={compatibleVehicles}
@@ -189,19 +173,13 @@ const WheelItemPage = () => {
           </TabsContent>
 
           {/* Variants content */}
-          <TabsContent value="variants" className="mt-6 animate-fade-in">
+          <TabsContent value="variants" className="space-y-4">
             <div className="grid gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layers className="h-5 w-5" />
-                    Wheel Variants & Part Numbers
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Main variant from wheel data */}
+                <CardContent className="pt-4">
+                  {/* Variant cards grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {/* Generate variants based on available colors and sizes */}
+
                     {(() => {
                       const variants: any[] = [];
                       const colors = wheel.color ? wheel.color.split(',').map((c: string) => c.trim()) : ['Standard'];
@@ -210,13 +188,11 @@ const WheelItemPage = () => {
                       const boltPatterns = (wheel.bolt_pattern_refs || []) as any[];
                       const partNumbersText = wheel.part_numbers || '';
 
-                      // Parse part numbers from text
                       const partNumbers = partNumbersText
                         .split(/[,;]/)
                         .map((p: string) => p.trim())
                         .filter((p: string) => p && p.length > 0);
 
-                      // Create variants for each color with available specs
                       colors.slice(0, 4).forEach((color: string, idx: number) => {
                         const diameter = diameters[0]?.raw || diameters[0]?.value || '21"';
                         const width = widths[idx] || widths[0];
@@ -289,20 +265,31 @@ const WheelItemPage = () => {
                     ))}
                   </div>
 
-                  {/* Full part numbers text if available */}
-                  {wheel.part_numbers && (
-                    <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                      <h4 className="text-sm font-semibold mb-2">All Part Numbers</h4>
-                      <p className="text-sm text-muted-foreground font-mono">{wheel.part_numbers}</p>
-                    </div>
-                  )}
+                  {/* Wheel Variants Table */}
+                  <div className="mt-6">
+
+                    <WheelVariantsTable
+                      wheelName={wheel.wheel_name}
+                      diameter={wheel.diameter}
+                      width={wheel.width}
+                      offset={wheel.wheel_offset}
+                      boltPattern={wheel.bolt_pattern}
+                      centerBore={wheel.center_bore}
+                      weight={wheel.weight}
+                      tireSize={wheel.tire_size_refs?.[0] || null}
+                      partNumbers={wheel.part_numbers}
+                      vehicles={wheel.vehicles}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
+
+
           {/* Gallery content */}
-          <TabsContent value="gallery" className="mt-6 animate-fade-in">
+          <TabsContent value="gallery" className="space-y-4">
             <GallerySection
               vehicleName={wheel.wheel_name}
               images={galleryImages}
@@ -310,15 +297,10 @@ const WheelItemPage = () => {
           </TabsContent>
 
           {/* Bad Pic content */}
-          <TabsContent value="badpic" className="mt-6 animate-fade-in">
+          <TabsContent value="badpic" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageOff className="h-5 w-5" />
-                  Reference Image (Unprocessed)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
+
                 {wheel.bad_pic_url ? (
                   <div className="space-y-4">
                     <div className="relative rounded-lg overflow-hidden bg-muted">
@@ -346,106 +328,14 @@ const WheelItemPage = () => {
           </TabsContent>
 
           {/* Comments content */}
-          <TabsContent value="comments" className="mt-6 animate-fade-in">
+          <TabsContent value="comments" className="space-y-4">
             <CommentsSection
               vehicleName={wheel.wheel_name}
               comments={comments}
             />
           </TabsContent>
-
-          {/* Market content */}
-          <TabsContent value="market" className="mt-6 animate-fade-in">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Marketplace Listings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4">
-                    {availableSizes.map((size, index) => (
-                      <Card key={index} className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{size.diameter} x {size.width}</p>
-                            <p className="text-sm text-muted-foreground">Offset: {size.offset} | {size.finish}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg">{size.price}</p>
-                            {size.inStock ? (
-                              <Badge className="bg-green-500/10 text-green-600 border-green-500/20">In Stock</Badge>
-                            ) : (
-                              <Badge variant="secondary">Out of Stock</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                    <div className="text-center py-8 text-muted-foreground">
-                      <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>More marketplace listings coming soon</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Cool Board content */}
-          <TabsContent value="coolboard" className="mt-6 animate-fade-in">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
-                    Cool Board Rankings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                          <span className="text-lg font-bold">🏆</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">Top Rated Wheel</p>
-                          <p className="text-sm text-muted-foreground">Based on community votes</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                        #1 Trending
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">92%</p>
-                        <p className="text-sm text-muted-foreground">Cool Rating</p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">1.2k</p>
-                        <p className="text-sm text-muted-foreground">Votes</p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">Top 5</p>
-                        <p className="text-sm text-muted-foreground">Category</p>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <Button className="w-full" variant="outline">
-                        View Full Cool Board →
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
+
       </div>
     </DashboardLayout>
   );

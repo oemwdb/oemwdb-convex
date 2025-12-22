@@ -57,14 +57,12 @@ const UpgradesSection: React.FC<UpgradesSectionProps> = ({ vehicleId }) => {
         const Icon = icon;
 
         return (
-            <Card className="mb-6">
-                <CardHeader>
-                    <CardTitle className={`flex items-center gap-2 text-xl ${headerColor}`}>
-                        <Icon className="h-6 w-6" />
-                        {title}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card className="mb-4">
+                <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Icon className="h-4 w-4" />
+                        <span className="font-medium">{title}</span>
+                    </div>
                     <div className="grid gap-3">
                         {sortedItems.map((item) => {
                             // Determine style based on level
@@ -77,16 +75,9 @@ const UpgradesSection: React.FC<UpgradesSectionProps> = ({ vehicleId }) => {
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <p className="font-medium text-sm text-foreground">{item.title}</p>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <Badge variant="secondary" className="text-xs capitalize">
-                                                {item.category}
-                                            </Badge>
-                                            {item.level && item.level !== 'STOCK' && (
-                                                <Badge variant="outline" className={`text-xs ${config.color} border-current opacity-75`}>
-                                                    {config.label}
-                                                </Badge>
-                                            )}
-                                        </div>
+                                        <Badge variant="secondary" className="text-xs capitalize shrink-0">
+                                            {item.category}
+                                        </Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         {item.description}

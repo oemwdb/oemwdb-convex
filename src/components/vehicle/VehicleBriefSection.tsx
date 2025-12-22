@@ -33,12 +33,9 @@ const VehicleBriefSection = ({
   productionStats
 }: VehicleBriefSectionProps) => {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3 bg-muted/30">
-        <CardTitle className="text-lg">Vehicle Overview</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <Card>
+      <CardContent className="pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Column 1: Identity & Body */}
           <div className="space-y-4">
             <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">

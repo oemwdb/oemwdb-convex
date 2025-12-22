@@ -7,6 +7,7 @@ import {
   Building2,
   Car,
   CircleDot,
+  Gauge,
   Terminal
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -56,11 +57,17 @@ const Sidebar = ({
     path: "/wheels",
     adminOnly: false
   }, {
+    icon: Gauge,
+    label: "Engines",
+    path: "/engines",
+    adminOnly: false
+  }, {
     icon: Terminal,
     label: "DEV",
     path: "/dev",
     adminOnly: true
   }];
+
 
 
 

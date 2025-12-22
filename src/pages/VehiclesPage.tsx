@@ -48,7 +48,12 @@ const VehiclesPage = () => {
     name: v.vehicle_title || v.model_name || v.chassis_code || "Unknown",
     brand: v.brand_name || "Unknown",
     wheels: 0, // We'll need to add wheel count logic later
-    image: v.vehicle_image || undefined
+    image: v.vehicle_image || undefined,
+    // Include JSONB refs for card back display
+    bolt_pattern_ref: v.bolt_pattern_ref,
+    center_bore_ref: v.center_bore_ref,
+    wheel_diameter_ref: v.wheel_diameter_ref,
+    wheel_width_ref: v.wheel_width_ref
   }));
 
   // Initialize search and parsed filters from URL params

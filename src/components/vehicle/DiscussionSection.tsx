@@ -95,6 +95,40 @@ const DiscussionSection: React.FC<DiscussionSectionProps> = ({ vehicleId }) => {
                 ))}
             </div>
 
+            {/* Comments List */}
+            <div className="space-y-4">
+                {filteredComments && filteredComments.length > 0 ? (
+                    filteredComments.map((comment) => (
+                        <Card key={comment.id}>
+                            <CardContent className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold">
+                                            U
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium">User</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <Badge variant="secondary" className={getBadgeColor(comment.tag)}>
+                                        {comment.tag}
+                                    </Badge>
+                                </div>
+                                <p className="text-sm text-foreground whitespace-pre-wrap pl-10">
+                                    {comment.comment_text}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    ))
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                        No comments found for {activeFilter}. Be the first to start the discussion!
+                    </div>
+                )}
+            </div>
 
             {/* Input Area */}
             <Card>
@@ -135,42 +169,7 @@ const DiscussionSection: React.FC<DiscussionSectionProps> = ({ vehicleId }) => {
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Comments List */}
-            <div className="space-y-4">
-                {filteredComments && filteredComments.length > 0 ? (
-                    filteredComments.map((comment) => (
-                        <Card key={comment.id}>
-                            <CardContent className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold">
-                                            U
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-medium">User</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <Badge variant="secondary" className={getBadgeColor(comment.tag)}>
-                                        {comment.tag}
-                                    </Badge>
-                                </div>
-                                <p className="text-sm text-foreground whitespace-pre-wrap pl-10">
-                                    {comment.comment_text}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ))
-                ) : (
-                    <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                        No comments found for {activeFilter}. Be the first to start the discussion!
-                    </div>
-                )}
-            </div>
-        </div >
+        </div>
     );
 };
 

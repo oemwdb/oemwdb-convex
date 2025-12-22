@@ -138,10 +138,10 @@ const BrandDetailPage = () => {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-            <TabsTrigger value="wheels">Wheels</TabsTrigger>
-            <TabsTrigger value="badpic">Bad Pic</TabsTrigger>
+          <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-card border border-border rounded-lg p-1 mb-4">
+            <TabsTrigger value="vehicles" className="flex-1 min-w-fit">Vehicles ({brandVehicles.length})</TabsTrigger>
+            <TabsTrigger value="wheels" className="flex-1 min-w-fit">Wheels ({brandWheels.length})</TabsTrigger>
+            <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
           </TabsList>
 
           {/* Vehicles Tab */}
@@ -190,11 +190,7 @@ const BrandDetailPage = () => {
           {/* Bad Pic Tab */}
           <TabsContent value="badpic">
             <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <ImageOff className="h-5 w-5" />
-                  Reference Image (Unprocessed)
-                </h3>
+              <CardContent className="pt-4">
                 {brandData?.brand_image_url ? (
                   <div className="space-y-4">
                     <div className="relative rounded-lg overflow-hidden bg-muted">
@@ -207,14 +203,11 @@ const BrandDetailPage = () => {
                         }}
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Reference image path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{brandData.brand_image_url}</code>
-                    </p>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                    <p>No reference image available for this brand</p>
+                    <p>No reference image available</p>
                   </div>
                 )}
               </CardContent>

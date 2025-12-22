@@ -11,14 +11,14 @@ import VehicleHeader from "@/components/vehicle/VehicleHeader";
 import VehicleBriefSection from "@/components/vehicle/VehicleBriefSection";
 import DiscussionSection from "@/components/vehicle/DiscussionSection";
 import GallerySection from "@/components/vehicle/GallerySection";
-import WheelsSection from "@/components/vehicle/WheelsSection";
+import WheelCard from "@/components/wheel/WheelCard";
 import MaintenanceSection from "@/components/vehicle/MaintenanceSection";
 import UpgradesSection from "@/components/vehicle/UpgradesSection";
 import VariantsSection from "@/components/vehicle/VariantsSection";
 
 const VehicleDetailPage = () => {
   const { vehicleName } = useParams<{ vehicleName: string }>();
-  const [activeTab, setActiveTab] = useState("brief");
+  const [activeTab, setActiveTab] = useState("details");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   // Fetch vehicle with related wheels from Supabase
@@ -73,35 +73,73 @@ const VehicleDetailPage = () => {
     };
   });
 
-
+  // Helper to extract values from JSONB ref arrays
+  const extractRefValues = (refArray: any[]): string[] => {
+    if (!refArray || !Array.isArray(refArray)) return [];
+    return refArray.map(item => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null) {
+        return item.value || item.raw || item.title || item.name || '';
+      }
+      return '';
+    }).filter(Boolean);
+  };
 
   return (
     <DashboardLayout title={`${vehicleDisplayName} Details`}>
-      <div className="p-4 space-y-4">
-        <VehicleHeader
-          name={vehicleDisplayName || "Unknown Vehicle"}
-          generation={vehicleData.lineage || "Current Generation"}
-          years={vehicleData.production_years || ""}
-          engines={vehicleData.engine_details ? [vehicleData.engine_details] : []}
-          drive="AWD"
-          segment={vehicleData.market_info || "Luxury"}
-          description={vehicleData.special_notes || ""}
-          msrp={vehicleData.production_stats || ""}
-        />
+      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+        {/* Grid layout with vehicle header and ad */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Vehicle Header - Takes 2 columns on large screens */}
+          <div className="lg:col-span-2">
+            <VehicleHeader
+              name={vehicleDisplayName || "Unknown Vehicle"}
+              generation={vehicleData.lineage || "Current Generation"}
+              years={vehicleData.production_years || ""}
+              engines={vehicleData.engine_details ? [
+                // Extract just the engine code from parentheses, e.g., "(N74B68)" -> "N74B68"
+                vehicleData.engine_details.match(/\(([^)]+)\)/)?.[1] || vehicleData.engine_details
+              ] : []}
+              drive="AWD"
+              segment={vehicleData.market_info || "Luxury"}
+              description={vehicleData.special_notes || ""}
+              msrp={vehicleData.production_stats || ""}
+              image={vehicleData.hero_image_url || undefined}
+              specs={{
+                bolt_pattern_ref: extractRefValues(vehicleData.bolt_pattern_ref),
+                center_bore_ref: extractRefValues(vehicleData.center_bore_ref),
+                wheel_diameter_ref: extractRefValues(vehicleData.diameter_ref),
+                wheel_width_ref: extractRefValues(vehicleData.width_ref)
+              }}
+            />
+          </div>
+
+          {/* Ad Panel */}
+          <div className="lg:col-span-1">
+            <Card className="h-full flex items-center justify-center bg-muted/30 border-dashed">
+              <CardContent className="text-center py-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                  <Layers className="h-6 w-6 text-primary/50" />
+                </div>
+                <h3 className="text-sm font-medium text-muted-foreground">Advertisement</h3>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="brief">Brief</TabsTrigger>
-            <TabsTrigger value="variants">Variants</TabsTrigger>
-            <TabsTrigger value="wheels">Wheels ({formattedWheels.length})</TabsTrigger>
-            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-            <TabsTrigger value="upgrades">Upgrades</TabsTrigger>
-            <TabsTrigger value="gallery">Gallery</TabsTrigger>
-            <TabsTrigger value="badpic">Bad Pic</TabsTrigger>
-            <TabsTrigger value="discussion">Discussion</TabsTrigger>
+          <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-card border border-border rounded-lg p-1">
+            <TabsTrigger value="details" className="flex-1 min-w-fit">Details</TabsTrigger>
+            <TabsTrigger value="variants" className="flex-1 min-w-fit">Variants</TabsTrigger>
+            <TabsTrigger value="wheels" className="flex-1 min-w-fit">Wheels ({formattedWheels.length})</TabsTrigger>
+            <TabsTrigger value="maintenance" className="flex-1 min-w-fit">Maintenance</TabsTrigger>
+            <TabsTrigger value="upgrades" className="flex-1 min-w-fit">Upgrades</TabsTrigger>
+            <TabsTrigger value="gallery" className="flex-1 min-w-fit">Gallery</TabsTrigger>
+            <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
+            <TabsTrigger value="discussion" className="flex-1 min-w-fit">Discussion</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="brief" className="space-y-6">
+          <TabsContent value="details" className="space-y-4">
             <VehicleBriefSection
               chassisCode={vehicleData.chassis_code}
               platform={vehicleData.platform || ""}
@@ -120,7 +158,7 @@ const VehicleDetailPage = () => {
 
 
 
-          <TabsContent value="variants" className="space-y-6">
+          <TabsContent value="variants" className="space-y-4">
             {vehicleData.model_name?.toLowerCase().includes("rolls") || vehicleData.formatted_name?.toLowerCase().includes("rolls") ? (
               <VariantsSection vehicleId={vehicleData.id} />
             ) : (
@@ -249,24 +287,37 @@ const VehicleDetailPage = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="wheels" className="space-y-6">
-            <WheelsSection
-              wheels={formattedWheels}
-              flippedCards={flippedCards}
-              toggleCardFlip={toggleCardFlip}
-            />
+          <TabsContent value="wheels" className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {(vehicleData.wheels || []).map((wheel: any) => (
+                <WheelCard
+                  key={wheel.id}
+                  wheel={{
+                    id: wheel.id,
+                    name: wheel.wheel_name,
+                    imageUrl: wheel.good_pic_url || wheel.bad_pic_url,
+                    diameter_ref: wheel.diameter ? [{ value: wheel.diameter }] : [],
+                    width_ref: wheel.width ? [{ value: wheel.width }] : [],
+                    bolt_pattern_ref: wheel.bolt_pattern ? [{ value: wheel.bolt_pattern }] : [],
+                    center_bore_ref: wheel.center_bore ? [{ value: wheel.center_bore }] : [],
+                  }}
+                  isFlipped={flippedCards[wheel.id] || false}
+                  onFlip={() => toggleCardFlip(wheel.id)}
+                />
+              ))}
+            </div>
           </TabsContent>
 
-          <TabsContent value="maintenance" className="space-y-6">
+          <TabsContent value="maintenance" className="space-y-4">
             <MaintenanceSection vehicleId={vehicleData.id} />
           </TabsContent>
 
-          <TabsContent value="upgrades" className="space-y-6">
+          <TabsContent value="upgrades" className="space-y-4">
             <UpgradesSection vehicleId={vehicleData.id} />
           </TabsContent>
 
 
-          <TabsContent value="gallery" className="space-y-6">
+          <TabsContent value="gallery" className="space-y-4">
             <GallerySection
               vehicleName={vehicleDisplayName || "Unknown Vehicle"}
               images={[
@@ -281,19 +332,13 @@ const VehicleDetailPage = () => {
             />
           </TabsContent>
 
-          <TabsContent value="discussion" className="space-y-6">
+          <TabsContent value="discussion" className="space-y-4">
             <DiscussionSection vehicleId={vehicleData.id} />
           </TabsContent>
 
-          <TabsContent value="badpic" className="space-y-6">
+          <TabsContent value="badpic" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageOff className="h-5 w-5" />
-                  Reference Image (Unprocessed)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {vehicleData.hero_image_url ? (
                   <div className="space-y-4">
                     <div className="relative rounded-lg overflow-hidden bg-muted">
@@ -307,12 +352,12 @@ const VehicleDetailPage = () => {
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Reference image path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{vehicleData.hero_image_url}</code>
+                      Image path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{vehicleData.hero_image_url}</code>
                     </p>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ImageOff className="h-12 w-12 mx-auto mb-3 opacity-30" />
                     <p>No reference image available</p>
                   </div>
                 )}

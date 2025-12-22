@@ -21,9 +21,7 @@ interface GallerySectionProps {
 const GallerySection = ({ vehicleName, images }: GallerySectionProps) => {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Gallery</h2>
-      <p className="text-slate-500 mb-4">Photos of {vehicleName}</p>
-      
+
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
@@ -35,11 +33,11 @@ const GallerySection = ({ vehicleName, images }: GallerySectionProps) => {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {images.map((image) => (
           <Card key={image.id} className="overflow-hidden">
-            <AspectRatio ratio={4/3}>
+            <AspectRatio ratio={4 / 3}>
               <img src={image.url} alt={image.alt} className="w-full h-full object-cover" />
             </AspectRatio>
             <CardContent className="p-3">

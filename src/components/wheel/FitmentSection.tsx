@@ -7,6 +7,10 @@ interface VehicleItem {
   brand?: string;
   wheels?: number;
   image?: string;
+  bolt_pattern_ref?: any;
+  center_bore_ref?: any;
+  wheel_diameter_ref?: any;
+  wheel_width_ref?: any;
 }
 
 interface FitmentSectionProps {
@@ -38,7 +42,11 @@ const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) 
                 name: vehicle.name,
                 brand: vehicle.brand || "Unknown",
                 wheels: vehicle.wheels || 0,
-                image: vehicle.image
+                image: vehicle.image,
+                bolt_pattern_ref: vehicle.bolt_pattern_ref,
+                center_bore_ref: vehicle.center_bore_ref,
+                wheel_diameter_ref: vehicle.wheel_diameter_ref,
+                wheel_width_ref: vehicle.wheel_width_ref,
               }}
               isFlipped={flippedCards[vehicle.name] || false}
               onFlip={toggleCardFlip}
@@ -51,3 +59,4 @@ const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) 
 };
 
 export default FitmentSection;
+
