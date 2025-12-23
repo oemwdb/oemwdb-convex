@@ -4,8 +4,12 @@ dist/
 *.log
 .DS_Store
 
-# iCloud sync conflicts (prevents duplicate files from being tracked)
-* [0-9]*
-* [0-9][0-9]*
+# iCloud sync conflicts
 *-conflict*
 *.icloud
+
+# Vite cache files
+vite.config.ts.timestamp-*.mjs
+
+# Temp import files (should never be committed)
+temp_*_import/
