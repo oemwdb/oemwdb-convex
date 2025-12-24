@@ -20,8 +20,9 @@ import VehicleCard from "@/components/vehicle/VehicleCard";
 import BrandCard from "@/components/brand/BrandCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Loader2, Plus, Package, Trash2, DollarSign, MapPin } from "lucide-react";
+import { LogOut, Loader2, Plus, Package, Trash2, DollarSign, MapPin, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -222,6 +223,34 @@ const ProfilePage = () => {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Danger Zone */}
+            <Card className="mt-6 border-destructive/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Danger Zone
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h4 className="font-medium">Delete Account</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data.
+                    </p>
+                  </div>
+                  <DeleteAccountDialog userEmail={user?.email} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Legal Links */}
+            <div className="mt-6 flex justify-center gap-4 text-sm text-muted-foreground">
+              <a href="/privacy" className="hover:underline">Privacy Policy</a>
+              <span>•</span>
+              <a href="/terms" className="hover:underline">Terms of Service</a>
             </div>
           </TabsContent>
 

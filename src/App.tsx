@@ -42,6 +42,8 @@ import ChartComparison from "./pages/ChartComparison";
 import VINDecoderPage from "./pages/VINDecoderPage";
 import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
 import GaragePage from "./pages/GaragePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 const queryClient = new QueryClient();
 
 
@@ -87,6 +89,8 @@ const App = () => (
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/chart-comparison" element={<ChartComparison />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfServicePage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
 
