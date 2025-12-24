@@ -7,12 +7,15 @@ import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import WheelCardButtons from "@/components/wheel/WheelCardButtons";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
+import { useDevMode } from "@/contexts/DevModeContext";
 
 interface WheelCardProps {
     wheel: {
         id: string;
         name: string;
         imageUrl?: string | null;
+        good_pic_url?: string | null;
+        bad_pic_url?: string | null;
         imageSource?: string | null;
         // JSONB reference fields for back of card
         diameter_ref?: any;
@@ -143,12 +146,25 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
 
     const displayName = getDisplayName();
 
+    const { isDevMode } = useDevMode();
+
     const toggleSource = () => {
         setIsSourceExpanded(!isSourceExpanded);
     };
 
-    // Get image URL
-    const imageUrl = wheel.imageUrl && wheel.imageUrl.startsWith('http') ? wheel.imageUrl : null;
+    // Calculate effective image URL based on dev mode
+    // Priority: 1. Good Pic | 2. Bad Pic (if dev mode) | 3. imageUrl (legacy)
+    let effectiveImageUrl: string | null = null;
+
+    if (wheel.good_pic_url) {
+        effectiveImageUrl = wheel.good_pic_url;
+    } else if (isDevMode && wheel.bad_pic_url) {
+        effectiveImageUrl = wheel.bad_pic_url;
+    } else {
+        effectiveImageUrl = wheel.imageUrl || null;
+    }
+
+    const imageUrl = effectiveImageUrl && effectiveImageUrl.length > 5 ? effectiveImageUrl : null;
 
     const cardContent = (
         <div

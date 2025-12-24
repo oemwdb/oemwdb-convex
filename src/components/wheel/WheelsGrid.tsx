@@ -32,7 +32,9 @@ const WheelsGrid = ({ wheels, flippedCards, onFlip }: WheelsGridProps) => {
               wheel={{
                 id: wheel.id.toString(),
                 name: wheel.wheel_name,
-                imageUrl: wheel.good_pic_url || wheel.bad_pic_url,
+                imageUrl: wheel.good_pic_url,
+                good_pic_url: wheel.good_pic_url,
+                bad_pic_url: wheel.bad_pic_url,
                 // Pass all reference fields
                 diameter_ref: wheel.diameter_ref,
                 width_ref: wheel.width_ref,

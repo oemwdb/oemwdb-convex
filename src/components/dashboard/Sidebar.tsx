@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Link, useLocation } from "react-router-dom";
 import {
   Building2,
@@ -13,6 +14,7 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDevMode } from "@/contexts/DevModeContext";
 
 interface SidebarProps {
   className?: string;
@@ -28,6 +30,7 @@ const Sidebar = ({
   const { user, role, profile } = useAuth();
   const { startNewHistory } = useNavigation();
   const location = useLocation();
+  const { isDevMode, toggleDevMode } = useDevMode();
   const isAdmin = role === 'admin';
 
   // Load expanded sections from localStorage on mount
@@ -186,16 +189,34 @@ const Sidebar = ({
       </nav>
 
       {/* Sidebar Footer - User controls and theme toggle */}
+
       <footer
-        className={cn("sidebar-footer pb-safe", collapsed ? "p-4" : "px-4 py-4")}
+        className={cn("sidebar-footer pb-safe flex flex-col gap-3", collapsed ? "p-2 items-center" : "px-4 py-4")}
         data-element="sidebar-footer"
       >
+        {/* Dev Mode Toggle (Admin Only) */}
+        {isAdmin && (
+          <div
+            className={cn(
+              "flex items-center w-full gap-3",
+              collapsed ? "justify-center flex-col gap-1" : "justify-center"
+            )}
+            title="Dev Mode"
+          >
+            <Switch
+              checked={isDevMode}
+              onCheckedChange={toggleDevMode}
+              className="data-[state=checked]:bg-yellow-500"
+            />
+          </div>
+        )}
+
         {/* Theme Toggle Wrapper */}
         <div
-          className={cn("theme-toggle-wrapper flex items-center", collapsed ? "justify-center" : "justify-start")}
+          className={cn("theme-toggle-wrapper flex items-center w-full", collapsed ? "justify-center" : "justify-start")}
           data-element="theme-toggle"
         >
-          <ThemeToggle className="justify-center" />
+          <ThemeToggle className={cn(collapsed ? "justify-center" : "justify-start w-full")} />
         </div>
       </footer>
     </aside>

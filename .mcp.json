@@ -7,7 +7,7 @@
         "@suekou/mcp-notion-server"
       ],
       "env": {
-        "NOTION_API_TOKEN": "ntn_V62415588614DljTKXbJOe8o2ZUuvymXCe0PEM1vNNgeoE",
+        "NOTION_API_TOKEN": "ntn_v62415588612NuNtbkFV65XeTNKuJedxvXY42JSUmzr7QX",
         "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
       }
     },

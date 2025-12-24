@@ -49,6 +49,6 @@ export function useSupabaseWheels() {
   return useQuery({
     queryKey: ["wheels"],
     queryFn: fetchWheels,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Force fresh data fetch to fix missing columns
   });
 }
