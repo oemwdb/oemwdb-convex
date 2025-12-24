@@ -1,1 +1,15 @@
-# All gitignores removed by user request for full env sync
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+
+# iCloud sync conflicts
+*-conflict*
+*.icloud
+
+# Vite cache files
+vite.config.ts.timestamp-*.mjs
+
+# Temp import files (should never be committed)
+temp_*_import/
