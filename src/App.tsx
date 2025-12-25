@@ -27,7 +27,7 @@ import WheelItemPage from "./pages/WheelItemPage";
 import EnginesPage from "./pages/EnginesPage";
 import EngineItemPage from "./pages/EngineItemPage";
 import DevPage from "./pages/DevPage";
-import DatabasePage from "./pages/DatabasePage";
+import TablesPage from "./pages/TablesPage";
 import DatabaseRecordPage from "./pages/DatabaseRecordPage";
 import InteractiveSiteMapPage from "./pages/InteractiveSiteMapPage";
 import MasterItemTemplatesPage from "./pages/templates/MasterItemTemplatesPage";
@@ -45,6 +45,7 @@ import ShadcnWorkshopPage from "./pages/ShadcnWorkshopPage";
 import GaragePage from "./pages/GaragePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import BucketsPage from "./pages/BucketsPage";
 const queryClient = new QueryClient();
 
 
@@ -79,8 +80,8 @@ const App = () => (
                   <Route path="/cool-board" element={<ProtectedRoute requireAdmin={true}><CoolBoardPage /></ProtectedRoute>} />
                   <Route path="/contribute" element={<ProtectedRoute requireAdmin={true}><ContributePage /></ProtectedRoute>} />
                   <Route path="/dev" element={<ProtectedRoute requireAdmin={true}><DevPage /></ProtectedRoute>} />
-                  <Route path="/dev/database" element={<ProtectedRoute requireAdmin={true}><DatabasePage /></ProtectedRoute>} />
-                  <Route path="/dev/database/:tableName/:recordId" element={<ProtectedRoute requireAdmin={true}><DatabaseRecordPage /></ProtectedRoute>} />
+                  <Route path="/dev/tables" element={<ProtectedRoute requireAdmin={true}><TablesPage /></ProtectedRoute>} />
+                  <Route path="/dev/tables/:tableName/:recordId" element={<ProtectedRoute requireAdmin={true}><DatabaseRecordPage /></ProtectedRoute>} />
                   <Route path="/dev/site-map" element={<ProtectedRoute requireAdmin={true}><InteractiveSiteMapPage /></ProtectedRoute>} />
                   <Route path="/dev/templates" element={<ProtectedRoute requireAdmin={true}><MasterItemTemplatesPage /></ProtectedRoute>} />
                   <Route path="/dev/templates/collections" element={<ProtectedRoute requireAdmin={true}><CollectionTemplatesPage /></ProtectedRoute>} />
@@ -88,6 +89,7 @@ const App = () => (
                   <Route path="/dev/vin-decoder" element={<ProtectedRoute requireAdmin={true}><VINDecoderPage /></ProtectedRoute>} />
                   <Route path="/dev/shadcn-workshop" element={<ProtectedRoute requireAdmin={true}><ShadcnWorkshopPage /></ProtectedRoute>} />
                   <Route path="/dev/garage" element={<ProtectedRoute requireAdmin={true}><GaragePage /></ProtectedRoute>} />
+                  <Route path="/dev/buckets" element={<ProtectedRoute requireAdmin={true}><BucketsPage /></ProtectedRoute>} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/chart-comparison" element={<ChartComparison />} />

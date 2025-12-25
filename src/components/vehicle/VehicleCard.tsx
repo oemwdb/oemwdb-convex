@@ -10,6 +10,7 @@ import VehicleCardButtons from "./VehicleCardButtons";
 
 interface VehicleCardProps {
   vehicle: {
+    id?: string;
     name: string;
     brand: string;
     wheels: number;
@@ -95,16 +96,8 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
     }
   }, [isFlipped]);
 
-  // Helper to remove brand name from vehicle name
-  const getDisplayName = () => {
-    if (!vehicle.brand || !vehicle.name) return vehicle.name;
-
-    // Remove brand name from the beginning of the vehicle name
-    const brandRegex = new RegExp(`^${vehicle.brand}\\s*[-–—]?\\s*`, 'i');
-    return vehicle.name.replace(brandRegex, '').trim() || vehicle.name;
-  };
-
-  const displayName = getDisplayName();
+  // Use chassis code (name) directly - no brand stripping needed for chassis codes like F55, F56
+  const displayName = vehicle.name;
 
   const toggleSource = () => {
     setIsSourceExpanded(!isSourceExpanded);
@@ -121,7 +114,7 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
     >
       {/* Front of card */}
       <Card
-        className="absolute inset-0 w-full h-full backface-hidden hover:shadow-md cursor-pointer overflow-hidden"
+        className="absolute inset-0 w-full h-full backface-hidden hover-glow cursor-pointer overflow-hidden"
       >
         <CardContent className="p-0 flex flex-col h-full">
           <div className="relative h-full w-full bg-muted flex flex-col justify-between">
@@ -304,12 +297,17 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
+
+  // Use vehicle ID for link if available, otherwise fallback to name-based slug
+  const vehicleLink = vehicle.id
+    ? `/vehicles/${encodeURIComponent(vehicle.id)}`
+    : `/vehicles/${vehicle.name.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
     <Link
-      to={`/vehicles/${vehicle.name.toLowerCase().replace(/\s+/g, '-')}`}
+      to={vehicleLink}
       className={cn("group relative block w-full perspective-1000", height)}
     >
       {cardContent}

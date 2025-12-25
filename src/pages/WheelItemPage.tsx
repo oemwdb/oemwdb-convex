@@ -68,16 +68,32 @@ const WheelItemPage = () => {
   const pageTitle = wheel.wheel_name || `Wheel #${wheelId}`;
 
   // Format compatible vehicles from vehicle_refs
-  const compatibleVehicles = (wheel.vehicles || []).map(v => ({
-    name: v.vehicle_title || v.model_name || v.chassis_code,
-    brand: v.brand_name || "Unknown",
-    wheels: 0, // Will be updated with actual wheel count later
-    image: v.hero_image_url,
-    bolt_pattern_ref: v.bolt_pattern_ref,
-    center_bore_ref: v.center_bore_ref,
-    wheel_diameter_ref: v.wheel_diameter_ref,
-    wheel_width_ref: v.wheel_width_ref,
-  }));
+  const compatibleVehicles = (wheel.vehicles || []).map(v => {
+    // Build name in "FXX: ModelName" format
+    const chassisCode = v.chassis_code || '';
+    const modelName = v.model_name || v.vehicle_title || '';
+    let displayName = '';
+
+    if (chassisCode && modelName) {
+      displayName = `${chassisCode}: ${modelName}`;
+    } else if (chassisCode) {
+      displayName = chassisCode;
+    } else {
+      displayName = modelName || 'Unknown';
+    }
+
+    return {
+      id: v.id,
+      name: displayName,
+      brand: v.brand_name || "Unknown",
+      wheels: 0,
+      image: v.hero_image_url,
+      bolt_pattern_ref: v.bolt_pattern_ref,
+      center_bore_ref: v.center_bore_ref,
+      wheel_diameter_ref: v.wheel_diameter_ref,
+      wheel_width_ref: v.wheel_width_ref,
+    };
+  });
 
 
   // Sample comments
@@ -212,10 +228,10 @@ const WheelItemPage = () => {
 
                       return variants.length > 0 ? variants : [{
                         color: 'Standard',
-                        size: `${wheel.diameter || '21"'} x ${wheel.width || '8.5J'}`,
-                        pcd: '5x120',
+                        size: `${wheel.diameter || 'N/A'} x ${wheel.width || 'N/A'}`,
+                        pcd: wheel.bolt_pattern || 'N/A',
                         partNumber: wheel.wheel_name?.replace(/\s+/g, '') || 'N/A',
-                        offset: wheel.wheel_offset || 'ET35',
+                        offset: wheel.wheel_offset || 'N/A',
                         available: true
                       }];
                     })().map((variant: any, idx: number) => (

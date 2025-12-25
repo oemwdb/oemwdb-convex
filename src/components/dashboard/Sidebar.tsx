@@ -9,7 +9,8 @@ import {
   Car,
   CircleDot,
   Gauge,
-  Terminal
+  Terminal,
+  Database
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -65,9 +66,14 @@ const Sidebar = ({
     path: "/engines",
     adminOnly: false
   }, {
+    icon: Database,
+    label: "Buckets",
+    path: "/dev/buckets",
+    adminOnly: true
+  }, {
     icon: Terminal,
-    label: "DEV",
-    path: "/dev",
+    label: "Tables",
+    path: "/dev/tables",
     adminOnly: true
   }];
 
@@ -77,7 +83,7 @@ const Sidebar = ({
   return (
     <aside
       className={cn(
-        "sidebar-container fixed left-4 top-4 bottom-4 bg-card border border-border rounded-2xl transition-all duration-300 flex flex-col z-50",
+        "sidebar-container fixed left-4 top-4 bottom-4 bg-card border border-border rounded-xl transition-all duration-300 flex flex-col z-50",
         collapsed ? "w-[56px]" : "w-[240px]",
         className
       )}
@@ -202,6 +208,7 @@ const Sidebar = ({
               collapsed ? "justify-center flex-col gap-1" : "justify-center"
             )}
             title="Dev Mode"
+            onClick={(e) => e.stopPropagation()}
           >
             <Switch
               checked={isDevMode}
@@ -215,6 +222,7 @@ const Sidebar = ({
         <div
           className={cn("theme-toggle-wrapper flex items-center w-full", collapsed ? "justify-center" : "justify-start")}
           data-element="theme-toggle"
+          onClick={(e) => e.stopPropagation()}
         >
           <ThemeToggle className={cn(collapsed ? "justify-center" : "justify-start w-full")} />
         </div>

@@ -162,7 +162,11 @@
     /* Chrome, Safari, Opera */
   }
 
-  /* Removed all neon/colored effects for pure grayscale theme */
+  /* Define hover-glow utility for interactive cards */
+  .hover-glow:hover {
+    @apply border-white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  }
 }
 
 @layer base {
@@ -199,12 +203,6 @@
     @apply text-muted-foreground transition-colors duration-200;
   }
 
-  /* Card hover effect - white outline in all modes */
-  .card:hover,
-  .theme-card:hover {
-    @apply border-white;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-  }
 
   /* Theme transition */
   html.dark {

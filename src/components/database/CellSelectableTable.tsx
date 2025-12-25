@@ -164,11 +164,14 @@ export function CellSelectableTable({
       if (tagArray.length === 0) return <span className="text-muted-foreground">—</span>;
       return (
         <div className="flex flex-wrap gap-1 py-1">
-          {tagArray.map((tag: string, idx: number) => (
-            <Badge key={`${tag}-${idx}`} variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto whitespace-nowrap">
-              {tag}
-            </Badge>
-          ))}
+          {tagArray.map((tag: any, idx: number) => {
+            const displayValue = typeof tag === 'object' ? JSON.stringify(tag) : String(tag);
+            return (
+              <Badge key={`${displayValue}-${idx}`} variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto whitespace-nowrap">
+                {displayValue}
+              </Badge>
+            );
+          })}
         </div>
       );
     }

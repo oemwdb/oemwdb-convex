@@ -1,4 +1,13 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+
+interface VehicleInfo {
+    id?: string;
+    chassis_code?: string;
+    model_name?: string;
+    vehicle_title?: string;
+}
 
 interface WheelVariantsTableProps {
     wheelName: string;
@@ -10,11 +19,7 @@ interface WheelVariantsTableProps {
     weight?: string | null;
     tireSize?: string | null;
     partNumbers?: string | null;
-    vehicles?: Array<{
-        chassis_code?: string;
-        model_name?: string;
-        vehicle_title?: string;
-    }>;
+    vehicles?: VehicleInfo[];
 }
 
 const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
@@ -36,9 +41,14 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
     const tireVal = tireSize || '—';
     const partNum = partNumbers?.split(/[,;\n]/)[0]?.trim() || '???';
 
-    const rows = vehicles.length > 0
-        ? vehicles.slice(0, 15).map(v => v.chassis_code || v.model_name || 'Universal')
-        : ['Universal'];
+    // Since all vehicles share the same wheel specs, group them into a single row
+    // Each vehicle becomes a clickable tag
+    const vehicleTags = vehicles.length > 0
+        ? vehicles.slice(0, 15).map(v => ({
+            label: v.chassis_code || v.model_name || v.vehicle_title || 'Unknown',
+            id: v.id || null
+        }))
+        : [{ label: 'Universal', id: null }];
 
     return (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -55,18 +65,39 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
                 </tr>
             </thead>
             <tbody>
-                {rows.map((model, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{model}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{specs}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{offsetVal}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{boreVal}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{boltVal}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{weightVal}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{tireVal}</td>
-                        <td style={{ padding: '8px 12px', color: '#ccc' }}>{partNum}</td>
-                    </tr>
-                ))}
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {vehicleTags.map((v, idx) => (
+                                v.id ? (
+                                    <Link key={idx} to={`/vehicles/${encodeURIComponent(v.id)}`}>
+                                        <Badge
+                                            variant="outline"
+                                            className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors text-xs py-0.5 px-2"
+                                        >
+                                            {v.label}
+                                        </Badge>
+                                    </Link>
+                                ) : (
+                                    <Badge
+                                        key={idx}
+                                        variant="outline"
+                                        className="text-xs py-0.5 px-2 opacity-60"
+                                    >
+                                        {v.label}
+                                    </Badge>
+                                )
+                            ))}
+                        </div>
+                    </td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{specs}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{offsetVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{boreVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{boltVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{weightVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{tireVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{partNum}</td>
+                </tr>
             </tbody>
         </table>
     );

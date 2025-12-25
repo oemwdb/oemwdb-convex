@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import WheelCardButtons from "@/components/wheel/WheelCardButtons";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
 import { useDevMode } from "@/contexts/DevModeContext";
+import { useStorageActions } from "@/hooks/useStorage";
 
 interface WheelCardProps {
     wheel: {
@@ -147,21 +148,30 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
     const displayName = getDisplayName();
 
     const { isDevMode } = useDevMode();
+    const { getPublicUrl } = useStorageActions();
 
     const toggleSource = () => {
         setIsSourceExpanded(!isSourceExpanded);
     };
 
     // Calculate effective image URL based on dev mode
-    // Priority: 1. Good Pic | 2. Bad Pic (if dev mode) | 3. imageUrl (legacy)
+    // Priority: 1. Good Pic | 2. Bad Pic (fallback) | 3. imageUrl (legacy)
     let effectiveImageUrl: string | null = null;
 
-    if (wheel.good_pic_url) {
+    if (wheel.good_pic_url && wheel.good_pic_url.length > 5) {
         effectiveImageUrl = wheel.good_pic_url;
-    } else if (isDevMode && wheel.bad_pic_url) {
+    } else if (isDevMode && wheel.bad_pic_url && wheel.bad_pic_url.length > 1) {
+        // STRICTLY only show bad pic if we are in Dev Mode
         effectiveImageUrl = wheel.bad_pic_url;
     } else {
         effectiveImageUrl = wheel.imageUrl || null;
+    }
+
+    // If we have an image URL but it's not absolute (http/https), assume it's a storage path
+    // This handles the "bad pics" which are just filenames like "mini-r97.webp"
+    if (effectiveImageUrl && !effectiveImageUrl.startsWith('http') && !effectiveImageUrl.startsWith('/')) {
+        effectiveImageUrl = getPublicUrl('oemwdb images', effectiveImageUrl);
+        // console.log(`Resolved Storage URL for ${wheel.name}:`, effectiveImageUrl);
     }
 
     const imageUrl = effectiveImageUrl && effectiveImageUrl.length > 5 ? effectiveImageUrl : null;
@@ -177,7 +187,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
         >
             {/* Front of card */}
             <Card
-                className="absolute inset-0 w-full h-full backface-hidden hover:shadow-md cursor-pointer overflow-hidden"
+                className="absolute inset-0 w-full h-full backface-hidden hover-glow cursor-pointer overflow-hidden"
             >
                 <CardContent className="p-0 flex flex-col h-full">
                     <div className="relative h-full w-full bg-muted flex flex-col justify-between">
@@ -339,7 +349,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 
     return (

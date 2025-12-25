@@ -93,10 +93,10 @@ const DevPage = () => {
               description="Marketplace listings"
             />
             <AppIcon
-              to="/dev"
-              icon={Terminal}
-              label="DEV"
-              description="Developer tools"
+              to="/dev/storage"
+              icon={Database}
+              label="Storage"
+              description="Manage bucket storage"
             />
             <AppIcon
               to="/dev/database"

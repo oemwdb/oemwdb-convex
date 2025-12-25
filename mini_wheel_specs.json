@@ -1,0 +1,32 @@
+{
+  "common_specs": {
+    "r_series": {
+      "bolt_pattern": ["4x100"],
+      "center_bore": ["56.1mm"],
+      "metal_type": "Aluminum Alloy"
+    },
+    "f_series": {
+      "bolt_pattern": ["5x112"],
+      "center_bore": ["56.1mm", "66.6mm"],
+      "metal_type": "Aluminum Alloy"
+    }
+  },
+  "wheels": {
+    "mini-504-vanity-spoke": {
+      "diameter_ref": ["18"],
+      "width_ref": ["7.0J"],
+      "bolt_pattern_ref": ["5x112"],
+      "center_bore_ref": ["66.6mm"],
+      "color_ref": ["Silver", "Spectre Grey", "Bicolor"],
+      "series": "f"
+    },
+    "mini-497-seven-spoke": {
+      "diameter_ref": ["17"],
+      "width_ref": ["7.0J"],
+      "bolt_pattern_ref": ["5x112"],
+      "center_bore_ref": ["56.1mm"],
+      "color_ref": ["Spectre Grey", "Bright Turned with Black"],
+      "series": "f"
+    }
+  }
+}

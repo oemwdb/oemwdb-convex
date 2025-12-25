@@ -17,6 +17,11 @@ import {
   Palette,
   Users,
 } from "lucide-react";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 const TABLES = [
   { name: "oem_brands", label: "Brands", icon: Package },
@@ -30,7 +35,7 @@ const TABLES = [
   { name: "users", label: "Users", icon: Users },
 ] as const;
 
-export default function DatabasePage() {
+export default function TablesPage() {
   const [activeTable, setActiveTable] = useState<TableName>("oem_brands");
   const { data, columns, isLoading, error, refetch } = useSupabaseTable(activeTable);
 
@@ -104,34 +109,71 @@ export default function DatabasePage() {
   const currentTableData = TABLES.find((t) => t.name === activeTable);
 
   return (
-    <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)]">
-        <div className="px-4 py-3 border-b border-border bg-background">
-          <DatabaseBreadcrumb
-            currentTable={activeTable}
-            currentTableLabel={currentTableData?.label || ""}
-            tables={TABLES.map((t) => ({ name: t.name, label: t.label }))}
-            onTableChange={(tableName) => setActiveTable(tableName as TableName)}
-          />
-        </div>
+    <DashboardLayout hideHeader={true}>
+      <div className="flex h-[calc(100vh-2rem)] flex-col my-4 mr-4 ml-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Sidebar: Table List */}
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="border-r border-border bg-muted/10">
+            <div className="flex flex-col h-full">
+              <div className="h-14 flex items-center px-4 border-b border-border bg-background/50 backdrop-blur-sm">
+                <h2 className="font-semibold text-sm">Tables</h2>
+              </div>
+              <div className="flex-1 overflow-y-auto py-2">
+                {TABLES.map((table) => {
+                  const Icon = table.icon;
+                  return (
+                    <button
+                      key={table.name}
+                      onClick={() => setActiveTable(table.name)}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${activeTable === table.name
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {table.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </ResizablePanel>
 
-        <FileListView
-          data={data}
-          columns={columns.map((col) => ({
-            id: col.key,
-            key: col.key,
-            label: col.label,
-            type: col.type as any,
-            editable: true,
-          }))}
-          tableName={activeTable}
-          isLoading={isLoading}
-          onRefetch={refetch}
-          onCellEdit={handleCellEdit}
-          onDeleteRows={handleDeleteRows}
-          onExport={handleExport}
-          onCreateRecord={handleCreateRecord}
-        />
+          <ResizableHandle withHandle />
+
+          {/* Main Content: Table View */}
+          <ResizablePanel defaultSize={80}>
+            <div className="flex flex-col h-full bg-background">
+              <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-muted/5">
+                <div className="flex items-center gap-2">
+                  <currentTableData.icon className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{currentTableData?.label}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-hidden">
+                <FileListView
+                  key={activeTable}
+                  data={data}
+                  columns={columns.map((col) => ({
+                    id: col.key,
+                    key: col.key,
+                    label: col.label,
+                    type: col.type as any,
+                    editable: true,
+                  }))}
+                  tableName={activeTable}
+                  isLoading={isLoading}
+                  onRefetch={refetch}
+                  onCellEdit={handleCellEdit}
+                  onDeleteRows={handleDeleteRows}
+                  onExport={handleExport}
+                  onCreateRecord={handleCreateRecord}
+                />
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </DashboardLayout>
   );

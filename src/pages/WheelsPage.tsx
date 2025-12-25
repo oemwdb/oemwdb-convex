@@ -357,7 +357,10 @@ const WheelsPage = () => {
           <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
             <CircleSlash2 className="h-12 w-12 mx-auto mb-4 text-destructive/50" />
             <h3 className="text-lg font-semibold text-destructive mb-2">Failed to Load Wheels</h3>
-            <p className="text-sm text-muted-foreground">Please try again later</p>
+            <p className="text-sm text-muted-foreground mb-4">Please try again later</p>
+            <p className="text-xs font-mono bg-destructive/10 p-2 rounded text-destructive text-left overflow-auto">
+              <pre>{JSON.stringify(error, null, 2)}</pre>
+            </p>
           </Card>
         ) : isLoading ? (
           <Card className="p-12 text-center bg-muted/20">

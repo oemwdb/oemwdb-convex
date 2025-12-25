@@ -139,7 +139,7 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
   const wheelBoltPatterns = extractRefValues(wheel.bolt_pattern_ref);
   const wheelCenterBores = extractRefValues(wheel.center_bore_ref);
 
-  if (wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) {
+  if ((wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) && mappedWheel.brand_name) {
     console.log("[Wheel Query] Searching vehicles by specs - Bolt Patterns:", wheelBoltPatterns, "Center Bores:", wheelCenterBores);
 
     // Fetch all vehicles and filter by spec match
@@ -164,12 +164,17 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
         const normalizedWheelCB = wheelCenterBores.map((cb: string) => cb?.toLowerCase().replace(/[mm\s]/g, ''));
 
         // Match if any bolt pattern matches AND any center bore matches
-        const boltPatternMatch = normalizedWheelBP.length === 0 ||
+        const boltPatternMatch = normalizedWheelBP.length > 0 &&
           normalizedWheelBP.some((wbp: string) => vehicleBoltPatterns.includes(wbp));
-        const centerBoreMatch = normalizedWheelCB.length === 0 ||
+        const centerBoreMatch = normalizedWheelCB.length > 0 &&
           normalizedWheelCB.some((wcb: string) => vehicleCenterBores.includes(wcb));
 
-        return boltPatternMatch && centerBoreMatch;
+        // Also check brand compatibility (loosely)
+        const vehicleBrand = getFirstString(v.brand_ref)?.toLowerCase() || '';
+        const wheelBrand = mappedWheel.brand_name?.toLowerCase() || '';
+        const brandMatch = vehicleBrand === wheelBrand;
+
+        return boltPatternMatch && centerBoreMatch && brandMatch;
       }).map((v: any) => ({
         id: v.id,
         chassis_code: v.vehicle_id_only || v.generation,

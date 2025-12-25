@@ -23,6 +23,7 @@ interface DashboardLayoutProps {
   onAddSearchTag?: (tag: string) => void;
   onRemoveSearchTag?: (tag: string) => void;
   topSuggestion?: string;
+  hideHeader?: boolean;
 }
 
 const DashboardLayout = ({
@@ -43,7 +44,8 @@ const DashboardLayout = ({
   searchTags,
   onAddSearchTag,
   onRemoveSearchTag,
-  topSuggestion
+  topSuggestion,
+  hideHeader = false
 }: DashboardLayoutProps) => {
   const [internalSidebarCollapsed, setInternalSidebarCollapsed] = useState(true);
 
@@ -62,26 +64,28 @@ const DashboardLayout = ({
     <div className="h-[100dvh] bg-background transition-colors duration-200">
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className={`h-full flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'ml-[88px]' : 'ml-[272px]'}`}>
-        <Header
-          title={title}
-          onFilterClick={onFilterClick}
-          showFilterButton={showFilterButton}
-          searchValue={searchValue}
-          onSearchChange={onSearchChange}
-          searchPlaceholder={searchPlaceholder}
-          searchDropdown={searchDropdown}
-          filterSearchDropdown={filterSearchDropdown}
-          onFilterSearchSubmit={onFilterSearchSubmit}
-          parsedFilters={parsedFilters}
-          onRemoveFilter={onRemoveFilter}
-          searchTags={searchTags}
-          onAddSearchTag={onAddSearchTag}
-          onRemoveSearchTag={onRemoveSearchTag}
-          topSuggestion={topSuggestion}
-          sidebarCollapsed={sidebarCollapsed}
-        />
-        <main className="flex-1 overflow-y-auto pt-[68px]">
-          <div className="max-w-[1920px] mx-auto">
+        {!hideHeader && (
+          <Header
+            title={title}
+            onFilterClick={onFilterClick}
+            showFilterButton={showFilterButton}
+            searchValue={searchValue}
+            onSearchChange={onSearchChange}
+            searchPlaceholder={searchPlaceholder}
+            searchDropdown={searchDropdown}
+            filterSearchDropdown={filterSearchDropdown}
+            onFilterSearchSubmit={onFilterSearchSubmit}
+            parsedFilters={parsedFilters}
+            onRemoveFilter={onRemoveFilter}
+            searchTags={searchTags}
+            onAddSearchTag={onAddSearchTag}
+            onRemoveSearchTag={onRemoveSearchTag}
+            topSuggestion={topSuggestion}
+            sidebarCollapsed={sidebarCollapsed}
+          />
+        )}
+        <main className={`flex-1 overflow-y-auto ${hideHeader ? '' : 'pt-[68px]'}`}>
+          <div className={hideHeader ? "h-full" : "max-w-[1920px] mx-auto"}>
             {children}
           </div>
         </main>

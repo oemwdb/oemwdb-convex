@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 
 interface VehicleItem {
+  id?: string;
   name: string;
   brand?: string;
   wheels?: number;
@@ -39,6 +40,7 @@ const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) 
             <VehicleCard
               key={`${vehicle.name}-${index}`}
               vehicle={{
+                id: vehicle.id,
                 name: vehicle.name,
                 brand: vehicle.brand || "Unknown",
                 wheels: vehicle.wheels || 0,
