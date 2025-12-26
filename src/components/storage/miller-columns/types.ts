@@ -10,3 +10,6 @@ export interface MillerColumn {
     path: string; // full path to this directory
     items: ColumnItem[];
 }
+
+export type ViewMode = 'list' | 'grid';
+

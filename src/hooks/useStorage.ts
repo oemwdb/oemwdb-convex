@@ -141,11 +141,113 @@ export function useStorageActions() {
         return data.publicUrl;
     };
 
+    // Helper: List all files in a folder recursively
+    const listFilesRecursively = async (bucket: string, folderPath: string): Promise<string[]> => {
+        const allFiles: string[] = [];
+
+        const { data, error } = await supabase.storage.from(bucket).list(folderPath, {
+            limit: 1000,
+        });
+
+        if (error || !data) return allFiles;
+
+        for (const item of data) {
+            const itemPath = folderPath ? `${folderPath}/${item.name}` : item.name;
+
+            // If no id, it's a folder - recurse
+            if (!item.id) {
+                const subFiles = await listFilesRecursively(bucket, itemPath);
+                allFiles.push(...subFiles);
+            } else {
+                // It's a file
+                allFiles.push(itemPath);
+            }
+        }
+
+        return allFiles;
+    };
+
+    // Helper: Create a placeholder file to keep a folder alive
+    const createFolderPlaceholder = async (bucket: string, folderPath: string) => {
+        // Create a 1x1 transparent PNG as placeholder
+        const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        const binaryString = atob(pngBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'image/png' });
+        const file = new File([blob], '.folder.png', { type: 'image/png' });
+
+        const placeholderPath = folderPath ? `${folderPath}/.folder.png` : '.folder.png';
+        await supabase.storage.from(bucket).upload(placeholderPath, file, { upsert: true });
+    };
+
+    // Move/Rename File or Folder
+    const moveFile = useMutation({
+        mutationFn: async ({ bucket, fromPath, toPath, isFolder = false, preserveSourceFolder = true }: { bucket: string, fromPath: string, toPath: string, isFolder?: boolean, preserveSourceFolder?: boolean }) => {
+            // Check if source is a folder by trying to list its contents
+            const { data: folderContents } = await supabase.storage.from(bucket).list(fromPath, { limit: 1 });
+            const sourceIsFolder = folderContents && folderContents.length > 0;
+
+            // Get the parent folder of the source item
+            const sourceParentFolder = fromPath.includes('/')
+                ? fromPath.substring(0, fromPath.lastIndexOf('/'))
+                : '';
+
+            if (sourceIsFolder || isFolder) {
+                // Move folder: need to move all files inside recursively
+                const allFiles = await listFilesRecursively(bucket, fromPath);
+
+                if (allFiles.length === 0) {
+                    throw new Error("Folder is empty or doesn't exist");
+                }
+
+                // Move each file to its new location
+                for (const filePath of allFiles) {
+                    // Calculate new path by replacing the source folder with destination
+                    const relativePath = filePath.substring(fromPath.length);
+                    const newFilePath = toPath + relativePath;
+
+                    const { error } = await supabase.storage.from(bucket).move(filePath, newFilePath);
+                    if (error) throw error;
+                }
+
+                return { message: `Moved ${allFiles.length} files`, sourceParentFolder };
+            } else {
+                // Single file move
+                const { data, error } = await supabase.storage.from(bucket).move(fromPath, toPath);
+                if (error) throw error;
+
+                // Check if moving this file would leave the source folder empty
+                if (preserveSourceFolder && sourceParentFolder) {
+                    const { data: remainingFiles } = await supabase.storage.from(bucket).list(sourceParentFolder, { limit: 2 });
+
+                    // If folder is now empty (or only has .folder.png), create a placeholder
+                    const nonPlaceholderFiles = remainingFiles?.filter(f => f.name !== '.folder.png') || [];
+                    if (nonPlaceholderFiles.length === 0) {
+                        await createFolderPlaceholder(bucket, sourceParentFolder);
+                    }
+                }
+
+                return data;
+            }
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["storage", "files", variables.bucket] });
+            toast.success("Moved successfully");
+        },
+        onError: (error: any) => {
+            toast.error(`Failed to move: ${error.message}`);
+        }
+    });
+
     return {
         createBucket,
         deleteBucket,
         uploadFile,
         deleteFile,
-        getPublicUrl
+        getPublicUrl,
+        moveFile
     };
 }
