@@ -97,12 +97,58 @@ export function useStorageActions() {
         }
     });
 
+    // Helper: Get MIME type from file extension
+    const getMimeType = (filename: string): string => {
+        const ext = filename.split('.').pop()?.toLowerCase() || '';
+        const mimeTypes: Record<string, string> = {
+            // Images
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'svg': 'image/svg+xml',
+            'ico': 'image/x-icon',
+            'bmp': 'image/bmp',
+            'tiff': 'image/tiff',
+            'tif': 'image/tiff',
+            // Documents
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls': 'application/vnd.ms-excel',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            // Text
+            'txt': 'text/plain',
+            'csv': 'text/csv',
+            'json': 'application/json',
+            'xml': 'application/xml',
+            // Media
+            'mp3': 'audio/mpeg',
+            'mp4': 'video/mp4',
+            'webm': 'video/webm',
+            'mov': 'video/quicktime',
+            // Archives
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed',
+        };
+        return mimeTypes[ext] || 'application/octet-stream';
+    };
+
     // Upload File
     const uploadFile = useMutation({
         mutationFn: async ({ bucket, path, file }: { bucket: string, path: string, file: File }) => {
             const filePath = path ? `${path}/${file.name}` : file.name;
-            const { data, error } = await supabase.storage.from(bucket).upload(filePath, file, {
-                upsert: true
+
+            // Detect and set correct MIME type
+            const mimeType = getMimeType(file.name);
+            console.log('[Upload Debug] Filename:', file.name, 'Original type:', file.type, 'Detected MIME:', mimeType);
+
+            const fileWithCorrectType = new File([file], file.name, { type: mimeType });
+
+            const { data, error } = await supabase.storage.from(bucket).upload(filePath, fileWithCorrectType, {
+                upsert: true,
+                contentType: mimeType
             });
             if (error) throw error;
             return data;
@@ -118,20 +164,88 @@ export function useStorageActions() {
         }
     });
 
-    // Delete File
+    // Helper: List all files in a folder recursively (moved up for use in deleteFile)
+    const listFilesRecursivelyForDelete = async (bucket: string, folderPath: string): Promise<string[]> => {
+        const allFiles: string[] = [];
+
+        const { data, error } = await supabase.storage.from(bucket).list(folderPath, {
+            limit: 1000,
+        });
+
+        if (error || !data) return allFiles;
+
+        for (const item of data) {
+            const itemPath = folderPath ? `${folderPath}/${item.name}` : item.name;
+
+            // If no id, it's a folder - recurse
+            if (!item.id) {
+                const subFiles = await listFilesRecursivelyForDelete(bucket, itemPath);
+                allFiles.push(...subFiles);
+            } else {
+                // It's a file
+                allFiles.push(itemPath);
+            }
+        }
+
+        return allFiles;
+    };
+
+    // Delete File or Folder
     const deleteFile = useMutation({
         mutationFn: async ({ bucket, path }: { bucket: string, path: string }) => {
-            const { data, error } = await supabase.storage.from(bucket).remove([path]);
-            if (error) throw error;
-            return data;
+            // First, check if this path is a folder (has contents)
+            const { data: folderContents } = await supabase.storage.from(bucket).list(path, { limit: 1 });
+
+            if (folderContents && folderContents.length > 0) {
+                // It's a folder - delete all files inside recursively
+                const allFiles = await listFilesRecursivelyForDelete(bucket, path);
+
+                if (allFiles.length > 0) {
+                    const { error } = await supabase.storage.from(bucket).remove(allFiles);
+                    if (error) throw error;
+                }
+
+                return { deleted: allFiles.length, type: 'folder' };
+            } else {
+                // It's a single file
+                const { data, error } = await supabase.storage.from(bucket).remove([path]);
+                if (error) throw error;
+                return data;
+            }
         },
-        onSuccess: (_, variables) => {
-            // Invalidate parent folder (we get path to file, need implementation logic to handle folder invalidation more robustly, but general refetch works)
-            queryClient.invalidateQueries({ queryKey: ["storage", "files", variables.bucket] });
-            toast.success("File deleted successfully");
+        onSuccess: (result, variables) => {
+            // Calculate the parent folder path from the file path
+            const parentPath = variables.path.includes('/')
+                ? variables.path.substring(0, variables.path.lastIndexOf('/'))
+                : '';
+
+            // Invalidate the specific parent folder query
+            queryClient.invalidateQueries({
+                queryKey: ["storage", "files", variables.bucket, parentPath],
+                refetchType: 'all'
+            });
+
+            // Invalidate root path
+            queryClient.invalidateQueries({
+                queryKey: ["storage", "files", variables.bucket, ""],
+                refetchType: 'all'
+            });
+
+            // Also invalidate all queries for this bucket to catch any stale data
+            queryClient.invalidateQueries({
+                queryKey: ["storage", "files", variables.bucket],
+                refetchType: 'all'
+            });
+
+            // Show appropriate toast
+            if (result && typeof result === 'object' && 'type' in result && result.type === 'folder') {
+                toast.success(`Folder deleted (${result.deleted} files removed)`);
+            } else {
+                toast.success("Deleted successfully");
+            }
         },
         onError: (error: any) => {
-            toast.error(`Failed to delete file: ${error.message}`);
+            toast.error(`Failed to delete: ${error.message}`);
         }
     });
 

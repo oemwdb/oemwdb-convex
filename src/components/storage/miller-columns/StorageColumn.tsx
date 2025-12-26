@@ -124,6 +124,10 @@ export function StorageColumn({
                                     selectionMode={selectionMode}
                                     onClick={() => onSelectItem(item)}
                                     onToggleSelect={handleToggleSelect}
+                                    onRename={handleRename}
+                                    onDelete={handleDelete}
+                                    onCopyUrl={handleCopyUrl}
+                                    onDownload={handleDownload}
                                     bucketName={bucketName}
                                     getPublicUrl={(itemPath) => getPublicUrl(bucketName, `${path ? path + '/' : ''}${itemPath}`)}
                                 />
