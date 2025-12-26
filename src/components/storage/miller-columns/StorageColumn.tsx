@@ -17,6 +17,7 @@ interface StorageColumnProps {
     viewMode?: ViewMode;
     selectedItems?: Set<string>;
     selectionMode?: boolean;
+    showCheckboxes?: boolean;
     onSelectItem: (item: ColumnItem) => void;
     onToggleSelect?: (itemPath: string) => void;
     onDragEnd?: (event: DragEndEvent) => void;
@@ -30,6 +31,7 @@ export function StorageColumn({
     viewMode = "list",
     selectedItems = new Set(),
     selectionMode = false,
+    showCheckboxes = false,
     onSelectItem,
     onToggleSelect
 }: StorageColumnProps) {
@@ -100,7 +102,7 @@ export function StorageColumn({
 
     return (
         <div
-            className={`w-[360px] min-w-[360px] flex-shrink-0 border-r border-border h-full flex flex-col bg-background/50 transition-colors ${isOver ? 'bg-primary/5' : ''}`}
+            className={`flex-1 min-w-[150px] flex-shrink border-r border-border h-full flex flex-col bg-background/50 transition-colors ${isOver ? 'bg-primary/5' : ''}`}
             ref={setNodeRef}
         >
             <ScrollArea className="flex-1">

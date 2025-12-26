@@ -164,11 +164,12 @@ export function StorageItem({
         }
     }, [getPublicUrl, item.name]);
 
-    return (
+    // Wrap in droppable container for folders
+    const content = (
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <div
-                    ref={setNodeRef}
+                    ref={item.kind === "folder" ? undefined : setNodeRef}
                     style={style}
                     {...(isRenaming ? {} : { ...listeners, ...attributes })}
                     onClick={handleClick}
@@ -282,4 +283,20 @@ export function StorageItem({
             </ContextMenuContent>
         </ContextMenu>
     );
+
+    // For folders, wrap in a separate droppable container
+    if (item.kind === "folder") {
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+                {...(isRenaming ? {} : { ...listeners, ...attributes })}
+                className={cn(isOver && "bg-primary/20 ring-2 ring-primary/50")}
+            >
+                {content}
+            </div>
+        );
+    }
+
+    return content;
 }

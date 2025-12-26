@@ -1,6 +1,6 @@
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, closestCenter } from "@dnd-kit/core";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { StorageColumn } from "./StorageColumn";
 import { ColumnItem, ViewMode } from "./types";
 import { Folder, FileText, Trash2, X, Copy, ExternalLink, Download } from "lucide-react";
@@ -12,16 +12,36 @@ interface MillerColumnsProps {
     bucketName: string;
     searchQuery?: string;
     viewMode?: ViewMode;
+    showCheckboxes?: boolean;
+    initialPath?: string[];
+    mirrored?: boolean;
+    onPathChange?: (path: string[]) => void;
     onMoveFile?: (fromPath: string, toPath: string) => void;
 }
 
-export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list", onMoveFile }: MillerColumnsProps) {
-    const [activePathToCheck, setActivePathToCheck] = useState<string[]>([]);
+export function MillerColumns({
+    bucketName,
+    searchQuery = "",
+    viewMode = "list",
+    showCheckboxes = false,
+    initialPath = [],
+    mirrored = false,
+    onPathChange,
+    onMoveFile
+}: MillerColumnsProps) {
+    const [activePathToCheck, setActivePathToCheck] = useState<string[]>(initialPath);
     const [activeFile, setActiveFile] = useState<ColumnItem | null>(null);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [selectionMode, setSelectionMode] = useState(false);
 
     const { getPublicUrl, deleteFile, moveFile } = useStorageActions();
+
+    // Sync path with parent when using tabs
+    useEffect(() => {
+        if (onPathChange && activePathToCheck.length > 0) {
+            onPathChange(activePathToCheck);
+        }
+    }, [activePathToCheck, onPathChange]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -31,6 +51,7 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
         })
     );
 
+    // Miller columns navigation - each folder opens a new column
     const handleSelectItem = (item: ColumnItem, depth: number) => {
         const newPath = activePathToCheck.slice(0, depth);
 
@@ -132,12 +153,16 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
         }
     };
 
+    // Build column paths for Miller columns layout
     const columnPaths = [""];
     let currentPath = "";
     for (const segment of activePathToCheck) {
         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
         columnPaths.push(currentPath);
     }
+
+    // For mirrored mode, reverse the column order
+    const displayPaths = mirrored ? [...columnPaths].reverse() : columnPaths;
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -146,13 +171,14 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
             setTimeout(() => {
                 if (scrollContainerRef.current) {
                     scrollContainerRef.current.scrollTo({
-                        left: scrollContainerRef.current.scrollWidth,
+                        // Mirrored scrolls to left (start), normal scrolls to right (end)
+                        left: mirrored ? 0 : scrollContainerRef.current.scrollWidth,
                         behavior: 'smooth'
                     });
                 }
             }, 100);
         }
-    }, [activePathToCheck, activeFile]);
+    }, [activePathToCheck, activeFile, mirrored]);
 
     // Get public URL for preview
     const getFilePublicUrl = useCallback(() => {
@@ -183,11 +209,7 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
     }, [activeFile, activePathToCheck, bucketName, deleteFile]);
 
     return (
-        <DndContext
-            sensors={sensors}
-            onDragEnd={handleDragEnd}
-            collisionDetection={closestCenter}
-        >
+        <>
             {/* Bulk action bar */}
             {selectedItems.size > 0 && (
                 <div className="h-10 bg-primary/10 border-b border-primary/20 flex items-center justify-between px-4 shrink-0">
@@ -216,12 +238,13 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
 
             <div
                 ref={scrollContainerRef}
-                className="flex h-full overflow-x-auto bg-background"
-                style={{ height: selectedItems.size > 0 ? 'calc(100% - 40px)' : '100%' }}
+                className={`flex-1 flex overflow-x-auto bg-background ${mirrored ? "justify-end" : ""}`}
             >
-                {columnPaths.map((path, index) => {
-                    const selectedSegment = activePathToCheck[index];
-                    const isLastColumn = index === columnPaths.length - 1;
+                {displayPaths.map((path, displayIndex) => {
+                    // Map display index back to actual column index
+                    const actualIndex = mirrored ? columnPaths.length - 1 - displayIndex : displayIndex;
+                    const selectedSegment = activePathToCheck[actualIndex];
+                    const isLastColumn = actualIndex === columnPaths.length - 1;
                     const selectedItemName = selectedSegment || (isLastColumn && activeFile ? activeFile.name : undefined);
 
                     return (
@@ -233,8 +256,9 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
                             searchQuery={searchQuery}
                             viewMode={viewMode}
                             selectedItems={selectedItems}
-                            selectionMode={selectionMode}
-                            onSelectItem={(item) => handleSelectItem(item, index)}
+                            selectionMode={selectionMode || showCheckboxes}
+                            showCheckboxes={showCheckboxes}
+                            onSelectItem={(item) => handleSelectItem(item, actualIndex)}
                             onToggleSelect={handleToggleSelect}
                         />
                     );
@@ -313,12 +337,6 @@ export function MillerColumns({ bucketName, searchQuery = "", viewMode = "list",
                 )}
             </div>
 
-            <DragOverlay>
-                <div className="bg-popover border shadow-lg rounded px-3 py-2 flex items-center gap-2 opacity-80">
-                    <FileText className="h-4 w-4" />
-                    <span>Move item</span>
-                </div>
-            </DragOverlay>
-        </DndContext>
+        </>
     );
 }

@@ -1,11 +1,12 @@
 
 import React, { useState, useCallback, useRef } from "react";
+import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, pointerWithin } from "@dnd-kit/core";
 import { BucketList } from "./BucketList";
 import { MillerColumns } from "./miller-columns/MillerColumns";
 import { useBuckets, useStorageActions } from "@/hooks/useStorage";
-import { Loader2, Upload, FolderPlus, RefreshCw, X, Search, LayoutGrid, LayoutList } from "lucide-react";
+import { Loader2, Upload, FolderPlus, RefreshCw, X, Search, LayoutGrid, LayoutList, CheckSquare, Folder, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ViewMode } from "./miller-columns/types";
+import { ViewMode, ColumnItem } from "./miller-columns/types";
 
 export function StorageExplorer() {
     const { data: buckets, isLoading } = useBuckets();
@@ -13,6 +14,16 @@ export function StorageExplorer() {
     const { uploadFile } = useStorageActions();
     const queryClient = useQueryClient();
     const [isDragging, setIsDragging] = useState(false);
+
+    // Dual pane state
+    const [leftPanePath, setLeftPanePath] = useState<string[]>([]);
+    const [rightPanePath, setRightPanePath] = useState<string[]>([]);
+    const [activePane, setActivePane] = useState<"left" | "right">("left");
+
+    // Resizable panes
+    const [leftPaneWidth, setLeftPaneWidth] = useState(50); // percentage
+    const [isResizing, setIsResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Create folder state
     const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -22,6 +33,42 @@ export function StorageExplorer() {
     // Search and view mode
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState<ViewMode>("list");
+    const [showCheckboxes, setShowCheckboxes] = useState(false);
+
+    // DnD for cross-pane moves
+    const [draggedItem, setDraggedItem] = useState<ColumnItem | null>(null);
+    const { moveFile } = useStorageActions();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 8 }
+        })
+    );
+
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        setDraggedItem(null);
+
+        if (!over || !selectedBucket) return;
+
+        const draggedData = active.data.current as { fullPath: string; name: string; kind: string } | undefined;
+        if (!draggedData) return;
+
+        // Get the target folder path
+        const targetPath = over.id as string;
+
+        // For root drops, clear the path
+        const fromPath = draggedData.fullPath;
+        const toPath = targetPath ? `${targetPath}/${draggedData.name}` : draggedData.name;
+
+        if (fromPath !== toPath) {
+            moveFile.mutate({
+                bucket: selectedBucket,
+                fromPath,
+                toPath
+            });
+        }
+    }, [selectedBucket, moveFile]);
 
     // Initialize selected bucket if available and none selected
     React.useEffect(() => {
@@ -95,6 +142,37 @@ export function StorageExplorer() {
         }
     }, [handleCreateFolder]);
 
+    // Pane path updates
+    const updateLeftPanePath = useCallback((path: string[]) => {
+        setLeftPanePath(path);
+    }, []);
+
+    const updateRightPanePath = useCallback((path: string[]) => {
+        setRightPanePath(path);
+    }, []);
+
+    // Resize handlers - allow panes to collapse when pushed to edges
+    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    }, []);
+
+    const handleResizeMove = useCallback((e: React.MouseEvent) => {
+        if (!isResizing || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+
+        // Snap to edges when close enough (collapse pane)
+        if (newWidth < 10) newWidth = 0;
+        else if (newWidth > 90) newWidth = 100;
+
+        setLeftPaneWidth(newWidth);
+    }, [isResizing]);
+
+    const handleResizeEnd = useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
     if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -120,18 +198,6 @@ export function StorageExplorer() {
                     </div>
                 </div>
             )}
-
-            {/* Sidebar for Buckets */}
-            <div className="w-56 border-r border-border bg-muted/10 flex flex-col">
-                <div className="p-3 border-b border-border bg-background/50 backdrop-blur-sm">
-                    <h2 className="font-semibold text-sm px-1">Buckets</h2>
-                </div>
-                <BucketList
-                    buckets={buckets || []}
-                    selectedBucket={selectedBucket}
-                    onSelect={setSelectedBucket}
-                />
-            </div>
 
             {/* Main Content for Files */}
             <div className="flex-1 flex flex-col min-w-0 bg-background">
@@ -221,6 +287,14 @@ export function StorageExplorer() {
                             >
                                 <FolderPlus className="h-3.5 w-3.5" />
                             </button>
+
+                            <button
+                                onClick={() => setShowCheckboxes(!showCheckboxes)}
+                                className={`p-1.5 rounded transition-colors ${showCheckboxes ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+                                title={showCheckboxes ? "Hide checkboxes" : "Show checkboxes"}
+                            >
+                                <CheckSquare className="h-3.5 w-3.5" />
+                            </button>
                         </div>
                     </div>
                 )}
@@ -255,13 +329,78 @@ export function StorageExplorer() {
                 )}
 
                 {selectedBucket ? (
-                    <div className="flex-1 h-full overflow-hidden">
-                        <MillerColumns
-                            bucketName={selectedBucket}
-                            searchQuery={searchQuery}
-                            viewMode={viewMode}
-                        />
-                    </div>
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={pointerWithin}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <div
+                            ref={containerRef}
+                            className="flex-1 flex overflow-hidden"
+                            onMouseMove={isResizing ? handleResizeMove : undefined}
+                            onMouseUp={isResizing ? handleResizeEnd : undefined}
+                            onMouseLeave={isResizing ? handleResizeEnd : undefined}
+                        >
+                            {/* Left Pane - hidden when collapsed */}
+                            {leftPaneWidth > 0 && (
+                                <div
+                                    className={`flex flex-col overflow-hidden ${activePane === "left" ? "ring-2 ring-primary/30 ring-inset" : ""}`}
+                                    style={{ width: leftPaneWidth === 100 ? '100%' : `${leftPaneWidth}%` }}
+                                    onClick={() => setActivePane("left")}
+                                >
+                                    <MillerColumns
+                                        key="left"
+                                        bucketName={selectedBucket}
+                                        searchQuery={searchQuery}
+                                        viewMode={viewMode}
+                                        showCheckboxes={showCheckboxes}
+                                        initialPath={leftPanePath}
+                                        onPathChange={updateLeftPanePath}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Resizable Divider */}
+                            <div
+                                className={`w-1.5 flex-shrink-0 cursor-col-resize transition-colors border-x border-border ${isResizing ? "bg-primary" : "bg-muted hover:bg-primary/50"}`}
+                                onMouseDown={handleResizeStart}
+                            />
+
+                            {/* Right Pane - hidden when collapsed */}
+                            {leftPaneWidth < 100 && (
+                                <div
+                                    className={`flex flex-col overflow-hidden ${activePane === "right" ? "ring-2 ring-primary/30 ring-inset" : ""}`}
+                                    style={{ width: leftPaneWidth === 0 ? '100%' : `${100 - leftPaneWidth}%` }}
+                                    onClick={() => setActivePane("right")}
+                                >
+                                    <MillerColumns
+                                        key="right"
+                                        bucketName={selectedBucket}
+                                        searchQuery={searchQuery}
+                                        viewMode={viewMode}
+                                        showCheckboxes={showCheckboxes}
+                                        initialPath={rightPanePath}
+                                        mirrored={true}
+                                        onPathChange={updateRightPanePath}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Drag overlay */}
+                        <DragOverlay>
+                            {draggedItem && (
+                                <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+                                    {draggedItem.kind === "folder" ? (
+                                        <Folder className="h-4 w-4 text-blue-400" />
+                                    ) : (
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                    <span className="text-sm">{draggedItem.name}</span>
+                                </div>
+                            )}
+                        </DragOverlay>
+                    </DndContext>
                 ) : (
                     <div className="flex-1 flex items-center justify-center text-muted-foreground">
                         Select a bucket to view files
