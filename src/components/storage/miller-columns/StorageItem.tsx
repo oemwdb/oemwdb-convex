@@ -15,6 +15,7 @@ import {
 interface StorageItemProps {
     item: ColumnItem;
     sourcePath: string; // Full path to this item's parent folder
+    paneId?: string;
     isActive: boolean;
     isSelected?: boolean;
     selectionMode?: boolean;
@@ -31,6 +32,7 @@ interface StorageItemProps {
 export function StorageItem({
     item,
     sourcePath,
+    paneId = "",
     isActive,
     isSelected = false,
     selectionMode = false,
@@ -46,20 +48,25 @@ export function StorageItem({
     // Full path for this item
     const fullPath = sourcePath ? `${sourcePath}/${item.name}` : item.name;
 
+    // Unique IDs with paneId prefix for cross-pane drag-drop
+    const draggableId = paneId ? `${paneId}:drag-${fullPath}` : `drag-${fullPath}`;
+    const droppableId = paneId ? `${paneId}:${fullPath}` : fullPath;
+
     // Draggable - include full path in data
     const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
-        id: `drag-${fullPath}`,
+        id: draggableId,
         data: {
             ...item,
             fullPath,
-            sourcePath
+            sourcePath,
+            paneId
         },
     });
 
     // Droppable - only folders can be drop targets
     const { setNodeRef: setDropRef, isOver } = useDroppable({
-        id: fullPath,
-        data: { path: fullPath, bucketName, isFolder: item.kind === "folder" },
+        id: droppableId,
+        data: { path: fullPath, bucketName, isFolder: item.kind === "folder", paneId },
         disabled: item.kind !== "folder",
     });
 
@@ -127,13 +134,15 @@ export function StorageItem({
     const handleClick = useCallback((e: React.MouseEvent) => {
         if (isRenaming) return;
 
-        if (selectionMode || e.metaKey || e.ctrlKey) {
+        // Only toggle selection when Cmd/Ctrl is held
+        // Checkbox mode shows checkboxes but clicking the item still navigates
+        if (e.metaKey || e.ctrlKey) {
             e.stopPropagation();
             onToggleSelect?.(item.name);
         } else {
             onClick();
         }
-    }, [isRenaming, selectionMode, onClick, onToggleSelect, item.name]);
+    }, [isRenaming, onClick, onToggleSelect, item.name]);
 
     const handleCheckboxClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();

@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useRef } from "react";
-import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, pointerWithin } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, pointerWithin, rectIntersection, CollisionDetection } from "@dnd-kit/core";
 import { BucketList } from "./BucketList";
 import { MillerColumns } from "./miller-columns/MillerColumns";
 import { useBuckets, useStorageActions } from "@/hooks/useStorage";
@@ -28,6 +28,7 @@ export function StorageExplorer() {
     // Create folder state
     const [showCreateFolder, setShowCreateFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
+    const [createFolderPath, setCreateFolderPath] = useState<string>(""); // parent path for new folder
     const folderInputRef = useRef<HTMLInputElement>(null);
 
     // Search and view mode
@@ -45,6 +46,32 @@ export function StorageExplorer() {
         })
     );
 
+    // Custom collision detection that prioritizes folder targets over column targets
+    const customCollisionDetection: CollisionDetection = useCallback((args) => {
+        // First, get all collisions using pointerWithin
+        const collisions = pointerWithin(args);
+
+        if (collisions.length === 0) {
+            // Fall back to rect intersection if pointer isn't inside any droppable
+            return rectIntersection(args);
+        }
+
+        // Prioritize folder droppables over column droppables
+        // Folder IDs contain paths like "BADPICS" or "left:BADPICS"
+        // Column IDs are like "root" or "left:root" or just paths
+        const folderCollisions = collisions.filter(collision => {
+            const data = collision.data?.droppableContainer?.data?.current;
+            return data?.isFolder === true;
+        });
+
+        // If we have folder collisions, prefer those
+        if (folderCollisions.length > 0) {
+            return folderCollisions;
+        }
+
+        return collisions;
+    }, []);
+
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
         setDraggedItem(null);
@@ -54,10 +81,11 @@ export function StorageExplorer() {
         const draggedData = active.data.current as { fullPath: string; name: string; kind: string } | undefined;
         if (!draggedData) return;
 
-        // Get the target folder path
-        const targetPath = over.id as string;
+        // Get the target folder path from data (not over.id which includes paneId prefix)
+        const overData = over.data.current as { path: string; bucketName: string; paneId?: string } | undefined;
+        const targetPath = overData?.path || "";
 
-        // For root drops, clear the path
+        // Build the destination path
         const fromPath = draggedData.fullPath;
         const toPath = targetPath ? `${targetPath}/${draggedData.name}` : draggedData.name;
 
@@ -84,6 +112,10 @@ export function StorageExplorer() {
         }
     }, [showCreateFolder]);
 
+    // Pane-specific drag states
+    const [leftPaneDragging, setLeftPaneDragging] = useState(false);
+    const [rightPaneDragging, setRightPaneDragging] = useState(false);
+
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -98,20 +130,69 @@ export function StorageExplorer() {
         }
     }, []);
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    // Left pane drop handlers
+    const handleLeftDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsDragging(false);
+        setLeftPaneDragging(true);
+    }, []);
+
+    const handleLeftDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.currentTarget === e.target) {
+            setLeftPaneDragging(false);
+        }
+    }, []);
+
+    const handleLeftDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setLeftPaneDragging(false);
 
         if (!selectedBucket) return;
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
+            const uploadPath = leftPanePath.join('/');
             Array.from(files).forEach(file => {
-                uploadFile.mutate({ bucket: selectedBucket, path: "", file });
+                // Accept all files, not just images
+                uploadFile.mutate({ bucket: selectedBucket, path: uploadPath, file });
             });
         }
-    }, [selectedBucket, uploadFile]);
+    }, [selectedBucket, uploadFile, leftPanePath]);
+
+    // Right pane drop handlers
+    const handleRightDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setRightPaneDragging(true);
+    }, []);
+
+    const handleRightDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.currentTarget === e.target) {
+            setRightPaneDragging(false);
+        }
+    }, []);
+
+    const handleRightDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setRightPaneDragging(false);
+
+        if (!selectedBucket) return;
+
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            const uploadPath = rightPanePath.join('/');
+            Array.from(files).forEach(file => {
+                // Accept all files, not just images
+                uploadFile.mutate({ bucket: selectedBucket, path: uploadPath, file });
+            });
+        }
+    }, [selectedBucket, uploadFile, rightPanePath]);
 
     const handleCreateFolder = useCallback(() => {
         if (!newFolderName.trim() || !selectedBucket) return;
@@ -125,11 +206,24 @@ export function StorageExplorer() {
             0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
         ]);
         const placeholderFile = new File([pngData], ".folder.png", { type: "image/png" });
-        uploadFile.mutate({ bucket: selectedBucket, path: newFolderName.trim(), file: placeholderFile });
+
+        // Create folder path: parentPath/folderName
+        const fullFolderPath = createFolderPath
+            ? `${createFolderPath}/${newFolderName.trim()}`
+            : newFolderName.trim();
+
+        uploadFile.mutate({ bucket: selectedBucket, path: fullFolderPath, file: placeholderFile });
 
         setNewFolderName("");
+        setCreateFolderPath("");
         setShowCreateFolder(false);
-    }, [newFolderName, selectedBucket, uploadFile]);
+    }, [newFolderName, selectedBucket, uploadFile, createFolderPath]);
+
+    // Handler for context menu "New Folder"
+    const handleContextMenuCreateFolder = useCallback((parentPath: string) => {
+        setCreateFolderPath(parentPath);
+        setShowCreateFolder(true);
+    }, []);
 
     const handleCreateFolderKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -139,6 +233,7 @@ export function StorageExplorer() {
             e.preventDefault();
             setShowCreateFolder(false);
             setNewFolderName("");
+            setCreateFolderPath("");
         }
     }, [handleCreateFolder]);
 
@@ -186,15 +281,15 @@ export function StorageExplorer() {
             className="flex h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm relative"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
         >
-            {/* Drop Zone Overlay */}
+            {/* Global drag indicator - but drops handled per-pane */}
             {isDragging && selectedBucket && (
-                <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-2 border-dashed border-primary rounded-xl flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-3 text-primary">
-                        <Upload className="h-12 w-12" />
-                        <span className="text-lg font-medium">Drop files to upload</span>
-                        <span className="text-sm text-muted-foreground">Files will be uploaded to {selectedBucket}</span>
+                <div className="absolute inset-0 z-40 pointer-events-none">
+                    <div className="h-full w-full flex items-center justify-center bg-primary/5">
+                        <div className="flex flex-col items-center gap-2 text-primary/70">
+                            <Upload className="h-8 w-8" />
+                            <span className="text-sm font-medium">Drop images in a pane to upload</span>
+                        </div>
                     </div>
                 </div>
             )}
@@ -309,7 +404,7 @@ export function StorageExplorer() {
                             value={newFolderName}
                             onChange={(e) => setNewFolderName(e.target.value)}
                             onKeyDown={handleCreateFolderKeyDown}
-                            placeholder="Enter folder name..."
+                            placeholder={createFolderPath ? `New folder in /${createFolderPath}...` : "Enter folder name..."}
                             className="flex-1 text-sm bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                         <button
@@ -320,7 +415,7 @@ export function StorageExplorer() {
                             Create
                         </button>
                         <button
-                            onClick={() => { setShowCreateFolder(false); setNewFolderName(""); }}
+                            onClick={() => { setShowCreateFolder(false); setNewFolderName(""); setCreateFolderPath(""); }}
                             className="p-1 hover:bg-muted rounded text-muted-foreground"
                         >
                             <X className="h-4 w-4" />
@@ -331,7 +426,7 @@ export function StorageExplorer() {
                 {selectedBucket ? (
                     <DndContext
                         sensors={sensors}
-                        collisionDetection={pointerWithin}
+                        collisionDetection={customCollisionDetection}
                         onDragEnd={handleDragEnd}
                     >
                         <div
@@ -344,18 +439,32 @@ export function StorageExplorer() {
                             {/* Left Pane - hidden when collapsed */}
                             {leftPaneWidth > 0 && (
                                 <div
-                                    className={`flex flex-col overflow-hidden ${activePane === "left" ? "ring-2 ring-primary/30 ring-inset" : ""}`}
+                                    className={`flex flex-col overflow-hidden relative ${activePane === "left" ? "ring-2 ring-primary/30 ring-inset" : ""} ${leftPaneDragging ? "ring-2 ring-blue-500 ring-inset" : ""}`}
                                     style={{ width: leftPaneWidth === 100 ? '100%' : `${leftPaneWidth}%` }}
                                     onClick={() => setActivePane("left")}
+                                    onDragOver={handleLeftDragOver}
+                                    onDragLeave={handleLeftDragLeave}
+                                    onDrop={handleLeftDrop}
                                 >
+                                    {/* Left pane drop indicator */}
+                                    {leftPaneDragging && (
+                                        <div className="absolute inset-0 z-50 bg-blue-500/10 flex items-center justify-center pointer-events-none">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Upload className="h-8 w-8 text-blue-500" />
+                                                <span className="text-sm font-medium text-blue-600">Drop to /{leftPanePath.join('/') || 'root'}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     <MillerColumns
                                         key="left"
+                                        paneId="left"
                                         bucketName={selectedBucket}
                                         searchQuery={searchQuery}
                                         viewMode={viewMode}
                                         showCheckboxes={showCheckboxes}
                                         initialPath={leftPanePath}
                                         onPathChange={updateLeftPanePath}
+                                        onCreateFolder={handleContextMenuCreateFolder}
                                     />
                                 </div>
                             )}
@@ -369,12 +478,25 @@ export function StorageExplorer() {
                             {/* Right Pane - hidden when collapsed */}
                             {leftPaneWidth < 100 && (
                                 <div
-                                    className={`flex flex-col overflow-hidden ${activePane === "right" ? "ring-2 ring-primary/30 ring-inset" : ""}`}
+                                    className={`flex flex-col overflow-hidden relative ${activePane === "right" ? "ring-2 ring-primary/30 ring-inset" : ""} ${rightPaneDragging ? "ring-2 ring-green-500 ring-inset" : ""}`}
                                     style={{ width: leftPaneWidth === 0 ? '100%' : `${100 - leftPaneWidth}%` }}
                                     onClick={() => setActivePane("right")}
+                                    onDragOver={handleRightDragOver}
+                                    onDragLeave={handleRightDragLeave}
+                                    onDrop={handleRightDrop}
                                 >
+                                    {/* Right pane drop indicator */}
+                                    {rightPaneDragging && (
+                                        <div className="absolute inset-0 z-50 bg-green-500/10 flex items-center justify-center pointer-events-none">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Upload className="h-8 w-8 text-green-500" />
+                                                <span className="text-sm font-medium text-green-600">Drop to /{rightPanePath.join('/') || 'root'}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     <MillerColumns
                                         key="right"
+                                        paneId="right"
                                         bucketName={selectedBucket}
                                         searchQuery={searchQuery}
                                         viewMode={viewMode}
@@ -382,6 +504,7 @@ export function StorageExplorer() {
                                         initialPath={rightPanePath}
                                         mirrored={true}
                                         onPathChange={updateRightPanePath}
+                                        onCreateFolder={handleContextMenuCreateFolder}
                                     />
                                 </div>
                             )}

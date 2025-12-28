@@ -157,21 +157,23 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
     // Calculate effective image URL based on dev mode
     // Priority: 1. Good Pic | 2. Bad Pic (fallback) | 3. imageUrl (legacy)
     let effectiveImageUrl: string | null = null;
+    let isBadPic = false;
 
-    if (wheel.good_pic_url && wheel.good_pic_url.length > 5) {
+    if (wheel.good_pic_url && wheel.good_pic_url.length > 5 && wheel.good_pic_url.startsWith('http')) {
         effectiveImageUrl = wheel.good_pic_url;
     } else if (isDevMode && wheel.bad_pic_url && wheel.bad_pic_url.length > 1) {
         // STRICTLY only show bad pic if we are in Dev Mode
         effectiveImageUrl = wheel.bad_pic_url;
-    } else {
-        effectiveImageUrl = wheel.imageUrl || null;
+        isBadPic = true;
+    } else if (wheel.imageUrl && wheel.imageUrl.length > 5) {
+        effectiveImageUrl = wheel.imageUrl;
     }
 
-    // If we have an image URL but it's not absolute (http/https), assume it's a storage path
-    // This handles the "bad pics" which are just filenames like "mini-r97.webp"
+    // If we have an image URL but it's not absolute (http/https), resolve it to storage
     if (effectiveImageUrl && !effectiveImageUrl.startsWith('http') && !effectiveImageUrl.startsWith('/')) {
-        effectiveImageUrl = getPublicUrl('oemwdb images', effectiveImageUrl);
-        // console.log(`Resolved Storage URL for ${wheel.name}:`, effectiveImageUrl);
+        // Use BADPICS bucket for bad_pic_url values, otherwise use oemwdb images
+        const bucketName = isBadPic ? 'BADPICS' : 'oemwdb images';
+        effectiveImageUrl = getPublicUrl(bucketName, effectiveImageUrl);
     }
 
     const imageUrl = effectiveImageUrl && effectiveImageUrl.length > 5 ? effectiveImageUrl : null;

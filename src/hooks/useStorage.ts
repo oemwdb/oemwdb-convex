@@ -140,10 +140,27 @@ export function useStorageActions() {
         mutationFn: async ({ bucket, path, file }: { bucket: string, path: string, file: File }) => {
             const filePath = path ? `${path}/${file.name}` : file.name;
 
-            // Detect and set correct MIME type
-            const mimeType = getMimeType(file.name);
-            console.log('[Upload Debug] Filename:', file.name, 'Original type:', file.type, 'Detected MIME:', mimeType);
+            // Determine the correct MIME type:
+            // 1. Use file.type if it's valid and not octet-stream
+            // 2. Otherwise, detect from extension
+            // 3. For images, default to image/png if we can't determine
+            let mimeType = file.type;
 
+            if (!mimeType || mimeType === 'application/octet-stream' || mimeType === '') {
+                mimeType = getMimeType(file.name);
+
+                // If still octet-stream and it looks like an image file, default to image/png
+                if (mimeType === 'application/octet-stream') {
+                    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'bmp', 'tiff', 'tif'].includes(ext)) {
+                        mimeType = 'image/png'; // Safe fallback for images
+                    }
+                }
+            }
+
+            console.log('[Upload Debug] Filename:', file.name, 'Original type:', file.type, 'Final MIME:', mimeType);
+
+            // Create a new File with the correct MIME type
             const fileWithCorrectType = new File([file], file.name, { type: mimeType });
 
             const { data, error } = await supabase.storage.from(bucket).upload(filePath, fileWithCorrectType, {

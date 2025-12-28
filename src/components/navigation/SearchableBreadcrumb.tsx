@@ -97,11 +97,11 @@ const SearchableBreadcrumb: React.FC = () => {
                 // Last item - always fully visible with primary styling
                 <span
                   className={cn(
-                    "inline-flex items-center px-2 h-9 rounded-lg font-medium whitespace-nowrap",
-                    "bg-primary/10 text-primary border border-primary/20"
+                    "inline-flex items-center px-3 h-8 rounded-full font-medium whitespace-nowrap",
+                    "bg-transparent text-foreground border border-white/20"
                   )}
                 >
-                  <Icon className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                  <Icon className="h-4 w-4 mr-2 flex-shrink-0 opacity-70" />
                   <span>{item.label}</span>
                 </span>
               ) : (

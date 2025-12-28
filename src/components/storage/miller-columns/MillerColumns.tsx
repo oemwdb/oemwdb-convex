@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 interface MillerColumnsProps {
     bucketName: string;
+    paneId?: string;
     searchQuery?: string;
     viewMode?: ViewMode;
     showCheckboxes?: boolean;
@@ -17,22 +18,34 @@ interface MillerColumnsProps {
     mirrored?: boolean;
     onPathChange?: (path: string[]) => void;
     onMoveFile?: (fromPath: string, toPath: string) => void;
+    onCreateFolder?: (parentPath: string) => void;
 }
 
 export function MillerColumns({
     bucketName,
+    paneId = "",
     searchQuery = "",
     viewMode = "list",
     showCheckboxes = false,
     initialPath = [],
     mirrored = false,
     onPathChange,
-    onMoveFile
+    onMoveFile,
+    onCreateFolder
 }: MillerColumnsProps) {
     const [activePathToCheck, setActivePathToCheck] = useState<string[]>(initialPath);
     const [activeFile, setActiveFile] = useState<ColumnItem | null>(null);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [selectionMode, setSelectionMode] = useState(false);
+
+    // Column widths (in pixels) - dynamically sized array
+    const [columnWidths, setColumnWidths] = useState<number[]>([]);
+    const [resizingIndex, setResizingIndex] = useState<number | null>(null);
+    const [startX, setStartX] = useState(0);
+    const [startWidth, setStartWidth] = useState(0);
+    const DEFAULT_COLUMN_WIDTH = 220;
+    const MIN_COLUMN_WIDTH = 120;
+    const MAX_COLUMN_WIDTH = 500;
 
     const { getPublicUrl, deleteFile, moveFile } = useStorageActions();
 
@@ -42,6 +55,58 @@ export function MillerColumns({
             onPathChange(activePathToCheck);
         }
     }, [activePathToCheck, onPathChange]);
+
+    // Initialize/update column widths when path changes
+    useEffect(() => {
+        const numColumns = activePathToCheck.length + 1; // +1 for root column
+        setColumnWidths(prev => {
+            if (prev.length < numColumns) {
+                // Add new columns with default width
+                return [...prev, ...Array(numColumns - prev.length).fill(DEFAULT_COLUMN_WIDTH)];
+            } else if (prev.length > numColumns) {
+                // Trim excess columns
+                return prev.slice(0, numColumns);
+            }
+            return prev;
+        });
+    }, [activePathToCheck.length, DEFAULT_COLUMN_WIDTH]);
+
+    // Column resize handlers
+    const handleResizeStart = useCallback((index: number, e: React.MouseEvent) => {
+        e.preventDefault();
+        setResizingIndex(index);
+        setStartX(e.clientX);
+        setStartWidth(columnWidths[index] || DEFAULT_COLUMN_WIDTH);
+    }, [columnWidths, DEFAULT_COLUMN_WIDTH]);
+
+    const handleResizeMove = useCallback((e: MouseEvent) => {
+        if (resizingIndex === null) return;
+
+        const delta = mirrored ? startX - e.clientX : e.clientX - startX;
+        const newWidth = Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, startWidth + delta));
+
+        setColumnWidths(prev => {
+            const updated = [...prev];
+            updated[resizingIndex] = newWidth;
+            return updated;
+        });
+    }, [resizingIndex, startX, startWidth, mirrored, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH]);
+
+    const handleResizeEnd = useCallback(() => {
+        setResizingIndex(null);
+    }, []);
+
+    // Attach global mouse listeners when resizing
+    useEffect(() => {
+        if (resizingIndex !== null) {
+            window.addEventListener('mousemove', handleResizeMove);
+            window.addEventListener('mouseup', handleResizeEnd);
+            return () => {
+                window.removeEventListener('mousemove', handleResizeMove);
+                window.removeEventListener('mouseup', handleResizeEnd);
+            };
+        }
+    }, [resizingIndex, handleResizeMove, handleResizeEnd]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -246,21 +311,34 @@ export function MillerColumns({
                     const selectedSegment = activePathToCheck[actualIndex];
                     const isLastColumn = actualIndex === columnPaths.length - 1;
                     const selectedItemName = selectedSegment || (isLastColumn && activeFile ? activeFile.name : undefined);
+                    const columnWidth = columnWidths[actualIndex] || DEFAULT_COLUMN_WIDTH;
 
                     return (
-                        <StorageColumn
-                            key={path || "root"}
-                            bucketName={bucketName}
-                            path={path}
-                            activeItemName={selectedItemName}
-                            searchQuery={searchQuery}
-                            viewMode={viewMode}
-                            selectedItems={selectedItems}
-                            selectionMode={selectionMode || showCheckboxes}
-                            showCheckboxes={showCheckboxes}
-                            onSelectItem={(item) => handleSelectItem(item, actualIndex)}
-                            onToggleSelect={handleToggleSelect}
-                        />
+                        <div key={path || "root"} className="flex h-full flex-shrink-0">
+                            <div style={{ width: columnWidth }} className="h-full">
+                                <StorageColumn
+                                    bucketName={bucketName}
+                                    path={path}
+                                    paneId={paneId}
+                                    activeItemName={selectedItemName}
+                                    searchQuery={searchQuery}
+                                    viewMode={viewMode}
+                                    selectedItems={selectedItems}
+                                    selectionMode={selectionMode || showCheckboxes}
+                                    showCheckboxes={showCheckboxes}
+                                    onSelectItem={(item) => handleSelectItem(item, actualIndex)}
+                                    onToggleSelect={handleToggleSelect}
+                                    onCreateFolder={onCreateFolder}
+                                />
+                            </div>
+                            {/* Resize handle - visible between columns */}
+                            {!isLastColumn && (
+                                <div
+                                    className={`w-1 flex-shrink-0 cursor-col-resize transition-colors border-r border-border ${resizingIndex === actualIndex ? 'bg-primary' : 'bg-transparent hover:bg-primary/50'}`}
+                                    onMouseDown={(e) => handleResizeStart(actualIndex, e)}
+                                />
+                            )}
+                        </div>
                     );
                 })}
 

@@ -1,17 +1,19 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
-import { useWheelImageLoader } from "@/components/vehicle/hooks/useWheelImageLoader";
+import { useDevMode } from "@/contexts/DevModeContext";
 
 interface WheelHeaderProps {
   name: string;
   brand: string;
   price: string;
   description: string;
-  image?: string;
+  goodPicUrl?: string | null;  // Primary image (shown to everyone)
+  badPicUrl?: string | null;   // Fallback image (admin only when good pic is empty)
+  image?: string;              // Legacy prop for backwards compatibility
   specs: {
     diameter_refs: string[];
     width_ref: string[];
@@ -24,8 +26,33 @@ interface WheelHeaderProps {
   compact?: boolean;
 }
 
-const WheelHeader = ({ name, brand, price, description, image, specs, compact = false }: WheelHeaderProps) => {
-  const { imageUrl, handleImageError } = useWheelImageLoader(image);
+const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, image, specs, compact = false }: WheelHeaderProps) => {
+  const { isDevMode } = useDevMode();
+  const [imageError, setImageError] = useState(false);
+
+  // Determine final image URL based on logic:
+  // 1. Always try good_pic_url first
+  // 2. If good_pic_url is empty AND user is admin (devMode), show bad_pic_url
+  // 3. If not admin, show nothing when good_pic_url is empty
+  // Legacy 'image' prop is used if new props aren't provided
+  let effectiveImageUrl: string | null = null;
+
+  if (goodPicUrl && goodPicUrl.length > 5 && goodPicUrl.startsWith('http')) {
+    effectiveImageUrl = goodPicUrl;
+  } else if (isDevMode && badPicUrl && badPicUrl.length > 5 && badPicUrl.startsWith('http')) {
+    effectiveImageUrl = badPicUrl;
+  } else if (image && image.startsWith('http') && !image.includes('placeholder')) {
+    // Legacy fallback
+    effectiveImageUrl = image;
+  }
+
+  // Reset error when URL changes
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const finalImageUrl = !imageError ? effectiveImageUrl : null;
+
   return (
     <Card className="overflow-hidden animate-fade-in">
       <CardContent className="p-4">
@@ -33,16 +60,16 @@ const WheelHeader = ({ name, brand, price, description, image, specs, compact = 
           {/* Wheel image - larger and prominent */}
           <div className="flex-shrink-0 w-48 md:w-56">
             <AspectRatio ratio={1} className="overflow-hidden rounded-lg bg-muted group">
-              {imageUrl ? (
-                <img 
-                  src={imageUrl} 
+              {finalImageUrl ? (
+                <img
+                  src={finalImageUrl}
                   alt={name}
                   className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   onError={handleImageError}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-muted-foreground text-center text-xs px-2">{name}</span>
+                  <span className="text-muted-foreground text-center text-xs px-2">No image available</span>
                 </div>
               )}
             </AspectRatio>

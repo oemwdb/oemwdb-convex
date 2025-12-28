@@ -146,7 +146,8 @@ const WheelItemPage = () => {
               brand={wheel.brand_name || "Unknown Brand"}
               price="$249.99"
               description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
-              image={wheel.good_pic_url || wheel.bad_pic_url || "/placeholder.svg"}
+              goodPicUrl={wheel.good_pic_url}
+              badPicUrl={wheel.bad_pic_url}
               specs={wheelSpecs}
             />
           </div>

@@ -1,21 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Package, Car, CircleEllipsis, Copy, LogOut } from "lucide-react";
+import { Search, X, Filter, Copy, LogOut, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchableBreadcrumb from "@/components/navigation/SearchableBreadcrumb";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import type { CollectionType } from '@/components/search/CollectionCarouselSelector';
 import type { ParsedFilters } from '@/utils/filterParser';
 
 interface HeaderProps {
@@ -36,10 +26,10 @@ interface HeaderProps {
   onRemoveSearchTag?: (tag: string) => void;
   topSuggestion?: string;
   sidebarCollapsed?: boolean;
+  onSidebarToggle?: () => void;
 }
 
 const Header = ({
-  title = "Overview",
   onFilterClick,
   showFilterButton = true,
   searchValue = '',
@@ -53,65 +43,23 @@ const Header = ({
   onRemoveFilter,
   searchTags = [],
   onAddSearchTag,
-  onRemoveSearchTag,
   topSuggestion = "",
-  sidebarCollapsed = true
+  sidebarCollapsed = true,
+  onSidebarToggle
 }: HeaderProps) => {
-  const [isTextOverflowing, setIsTextOverflowing] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<CollectionType>('all');
   const [tempSearchValue, setTempSearchValue] = useState("");
   const [ghostSuggestion, setGhostSuggestion] = useState("");
-  const [searchBarWidth, setSearchBarWidth] = useState(0);
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
-  const { user, signOut, profile, role } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine if we're on a collection page
-  const collectionPages = {
-    '/brands': 'brands',
-    '/vehicles': 'vehicles',
-    '/wheels': 'wheels'
-  };
-  const currentCollection = collectionPages[location.pathname as keyof typeof collectionPages];
-  const isCollectionPage = !!currentCollection;
+  const hasActiveTags = Object.values(parsedFilters).some(arr => arr && arr.length > 0);
+  const totalTagCount = Object.values(parsedFilters).reduce((sum, arr) => sum + (arr?.length || 0), 0);
 
-  // Check if there are any active tags/filters
-  const hasActiveTags =
-    Object.values(parsedFilters).some(arr => arr && arr.length > 0);
-
-  // Count total tags for "+N more" indicator
-  const totalTagCount =
-    Object.values(parsedFilters).reduce((sum, arr) => sum + (arr?.length || 0), 0);
-
-  // Get dynamic placeholder based on selected collection
-  const getSearchPlaceholder = () => {
-    if (isCollectionPage) {
-      return searchPlaceholder;
-    }
-    switch (selectedCollection) {
-      case 'brands':
-        return 'Search brands...';
-      case 'vehicles':
-        return 'Search vehicles...';
-      case 'wheels':
-        return 'Search wheels...';
-      default:
-        return 'Search across all collections...';
-    }
-  };
-
-  useEffect(() => {
-    if (titleRef.current) {
-      setIsTextOverflowing(titleRef.current.scrollWidth > titleRef.current.clientWidth);
-    }
-  }, [title]);
+  const collectionPages = { '/brands': 'brands', '/vehicles': 'vehicles', '/wheels': 'wheels' };
+  const isCollectionPage = !!collectionPages[location.pathname as keyof typeof collectionPages];
 
   useEffect(() => {
     if (isSearchExpanded && searchInputRef.current) {
@@ -119,109 +67,33 @@ const Header = ({
     }
   }, [isSearchExpanded]);
 
-  // Track search bar width for dropdown alignment
-  useEffect(() => {
-    const updateWidth = () => {
-      if (searchContainerRef.current) {
-        setSearchBarWidth(searchContainerRef.current.offsetWidth);
-      }
-    };
-
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-
-    const resizeObserver = new ResizeObserver(updateWidth);
-    if (searchContainerRef.current) {
-      resizeObserver.observe(searchContainerRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('resize', updateWidth);
-      resizeObserver.disconnect();
-    };
-  }, [isSearchExpanded]);
-
-  const toggleSearch = () => {
-    const newExpandedState = !isSearchExpanded;
-
-    if (newExpandedState) {
-      // Only expand search bar
-      setIsSearchExpanded(true);
-    } else {
-      // Only collapse search bar
-      setTempSearchValue("");
-      setIsSearchExpanded(false);
-    }
-  };
-
-  // Helper to detect if input is a spec pattern
   const isSpecPattern = (text: string): boolean => {
     const patterns = [
-      /^\d+(\.\d+)?\s*(inch|"|in)$/i,  // diameter: "20 inch", "20\"", "20 in"
-      /^\d+(\.\d+)?J?$/,                // width: "9.5", "9.5J"
-      /^\d+x\d+(\.\d+)?$/,              // bolt pattern: "5x120"
-      /^\d+(\.\d+)?\s*mm$/i,            // center bore: "66.6mm"
-      /^(black|silver|chrome|gunmetal|bronze|gold|white|grey|gray|red|blue|green|yellow|orange|purple|pink)$/i // colors
+      /^\d+(\.\d+)?\s*(inch|"|in)$/i,
+      /^\d+(\.\d+)?J?$/,
+      /^\d+x\d+(\.\d+)?$/,
+      /^\d+(\.\d+)?\s*mm$/i,
+      /^(black|silver|chrome|gunmetal|bronze|gold|white|grey|gray)$/i
     ];
     return patterns.some(pattern => pattern.test(text.trim()));
-  };
-
-  const handleSearchSubmit = () => {
-    const searchQuery = isCollectionPage ? searchValue : tempSearchValue;
-    if (searchQuery) {
-      if (isCollectionPage) {
-        // Stay on collection page with search
-        onSearchChange?.(searchQuery);
-      } else {
-        // Navigate to home page with search params and selected collection
-        const collection = selectedCollection === 'all' ? '' : selectedCollection;
-        const params = new URLSearchParams();
-        params.set('search', searchQuery);
-        if (collection) params.set('collection', collection);
-        navigate(`/?${params.toString()}`);
-        setIsSearchExpanded(false);
-      }
-    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tempSearchValue.trim()) {
       const input = tempSearchValue.trim();
-
-      // On collection pages (wheels, vehicles), use smart categorization
-      if (location.pathname === '/wheels' || location.pathname === '/vehicles') {
-        // Split by comma to handle multiple tags at once
+      if (isCollectionPage) {
         const tags = input.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-
         tags.forEach(tag => {
           if (isSpecPattern(tag)) {
-            // It's a spec filter - route to filter handler
             onFilterSearchSubmit?.(tag);
           } else {
-            // It's a general search term - add as search tag
             onAddSearchTag?.(tag);
           }
         });
-
         setTempSearchValue("");
         setGhostSuggestion("");
       } else {
-        // On other pages, use traditional search
         onSearchChange?.(tempSearchValue);
-      }
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Accept suggestion with Tab or Right Arrow (when cursor is at end)
-    if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghostSuggestion) {
-      const input = e.currentTarget;
-      const cursorAtEnd = input.selectionStart === tempSearchValue.length;
-
-      if (e.key === 'Tab' || (e.key === 'ArrowRight' && cursorAtEnd)) {
-        e.preventDefault();
-        setTempSearchValue(ghostSuggestion);
-        setGhostSuggestion("");
       }
     }
   };
@@ -230,23 +102,11 @@ const Header = ({
     const value = e.target.value;
     setTempSearchValue(value);
 
-    // Update ghost suggestion from dropdown or matched tags
-    if (value && value.length >= 2) {
-      // Priority 1: Use topSuggestion from dropdown if available
-      if (topSuggestion && topSuggestion.toLowerCase().startsWith(value.toLowerCase()) && topSuggestion.toLowerCase() !== value.toLowerCase()) {
+    if (value && value.length >= 2 && topSuggestion) {
+      if (topSuggestion.toLowerCase().startsWith(value.toLowerCase())) {
         setGhostSuggestion(topSuggestion);
-      }
-      // Priority 2: Search through existing search tags
-      else {
-        const inputLower = value.toLowerCase();
-        const tagMatch = searchTags.find(tag =>
-          tag.toLowerCase().startsWith(inputLower) && tag.toLowerCase() !== inputLower
-        );
-        if (tagMatch) {
-          setGhostSuggestion(tagMatch);
-        } else {
-          setGhostSuggestion("");
-        }
+      } else {
+        setGhostSuggestion("");
       }
     } else {
       setGhostSuggestion("");
@@ -254,236 +114,164 @@ const Header = ({
   };
 
   return (
-    <header className={cn("fixed top-4 right-0 z-40 pointer-events-none", sidebarCollapsed ? "left-[88px]" : "left-[272px]", className)}>
-      <div className="relative">
-        <div className="flex items-start pl-0 pr-4 relative pointer-events-auto">
-          {/* Breadcrumb navigation */}
-          <div className={cn(
-            "transition-all duration-300 ease-out whitespace-nowrap overflow-hidden",
-            isSearchExpanded
-              ? "w-auto flex-shrink-0 mr-3"
-              : hasActiveTags
-                ? "flex-1 mr-4"
-                : "flex-1 mr-4"
-          )}>
-            <SearchableBreadcrumb />
-          </div>
-
-          {/* Unified Search Bar */}
-          <div
-            ref={searchContainerRef}
-            className={cn(
-              "flex items-center transition-all duration-300 ease-out search-container",
-              isSearchExpanded
-                ? "flex-1 mr-2"
-                : hasActiveTags
-                  ? "w-auto ml-auto mr-2"
-                  : "w-9 ml-auto mr-2"
-            )}
+    <header className={cn(
+      "h-12 flex items-center border-b border-border bg-sidebar px-4 gap-4 flex-shrink-0",
+      className
+    )}>
+      {/* Breadcrumb */}
+      <div className="flex-1 min-w-0 overflow-hidden flex items-center">
+        {/* Sidebar Toggle */}
+        {sidebarCollapsed && onSidebarToggle && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-accent mr-2 shrink-0"
+            onClick={onSidebarToggle}
+            title="Expand Menu"
           >
-            {isSearchExpanded ? (
-              <div className="flex items-center border border-border rounded-md bg-card w-full h-9 hover:border-muted-foreground/50 focus-within:border-muted-foreground transition-colors duration-200">
-                <Search className="ml-3 text-muted-foreground flex-shrink-0" size={16} />
+            <PanelLeftOpen className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        )}
 
-                {/* Search input container with ghost text overlay */}
-                <div className="relative flex-1 min-w-[100px]">
-                  {/* Ghost suggestion overlay */}
-                  {ghostSuggestion && tempSearchValue && (
-                    <div
-                      className="absolute inset-0 flex items-center px-3 pointer-events-none"
-                      style={{ zIndex: 0 }}
-                    >
-                      <span className="text-sm opacity-0 select-none">{tempSearchValue}</span>
-                      <span className="text-sm text-muted-foreground/40 select-none">
-                        {ghostSuggestion.slice(tempSearchValue.length)}
-                      </span>
-                    </div>
-                  )}
+        <SearchableBreadcrumb />
+      </div>
 
-                  {/* Actual input */}
-                  <Input
-                    ref={searchInputRef}
-                    placeholder={
-                      searchTags.length === 0 && Object.keys(parsedFilters).length === 0
-                        ? getSearchPlaceholder()
-                        : "Add more..."
-                    }
-                    className="h-9 flex-1 min-w-[100px] text-sm border-0 bg-transparent focus:ring-0 focus:outline-none px-3 relative z-10"
-                    value={tempSearchValue}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    onKeyPress={handleKeyPress}
-                    onBlur={(e) => {
-                      const relatedTarget = e.relatedTarget as HTMLElement;
-                      const isClickingDropdown = relatedTarget?.closest('[data-filter-dropdown]');
-                      const isClickingBreadcrumb = relatedTarget?.closest('[data-breadcrumb-popover]') || relatedTarget?.closest('[data-breadcrumb-popover-trigger]');
-                      const isClickingSearchContainer = relatedTarget?.closest('.search-container');
-                      const isClickingFilterButton = relatedTarget?.closest('[data-filter-button]');
-
-                      // Only auto-collapse if:
-                      // 1. Input is empty
-                      // 2. No active filter tags exist
-                      // 3. Not clicking on any related UI elements
-                      if (!tempSearchValue &&
-                        !hasActiveTags &&
-                        !isClickingBreadcrumb &&
-                        !isClickingSearchContainer &&
-                        !isClickingFilterButton &&
-                        !isClickingDropdown) {
-                        setTimeout(() => setIsSearchExpanded(false), 200);
-                      }
-                    }}
-                    data-search-input
-                  />
-                </div>
-
-                {/* Filter tags display */}
-                <div className="flex items-center gap-1 px-2 py-2 flex-wrap min-w-0 max-w-[500px]">
-                  {/* Filter tags (spec-based) */}
-                  {Object.entries(parsedFilters).map(([category, values]) =>
-                    values?.map((value, index) => (
-                      <span
-                        key={`${category}-${index}`}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-xs font-medium whitespace-nowrap"
-                      >
-                        {value}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveFilter?.(category as keyof ParsedFilters, value);
-                          }}
-                          className="hover:text-primary/70 transition-colors"
-                          aria-label={`Remove ${value} filter`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 flex-shrink-0 hover:bg-transparent"
-                  onClick={toggleSearch}
-                >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-                </Button>
-              </div>
-            ) : hasActiveTags ? (
-              // COMPRESSED STATE WITH TAGS
-              <button
-                onClick={() => {
-                  // Only expand search bar
-                  setIsSearchExpanded(true);
-                }}
-                className="flex items-center gap-1 px-2 h-9 border border-border rounded-md bg-card hover:border-muted-foreground/50 transition-colors duration-200 cursor-pointer"
-                data-filter-button
-              >
-                <Search className="text-muted-foreground flex-shrink-0" size={14} />
-
-                {/* Show compressed filter tags */}
-                <div className="flex items-center gap-1 max-w-[400px] overflow-hidden">
-                  {/* Filter tags */}
-                  {Object.entries(parsedFilters).flatMap(([category, values]) =>
-                    values?.slice(0, 3).map((value, index) => (
-                      <span
-                        key={`${category}-${index}`}
-                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium whitespace-nowrap"
-                      >
-                        {value}
-                      </span>
-                    ))
-                  )}
-
-                  {/* Show +N more if there are additional tags */}
-                  {totalTagCount > 3 && (
-                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
-                      +{totalTagCount - 3}
-                    </span>
-                  )}
-                </div>
-              </button>
-            ) : (
-              // COLLAPSED STATE WITHOUT TAGS
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-card hover:border hover:border-border rounded-lg"
-                onClick={toggleSearch}
-                data-filter-button
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
-
-          {/* Right buttons section - Context actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Profile page - Logout button */}
-            {location.pathname === '/profile' ? (
-              <Button
-                variant="ghost"
-                className={cn(
-                  "h-9 transition-all duration-300 rounded-lg overflow-hidden",
-                  "bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground",
-                  "border border-destructive/20 hover:border-destructive",
-                  "group"
-                )}
-                onClick={async () => {
-                  await signOut();
-                  navigate('/');
-                }}
-                onMouseEnter={() => setIsProfileExpanded(true)}
-                onMouseLeave={() => setIsProfileExpanded(false)}
-                style={{ width: isProfileExpanded ? '110px' : '36px' }}
-              >
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <LogOut className="h-5 w-5 flex-shrink-0" />
-                  <span
-                    className={cn(
-                      "text-sm font-medium transition-all duration-300 overflow-hidden",
-                      isProfileExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                    )}
-                  >
-                    Logout
+      {/* Search */}
+      <div className="flex items-center">
+        {isSearchExpanded ? (
+          <div className="flex items-center h-8 border border-border rounded-full bg-card hover:border-muted-foreground/30 focus-within:border-muted-foreground/50 transition-colors w-[300px]">
+            <Search className="ml-3 text-muted-foreground flex-shrink-0" size={14} />
+            <div className="relative flex-1">
+              {ghostSuggestion && tempSearchValue && (
+                <div className="absolute inset-0 flex items-center px-2 pointer-events-none">
+                  <span className="text-sm opacity-0">{tempSearchValue}</span>
+                  <span className="text-sm text-muted-foreground/40">
+                    {ghostSuggestion.slice(tempSearchValue.length)}
                   </span>
                 </div>
-              </Button>
-            ) : showFilterButton ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
-                onClick={onFilterClick}
-                data-filter-button
-              >
-                <Filter className="h-5 w-5" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 transition-all duration-200 hover:bg-card hover:border hover:border-border rounded-lg"
-                onClick={() => {
-                  // TODO: Implement copy YAML functionality
-                  console.log('Copy YAML clicked');
+              )}
+              <Input
+                ref={searchInputRef}
+                placeholder={searchPlaceholder}
+                className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 px-2"
+                value={tempSearchValue}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                onBlur={() => {
+                  if (!tempSearchValue && !hasActiveTags) {
+                    setTimeout(() => setIsSearchExpanded(false), 150);
+                  }
                 }}
-              >
-                <Copy className="h-5 w-5" />
-              </Button>
+              />
+            </div>
+            {/* Tags */}
+            {hasActiveTags && (
+              <div className="flex items-center gap-1 px-2">
+                {Object.entries(parsedFilters).flatMap(([category, values]) =>
+                  values?.slice(0, 2).map((value, index) => (
+                    <span
+                      key={`${category}-${index}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-transparent text-foreground text-xs"
+                    >
+                      {value}
+                      <button
+                        onClick={() => onRemoveFilter?.(category as keyof ParsedFilters, value)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))
+                )}
+                {totalTagCount > 2 && (
+                  <span className="text-xs text-muted-foreground">+{totalTagCount - 2}</span>
+                )}
+              </div>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-transparent"
+              onClick={() => {
+                setTempSearchValue("");
+                setIsSearchExpanded(false);
+              }}
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
-        </div>
-
-        {/* Unified dropdown - aligned with page content */}
-        {(searchDropdown || filterSearchDropdown) && (
-          <div className="w-full mt-2 pl-0 pr-4">
-            {filterSearchDropdown || searchDropdown}
-          </div>
+        ) : hasActiveTags ? (
+          <button
+            onClick={() => setIsSearchExpanded(true)}
+            className="flex items-center gap-2 h-8 px-3 border border-border rounded-full bg-card hover:border-muted-foreground/30"
+          >
+            <Search size={14} className="text-muted-foreground" />
+            {Object.entries(parsedFilters).flatMap(([category, values]) =>
+              values?.slice(0, 2).map((value, index) => (
+                <span
+                  key={`${category}-${index}`}
+                  className="px-2 py-0.5 rounded-full border border-white/20 bg-transparent text-foreground text-[10px]"
+                >
+                  {value}
+                </span>
+              ))
+            )}
+            {totalTagCount > 2 && (
+              <span className="text-[10px] text-muted-foreground">+{totalTagCount - 2}</span>
+            )}
+          </button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-accent"
+            onClick={() => setIsSearchExpanded(true)}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
         )}
       </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1">
+        {location.pathname === '/profile' ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+            onClick={async () => {
+              await signOut();
+              navigate('/');
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        ) : showFilterButton ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-accent"
+            onClick={onFilterClick}
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-accent"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Dropdown */}
+      {(searchDropdown || filterSearchDropdown) && (
+        <div className="absolute top-12 left-0 right-0 px-4 z-50">
+          {filterSearchDropdown || searchDropdown}
+        </div>
+      )}
     </header>
   );
 };
