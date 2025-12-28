@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -53,15 +54,27 @@ const DashboardLayout = ({
   secondarySidebar,
   secondaryTitle
 }: DashboardLayoutProps) => {
-  const [showSecondary, setShowSecondary] = useState(true);
+  const location = useLocation();
+  const [showSecondary, setShowSecondary] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
+
+  // Collapse secondary sidebar on route change
+  useEffect(() => {
+    setShowSecondary(false);
+  }, [location.pathname]);
 
   // Content margin is now always 48px (Primary Sidebar width) because Secondary Sidebar overlays
   const contentMargin = 48;
 
   return (
     <div className="h-[100dvh] bg-sidebar transition-colors duration-200">
-      <Sidebar className="z-50" onHoverChange={setSidebarHovered} />
+      <Sidebar
+        className="z-50"
+        onHoverChange={setSidebarHovered}
+        hasSecondary={!!secondarySidebar}
+        isSecondaryOpen={showSecondary}
+        onToggleSecondary={() => setShowSecondary((prev) => !prev)}
+      />
 
       <div
         className="h-full flex flex-col overflow-hidden transition-all duration-200 relative"
@@ -69,7 +82,7 @@ const DashboardLayout = ({
       >
         {!hideHeader && (
           <Header
-            className={`transition-[padding] duration-200 ease-out ${sidebarHovered ? 'pl-[168px]' : ''}`}
+            className={`transition-[padding] duration-200 ease-out ${sidebarHovered ? 'pl-[120px]' : ''}`}
             title={title}
             onFilterClick={onFilterClick}
             showFilterButton={showFilterButton}

@@ -8,7 +8,8 @@ import {
   Gauge,
   Terminal,
   Database,
-  ChevronLeft
+  ChevronLeft,
+  PanelLeftOpen
 } from "lucide-react";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,10 +17,16 @@ import { useDevMode } from "@/contexts/DevModeContext";
 
 const Sidebar = ({
   className,
-  onHoverChange
+  onHoverChange,
+  hasSecondary,
+  isSecondaryOpen,
+  onToggleSecondary
 }: {
   className?: string;
   onHoverChange?: (hovered: boolean) => void;
+  hasSecondary?: boolean;
+  isSecondaryOpen?: boolean;
+  onToggleSecondary?: () => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const { user, role, profile } = useAuth();
@@ -55,7 +62,7 @@ const Sidebar = ({
     <aside
       className={cn(
         "fixed left-0 top-0 bottom-0 z-50 flex flex-col bg-sidebar transition-all duration-200 ease-out",
-        isHovered ? "w-[200px]" : "w-[48px]",
+        isHovered ? "w-[150px]" : "w-[48px]",
         className
       )}
       onMouseEnter={handleMouseEnter}
@@ -96,7 +103,7 @@ const Sidebar = ({
                     to={item.path}
                     onClick={() => startNewHistory(item.path)}
                     className={cn(
-                      "flex items-center gap-2 h-8 px-2 rounded-md text-sm transition-colors",
+                      "flex items-center gap-2 h-8 px-2 rounded-md text-sm transition-colors relative group",
                       active
                         ? "bg-accent text-foreground font-medium"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
@@ -106,9 +113,24 @@ const Sidebar = ({
                   >
                     <item.icon size={18} className="flex-shrink-0" />
                     {isHovered && (
-                      <span className="truncate animate-in fade-in slide-in-from-left-2 duration-150">
+                      <span className="truncate animate-in fade-in slide-in-from-left-2 duration-150 flex-1">
                         {item.label}
                       </span>
+                    )}
+
+                    {/* Expand Button Only - Hidden if Secondary is Open */}
+                    {active && hasSecondary && isHovered && onToggleSecondary && !isSecondaryOpen && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggleSecondary();
+                        }}
+                        className="p-1 rounded-md hover:bg-background/20 text-muted-foreground hover:text-foreground transition-colors absolute right-1"
+                        title="Open Menu"
+                      >
+                        <PanelLeftOpen className="h-4 w-4" />
+                      </button>
                     )}
                   </Link>
                 </li>

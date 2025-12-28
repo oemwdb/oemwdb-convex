@@ -120,18 +120,7 @@ const Header = ({
     )}>
       {/* Breadcrumb */}
       <div className="flex-1 min-w-0 overflow-hidden flex items-center">
-        {/* Sidebar Toggle */}
-        {sidebarCollapsed && onSidebarToggle && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-accent mr-2 shrink-0"
-            onClick={onSidebarToggle}
-            title="Expand Menu"
-          >
-            <PanelLeftOpen className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        )}
+
 
         <SearchableBreadcrumb />
       </div>
