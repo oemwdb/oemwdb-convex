@@ -240,7 +240,7 @@ const Header = ({
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full hover:bg-accent"
-            onClick={onFilterClick}
+            onClick={onSidebarToggle || onFilterClick}
           >
             <Filter className="h-4 w-4" />
           </Button>

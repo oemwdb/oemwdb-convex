@@ -135,7 +135,19 @@ const WheelItemPage = () => {
   ];
 
   return (
-    <DashboardLayout title={pageTitle} showFilterButton={false}>
+    <DashboardLayout
+      title={pageTitle}
+      showFilterButton={false}
+      secondaryTitle="Comments"
+      secondarySidebar={
+        <div className="p-2">
+          <CommentsSection
+            vehicleName={wheel.wheel_name}
+            comments={comments}
+          />
+        </div>
+      }
+    >
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
         {/* Grid layout with wheel header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -177,7 +189,7 @@ const WheelItemPage = () => {
             <TabsTrigger value="variants" className="flex-1 min-w-fit">Variants</TabsTrigger>
             <TabsTrigger value="gallery" className="flex-1 min-w-fit">Gallery</TabsTrigger>
             <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
-            <TabsTrigger value="comments" className="flex-1 min-w-fit">Comments</TabsTrigger>
+
           </TabsList>
 
 
@@ -344,13 +356,7 @@ const WheelItemPage = () => {
             </Card>
           </TabsContent>
 
-          {/* Comments content */}
-          <TabsContent value="comments" className="space-y-4">
-            <CommentsSection
-              vehicleName={wheel.wheel_name}
-              comments={comments}
-            />
-          </TabsContent>
+
         </Tabs>
 
       </div>

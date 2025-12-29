@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { 
-  Home, 
+import {
+  Home,
   Hexagon, // Brands
   Car, // Vehicles  
   CircleDot, // Wheels
@@ -47,9 +47,9 @@ const getIconForPath = (path: string): React.ElementType => {
 // Helper to get label for path
 const getLabelForPath = (path: string, params?: any): string => {
   const segments = path.split('/').filter(Boolean);
-  
+
   if (path === '/') return 'Home';
-  
+
   // Main pages
   if (path === '/brands') return 'Brands';
   if (path === '/vehicles') return 'Vehicles';
@@ -59,11 +59,11 @@ const getLabelForPath = (path: string, params?: any): string => {
   if (path === '/profile') return 'Profile';
   if (path === '/dev') return 'Dev';
   if (path === '/login') return 'Login';
-  
+
   // Detail pages - extract from URL
   if (segments.length >= 2) {
     const lastSegment = decodeURIComponent(segments[segments.length - 1]);
-    
+
     // Check if it's a detail page
     if (segments[0] === 'brands' && segments.length === 2) {
       // Clean up brand name
@@ -80,7 +80,7 @@ const getLabelForPath = (path: string, params?: any): string => {
     if (segments[0] === 'wheel' && segments.length === 2) {
       return `Wheel #${lastSegment}`; // Wheel ID
     }
-    
+
     // Dev templates
     if (segments[0] === 'dev' && segments[1] === 'templates') {
       if (segments[2] === 'vehicles') return 'Vehicle Templates';
@@ -89,13 +89,13 @@ const getLabelForPath = (path: string, params?: any): string => {
       if (segments[2] === 'wheels') return 'Wheel Templates';
     }
   }
-  
+
   // Fallback - clean up the last segment
   if (segments.length > 0) {
     const lastSegment = segments[segments.length - 1];
     return lastSegment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
-  
+
   return 'Page';
 };
 
@@ -103,10 +103,10 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const location = useLocation();
   const [history, setHistory] = useState<NavigationItem[]>([]);
   const [shouldResetOnNext, setShouldResetOnNext] = useState(false);
-  
+
   useEffect(() => {
     const currentPath = location.pathname;
-    
+
     // If we should reset (from sidebar click), start fresh
     if (shouldResetOnNext) {
       setHistory([{
@@ -118,7 +118,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setShouldResetOnNext(false);
       return;
     }
-    
+
     // Don't add duplicate - check if this path already exists anywhere in history
     const existingIndex = history.findIndex(item => item.path === currentPath);
     if (existingIndex !== -1) {
@@ -139,14 +139,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const mainCollections = ['/brands', '/vehicles', '/wheels'];
     if (mainCollections.includes(currentPath)) {
       // Check if we're coming from a related detail page
-      const isFromRelatedDetail = history.length > 0 && 
+      const isFromRelatedDetail = history.length > 0 &&
         history.some(item => {
           if (currentPath === '/brands') return item.path.startsWith('/brand/');
           if (currentPath === '/vehicles') return item.path.startsWith('/vehicle/');
           if (currentPath === '/wheels') return item.path.startsWith('/wheel/');
           return false;
         });
-      
+
       // If coming from related detail, keep hierarchy; otherwise reset
       if (!isFromRelatedDetail) {
         setHistory([{
@@ -157,7 +157,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }]);
         return;
       }
-      
+
       // Coming from related detail - check if parent already exists
       const hasParent = history.some(item => item.path === currentPath);
       if (!hasParent) {
@@ -171,7 +171,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return;
     }
-    
+
     // For detail pages, ensure parent exists
     const detailRoutes = {
       '/brand/': { parent: '/brands', label: 'Brands', icon: Hexagon },
@@ -183,7 +183,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (currentPath.startsWith(route)) {
         const hasParent = history.some(item => item.path === config.parent);
         const items: NavigationItem[] = [];
-        
+
         if (!hasParent) {
           items.push({
             path: config.parent,
@@ -192,14 +192,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             timestamp: Date.now() - 1
           });
         }
-        
+
         items.push({
           path: currentPath,
           label: getLabelForPath(currentPath),
           icon: getIconForPath(currentPath),
           timestamp: Date.now()
         });
-        
+
         setHistory(prev => [...prev, ...items]);
         return;
       }
@@ -212,15 +212,15 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       icon: getIconForPath(currentPath),
       timestamp: Date.now()
     };
-    
+
     setHistory(prev => [...prev, newItem]);
   }, [location.pathname, shouldResetOnNext]);
-  
-  const clearHistory = () => {
+
+  const clearHistory = React.useCallback(() => {
     setHistory([]);
-  };
-  
-  const removeFromHistory = (index: number, navigate?: (path: string) => void) => {
+  }, []);
+
+  const removeFromHistory = React.useCallback((index: number, navigate?: (path: string) => void) => {
     setHistory(prev => {
       const newHistory = prev.filter((_, i) => i !== index);
       // If removing a middle item and navigate function provided, go to previous item
@@ -229,9 +229,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return newHistory;
     });
-  };
-  
-  const updateCurrentLabel = (label: string) => {
+  }, []);
+
+  const updateCurrentLabel = React.useCallback((label: string) => {
     setHistory(prev => {
       if (prev.length === 0) return prev;
       const updated = [...prev];
@@ -241,12 +241,12 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
       return updated;
     });
-  };
-  
-  const startNewHistory = (path: string) => {
+  }, []);
+
+  const startNewHistory = React.useCallback((path: string) => {
     setShouldResetOnNext(true);
-  };
-  
+  }, []);
+
   return (
     <NavigationContext.Provider value={{ history, clearHistory, removeFromHistory, updateCurrentLabel, startNewHistory }}>
       {children}
