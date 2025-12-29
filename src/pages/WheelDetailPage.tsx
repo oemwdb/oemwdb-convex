@@ -100,7 +100,18 @@ const WheelDetailPage = () => {
   ];
 
   return (
-    <DashboardLayout title={`${wheel.wheel_name} Details`}>
+    <DashboardLayout
+      title={`${wheel.wheel_name} Details`}
+      secondaryTitle="Comments"
+      secondarySidebar={
+        <div className="p-2">
+          <CommentsSection
+            vehicleName={wheel.wheel_name}
+            comments={comments}
+          />
+        </div>
+      }
+    >
       <div className="pl-0 pr-4 pt-0 pb-4 space-y-4 overflow-hidden">
         {/* Hero section with gradient background */}
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 mb-6">
@@ -195,9 +206,7 @@ const WheelDetailPage = () => {
               Vehicles
               <span className="ml-1 text-xs">({compatibleVehicles.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="comments" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              Comments
-            </TabsTrigger>
+
             <TabsTrigger value="gallery" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Gallery
             </TabsTrigger>
@@ -227,12 +236,7 @@ const WheelDetailPage = () => {
             </TabsContent>
 
             {/* Comments content */}
-            <TabsContent value="comments" className="mt-0">
-              <CommentsSection
-                vehicleName={wheel.wheel_name}
-                comments={comments}
-              />
-            </TabsContent>
+
 
             {/* Gallery content */}
             <TabsContent value="gallery" className="mt-0">

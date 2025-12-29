@@ -104,9 +104,9 @@ const DashboardLayout = ({
           />
         )}
 
-        {/* Secondary Sidebar - Overlay */}
+        {/* Secondary Sidebar - Overlay (Right Side) */}
         {secondarySidebar && showSecondary && (
-          <aside className="absolute left-0 top-12 bottom-0 w-[240px] bg-sidebar border-r border-border flex flex-col z-40">
+          <aside className="absolute right-0 top-12 bottom-0 w-[300px] bg-sidebar border-l border-border flex flex-col z-40 animate-in slide-in-from-right duration-200 shadow-xl">
             {/* Secondary Header */}
             <div className="h-10 flex items-center justify-between border-b border-border px-3 shrink-0">
               <span className="text-sm font-medium">{secondaryTitle || 'Menu'}</span>
@@ -117,7 +117,9 @@ const DashboardLayout = ({
                 onClick={() => setShowSecondary(false)}
                 title="Collapse Menu"
               >
-                <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
+                <div className="transform rotate-180">
+                  <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
+                </div>
               </Button>
             </div>
             {/* Secondary Content */}
