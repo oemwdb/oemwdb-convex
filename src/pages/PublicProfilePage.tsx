@@ -39,8 +39,8 @@ const PublicProfilePage = () => {
 
   if (profileLoading) {
     return (
-      <DashboardLayout title="Loading...">
-        <div className="space-y-6">
+      <DashboardLayout title="Loading..." disableContentPadding={true}>
+        <div className="h-full p-2 overflow-y-auto space-y-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-6">
@@ -60,7 +60,7 @@ const PublicProfilePage = () => {
 
   if (!profile) {
     return (
-      <DashboardLayout title="User Not Found">
+      <DashboardLayout title="User Not Found" disableContentPadding={true}>
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
@@ -73,10 +73,10 @@ const PublicProfilePage = () => {
   }
 
   return (
-    <DashboardLayout title={profile.display_name || profile.username}>
-      <div className="p-4">
+    <DashboardLayout title={profile.display_name || profile.username} disableContentPadding={true}>
+      <div className="h-full p-2 overflow-y-auto">
         {/* Profile Header */}
-        <Card className="mb-6">
+        <Card className="mb-4">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-6">
               <Avatar className="h-32 w-32">
@@ -101,7 +101,7 @@ const PublicProfilePage = () => {
                   <p className="text-sm">{profile.bio}</p>
                 )}
 
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   {profile.location && (
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
@@ -116,7 +116,7 @@ const PublicProfilePage = () => {
                   )}
                 </div>
 
-                <div className="flex gap-6 text-sm">
+                <div className="flex gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <Package className="h-4 w-4" />
                     <span className="font-semibold">{profile.listing_count}</span>
@@ -141,7 +141,7 @@ const PublicProfilePage = () => {
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="market" className="mt-6">
+          <TabsContent value="market" className="mt-4">
             {listingsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[1, 2, 3].map((i) => (
@@ -207,7 +207,7 @@ const PublicProfilePage = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="about" className="mt-6">
+          <TabsContent value="about" className="mt-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-4">
@@ -225,9 +225,9 @@ const PublicProfilePage = () => {
                       <p className="text-2xl font-bold">
                         {profile.member_since
                           ? Math.floor(
-                              (Date.now() - new Date(profile.member_since).getTime()) /
-                                (1000 * 60 * 60 * 24)
-                            )
+                            (Date.now() - new Date(profile.member_since).getTime()) /
+                            (1000 * 60 * 60 * 24)
+                          )
                           : 0}
                       </p>
                       <p className="text-sm text-muted-foreground">Days Active</p>
@@ -245,7 +245,7 @@ const PublicProfilePage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reviews" className="mt-6">
+          <TabsContent value="reviews" className="mt-4">
             <Card>
               <CardContent className="pt-6 text-center">
                 <p className="text-muted-foreground">User reviews and ratings coming soon</p>

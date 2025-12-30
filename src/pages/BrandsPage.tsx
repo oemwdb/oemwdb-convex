@@ -149,23 +149,26 @@ const BrandsPage = () => {
           totalResults={filteredBrands.length}
         />
       }
+      disableContentPadding={true}
     >
-      {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Loading brands...</div>
-      ) : isError ? (
-        <div className="text-center py-10 text-red-500">Failed to load brands.</div>
-      ) : (
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-          {filteredBrands.map((brand) => (
-            <BrandCard
-              key={brand.name}
-              brand={brand}
-              isFlipped={flippedCards[brand.name] || false}
-              onFlip={toggleCardFlip}
-            />
-          ))}
-        </div>
-      )}
+      <div className="h-full p-2 overflow-y-auto">
+        {isLoading ? (
+          <div className="text-center py-10 text-muted-foreground">Loading brands...</div>
+        ) : isError ? (
+          <div className="text-center py-10 text-red-500">Failed to load brands.</div>
+        ) : (
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+            {filteredBrands.map((brand) => (
+              <BrandCard
+                key={brand.name}
+                brand={brand}
+                isFlipped={flippedCards[brand.name] || false}
+                onFlip={toggleCardFlip}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 };

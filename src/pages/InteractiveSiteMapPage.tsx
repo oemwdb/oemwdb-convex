@@ -93,8 +93,8 @@ const InteractiveSiteMapPage = () => {
   `;
 
   return (
-    <DashboardLayout title="Interactive Site Map" showFilterButton={false}>
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+    <DashboardLayout title="Interactive Site Map" showFilterButton={false} disableContentPadding={true}>
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Header */}
         <Card className="p-6">
           <div className="flex items-center justify-between">

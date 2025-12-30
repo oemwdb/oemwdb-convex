@@ -36,7 +36,7 @@ const WheelItemPage = () => {
   // If loading, show loading state
   if (isLoading) {
     return (
-      <DashboardLayout title="Loading...">
+      <DashboardLayout title="Loading..." disableContentPadding={true}>
         <Card className="p-12 text-center bg-gradient-to-br from-muted/30 to-muted/10 border-border/50">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground animate-pulse">Loading wheel details...</p>
@@ -48,7 +48,7 @@ const WheelItemPage = () => {
   // If wheel not found or error, show error message
   if (!wheel || error) {
     return (
-      <DashboardLayout title="Wheel Not Found">
+      <DashboardLayout title="Wheel Not Found" disableContentPadding={true}>
         <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
           <CircleSlash2 className="h-16 w-16 mx-auto mb-4 text-destructive/50" />
           <h2 className="text-2xl font-bold mb-2 text-foreground">Wheel not found</h2>
@@ -147,8 +147,10 @@ const WheelItemPage = () => {
           />
         </div>
       }
+      secondaryActionIcon={<MessageSquare className="h-4 w-4" />}
+      disableContentPadding={true}
     >
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+      <div className="h-full p-2 overflow-y-auto space-y-2">
         {/* Grid layout with wheel header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Wheel Header - Takes 2 columns on large screens */}

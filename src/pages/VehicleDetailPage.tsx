@@ -16,6 +16,8 @@ import MaintenanceSection from "@/components/vehicle/MaintenanceSection";
 import UpgradesSection from "@/components/vehicle/UpgradesSection";
 import VariantsSection from "@/components/vehicle/VariantsSection";
 
+import CommentsSection from "@/components/vehicle/CommentsSection";
+
 const VehicleDetailPage = () => {
   const { vehicleName } = useParams<{ vehicleName: string }>();
   const [activeTab, setActiveTab] = useState("details");
@@ -85,9 +87,27 @@ const VehicleDetailPage = () => {
     }).filter(Boolean);
   };
 
+  // Sample comments
+  const comments = [
+    { id: 1, user: "BimmerFan", comment: "The E36 is a classic!", date: "2 days ago" },
+    { id: 2, user: "DriftKing", comment: "Best chassis for builds.", date: "5 days ago" }
+  ];
+
   return (
-    <DashboardLayout title={`${vehicleDisplayName} Details`}>
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+    <DashboardLayout
+      title={`${vehicleDisplayName} Details`}
+      secondaryTitle="Comments"
+      secondarySidebar={
+        <div className="p-2">
+          <CommentsSection
+            vehicleName={vehicleDisplayName || "Vehicle"}
+            comments={comments}
+          />
+        </div>
+      }
+      disableContentPadding={true}
+    >
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Grid layout with vehicle header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Vehicle Header - Takes 2 columns on large screens */}

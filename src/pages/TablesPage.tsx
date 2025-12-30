@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useSupabaseTable } from "@/hooks/useSupabaseTable";
 import { TableName } from "@/components/datatable/EditableDataTable";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FileListView } from "@/components/database/FileListView";
-import { DatabaseBreadcrumb } from "@/components/database/DatabaseBreadcrumb";
+import { useColumnOrder } from "@/hooks/useColumnOrder";
+import { CreateRecordDialog } from "@/components/database/CreateRecordDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Package,
   Car,
@@ -16,12 +19,12 @@ import {
   Ruler,
   Palette,
   Users,
+  RefreshCw,
+  Search,
+  RotateCcw,
+  Plus
 } from "lucide-react";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+
 
 const TABLES = [
   { name: "oem_brands", label: "Brands", icon: Package },
@@ -35,9 +38,28 @@ const TABLES = [
   { name: "users", label: "Users", icon: Users },
 ] as const;
 
+import { TableColumn } from "@/types/database";
+
+// ... (existing imports)
+
 export default function TablesPage() {
   const [activeTable, setActiveTable] = useState<TableName>("oem_brands");
-  const { data, columns, isLoading, error, refetch } = useSupabaseTable(activeTable);
+  const { data, columns: rawColumns, isLoading, error, refetch } = useSupabaseTable(activeTable);
+
+  // Reset search when table changes
+  useEffect(() => {
+    setSearchQuery("");
+  }, [activeTable]);
+
+  const columns: TableColumn[] = rawColumns?.map(col => ({
+    ...col,
+    id: col.key,
+  })) as any[] || [];
+
+  // Hoisted state for FileListView control
+  const { orderedColumns, resetToDefault, reorderColumns } = useColumnOrder(activeTable, columns);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleCellEdit = async (rowId: string, columnId: string, value: any) => {
     try {
@@ -109,72 +131,112 @@ export default function TablesPage() {
   const currentTableData = TABLES.find((t) => t.name === activeTable);
 
   return (
-    <DashboardLayout hideHeader={true}>
-      <div className="flex h-[calc(100vh-2rem)] flex-col my-4 mr-4 ml-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Sidebar: Table List */}
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="border-r border-border bg-muted/10">
-            <div className="flex flex-col h-full">
-              <div className="h-14 flex items-center px-4 border-b border-border bg-background/50 backdrop-blur-sm">
-                <h2 className="font-semibold text-sm">Tables</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto py-2">
-                {TABLES.map((table) => {
-                  const Icon = table.icon;
-                  return (
-                    <button
-                      key={table.name}
-                      onClick={() => setActiveTable(table.name)}
-                      className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${activeTable === table.name
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {table.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          {/* Main Content: Table View */}
-          <ResizablePanel defaultSize={80}>
-            <div className="flex flex-col h-full bg-background">
-              <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-muted/5">
-                <div className="flex items-center gap-2">
-                  <currentTableData.icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{currentTableData?.label}</span>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-hidden">
-                <FileListView
-                  key={activeTable}
-                  data={data}
-                  columns={columns.map((col) => ({
-                    id: col.key,
-                    key: col.key,
-                    label: col.label,
-                    type: col.type as any,
-                    editable: true,
-                  }))}
-                  tableName={activeTable}
-                  isLoading={isLoading}
-                  onRefetch={refetch}
-                  onCellEdit={handleCellEdit}
-                  onDeleteRows={handleDeleteRows}
-                  onExport={handleExport}
-                  onCreateRecord={handleCreateRecord}
-                />
-              </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+    <DashboardLayout
+      title="Database Tables"
+      secondaryTitle="Tables"
+      showSearch={false}
+      showBreadcrumb={false}
+      headerActions={
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 pl-8 pr-3 text-sm w-[240px] bg-muted/30 border-none focus-visible:ring-1"
+            />
+          </div>
+          <div className="h-4 w-px bg-border mx-2" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Refresh"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetToDefault}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Reset column order"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowCreateDialog(true)}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground"
+            title="Create new record"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      }
+      secondarySidebar={
+        <div className="flex flex-col h-full">
+          <div className="p-2 space-y-1 flex-1 overflow-y-auto">
+            {TABLES.map((table) => {
+              const Icon = table.icon;
+              const isActive = activeTable === table.name;
+              return (
+                <button
+                  key={table.name}
+                  onClick={() => setActiveTable(table.name)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-200 ${isActive
+                    ? "bg-white text-black shadow-sm font-medium"
+                    : "text-muted-foreground hover:bg-white/10 hover:text-foreground"
+                    }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {table.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="p-2 border-t border-border">
+            <button
+              onClick={handleExport}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors border border-transparent hover:border-border"
+            >
+              Export CSV
+            </button>
+          </div>
+        </div>
+      }
+      disableContentPadding={true}
+    >
+      <div className="flex h-full flex-col overflow-hidden p-2">
+        <div className="flex-1 overflow-hidden">
+          <FileListView
+            key={activeTable}
+            data={data}
+            columns={orderedColumns} // Pass the externally controlled columns
+            tableName={activeTable}
+            isLoading={isLoading}
+            onRefetch={refetch}
+            onCellEdit={handleCellEdit}
+            onDeleteRows={handleDeleteRows}
+            onExport={handleExport}
+            onCreateRecord={handleCreateRecord}
+            // Pass external controls
+            searchQuery={searchQuery}
+            onColumnReorder={reorderColumns}
+          />
+        </div>
       </div>
+
+      <CreateRecordDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        columns={orderedColumns}
+        onSave={handleCreateRecord}
+      />
     </DashboardLayout>
   );
 }

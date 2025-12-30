@@ -21,8 +21,8 @@ const CoolBoardPage = () => {
   };
 
   return (
-    <DashboardLayout title="Cool Board" showFilterButton={false}>
-      <div className="p-4 space-y-4">
+    <DashboardLayout title="Cool Board" showFilterButton={false} disableContentPadding={true}>
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Tabs at Top */}
         <Tabs defaultValue="brands" value={selectedType} onValueChange={(value) => setSelectedType(value as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-4">

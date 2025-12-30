@@ -111,8 +111,9 @@ const WheelDetailPage = () => {
           />
         </div>
       }
+      disableContentPadding={true}
     >
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4 overflow-hidden">
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Hero section with gradient background */}
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 mb-6">
           <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />

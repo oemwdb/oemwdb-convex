@@ -56,8 +56,8 @@ const GaragePage: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Garage">
-      <main className="p-4 space-y-4">
+    <DashboardLayout title="Garage" disableContentPadding={true}>
+      <main className="h-full p-2 space-y-4 overflow-y-auto">
         <section aria-labelledby="garage-builder">
           <h1 id="garage-builder" className="text-xl font-semibold">Build a combo</h1>
           <p className="text-muted-foreground text-sm">Select a vehicle and an OEM wheel to save the combo to your garage.</p>

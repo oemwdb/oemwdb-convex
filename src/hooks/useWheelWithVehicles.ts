@@ -26,6 +26,7 @@ export interface WheelWithRelations {
   width_ref?: string[];
   bolt_pattern_refs?: string[];
   center_bore_ref?: string[];
+  offset_refs?: string[]; // New field
   color_refs?: string[];
   tire_size_refs?: string[];
   vehicle_refs?: any;
@@ -93,6 +94,7 @@ export const fetchWheelWithVehicles = async (wheelId: string) => {
     width_ref: extractRefValues(wheel.width_ref),
     bolt_pattern_refs: extractRefValues(wheel.bolt_pattern_ref),
     center_bore_ref: extractRefValues(wheel.center_bore_ref),
+    offset_refs: extractRefValues(wheel.offset_ref),
     color_refs: extractRefValues(wheel.color_ref),
     tire_size_refs: extractRefValues(wheel.tire_size_ref),
     vehicle_refs: wheel.vehicle_ref
@@ -261,6 +263,7 @@ export const fetchWheelByName = async (wheelName: string) => {
     width_ref: extractRefValues(wheel.width_ref),
     bolt_pattern_refs: extractRefValues(wheel.bolt_pattern_ref),
     center_bore_ref: extractRefValues(wheel.center_bore_ref),
+    offset_refs: extractRefValues(wheel.offset_ref),
     color_refs: extractRefValues(wheel.color_ref),
     tire_size_refs: extractRefValues(wheel.tire_size_ref),
     vehicle_refs: wheel.vehicle_ref

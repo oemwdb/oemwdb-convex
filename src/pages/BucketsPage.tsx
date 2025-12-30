@@ -5,8 +5,8 @@ import { StorageExplorer } from "@/components/storage/StorageExplorer";
 
 const BucketsPage = () => {
     return (
-        <DashboardLayout title="Buckets" hideHeader={true}>
-            <div className="h-[calc(100vh-2rem)] flex flex-col my-4 mr-4 ml-0">
+        <DashboardLayout title="Buckets" hideHeader={true} disableContentPadding={true}>
+            <div className="h-full p-2 flex flex-col">
                 <div className="flex-1 min-h-0">
                     <StorageExplorer />
                 </div>

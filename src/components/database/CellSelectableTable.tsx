@@ -64,18 +64,18 @@ function SortableHeader({
     <th
       ref={setNodeRef}
       style={style}
-      className="px-2 py-1.5 text-left font-medium text-muted-foreground relative group border-r border-border bg-muted/30"
+      className="px-4 py-3 text-left font-medium text-muted-foreground relative group select-none whitespace-nowrap"
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity -ml-2 p-0.5 hover:bg-muted rounded"
         >
-          <GripVertical className="h-3 w-3" />
+          <GripVertical className="h-3 w-3 text-muted-foreground/50" />
         </div>
         <div
-          className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+          className="flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors flex-1"
           onClick={() => onSort(column.id)}
         >
           {column.label}
@@ -193,17 +193,17 @@ export function CellSelectableTable({
 
   return (
     <div className="flex-1 overflow-auto">
-      <table className="w-full text-xs border-collapse">
-        <thead className="sticky top-0 bg-background border-b-2 border-border z-10">
-          <tr>
-            <th className="w-10 px-2 py-1.5 text-left border-r border-border bg-muted/30">
+      <table className="w-full text-sm border-collapse">
+        <thead className="sticky top-0 bg-card z-10">
+          <tr className="border-b border-border">
+            <th className="w-10 px-4 py-3 text-left">
               <Checkbox
                 checked={selectedCells.size === data.length * columns.length && data.length > 0}
                 onCheckedChange={onSelectAll}
-                className="h-3.5 w-3.5"
+                className="translate-y-[2px]"
               />
             </th>
-            <th className="w-12 px-2 py-1.5 border-r border-border bg-muted/30"></th>
+            <th className="w-12 px-4 py-3"></th>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -228,26 +228,35 @@ export function CellSelectableTable({
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={row.id} className="border-b border-border">
-              <td className="px-2 py-1.5 border-r border-border bg-muted/20">
+            <tr key={row.id} className="border-b border-border hover:bg-muted/50 transition-colors group">
+              <td className="px-4 py-3">
                 <Checkbox
-                  className="h-3.5 w-3.5 opacity-0"
+                  className="translate-y-[2px] opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
+                  checked={selectedCells.has(`row-all:${row.id}`) || columns.some(c => selectedCells.has(`${row.id}:${c.id}`))}
+                  onCheckedChange={(checked) => {
+                    // Select entire row logic could go here, or we keep current cell selection
+                    // For now, let's keep the visual cue but maybe not functional change yet to keep it simple
+                    // Actually, user wants row checkboxes usually. 
+                    // The current logic is cell-based. Let's keep it cell based for now but visually align.
+                    // The opacity-0 on hover suggests row selection. 
+                    // Reverting to disabled usage to match previous logic but with better styling
+                  }}
                   disabled
                 />
               </td>
-              <td className="px-2 py-1.5 border-r border-border">
+              <td className="px-4 py-3">
                 {getImageUrl(row) ? (
                   <img
                     src={getImageUrl(row)}
                     alt=""
-                    className="h-6 w-6 rounded object-cover"
+                    className="h-8 w-8 rounded-md object-cover border border-border"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : (
-                  <div className="h-6 w-6 rounded bg-muted/50 flex items-center justify-center">
-                    <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
                   </div>
                 )}
               </td>
@@ -261,8 +270,8 @@ export function CellSelectableTable({
                   <td
                     key={column.id}
                     className={cn(
-                      "px-2 py-1.5 text-muted-foreground border-r border-border align-top cursor-pointer transition-colors",
-                      isSelected && "bg-primary/20 font-medium text-foreground"
+                      "px-4 py-3 text-foreground align-middle cursor-pointer transition-colors relative",
+                      isSelected && "bg-muted/50 font-medium"
                     )}
                     onClick={(e) => !isEditing && onCellClick(row.id, column.id, e.shiftKey)}
                     onDoubleClick={() => startEditing(row.id, column.id, cellValue)}
@@ -283,7 +292,7 @@ export function CellSelectableTable({
                           }
                         }}
                         onBlur={saveEdit}
-                        className="h-6 px-1 text-xs"
+                        className="h-8 -ml-2 w-[calc(100%+16px)] px-2 text-sm bg-background shadow-sm border-primary"
                       />
                     ) : (
                       renderCellValue(column, row)

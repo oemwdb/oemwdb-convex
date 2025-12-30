@@ -120,8 +120,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <DashboardLayout title="My Profile">
-      <div className="p-4">
+    <DashboardLayout title="My Profile" disableContentPadding={true}>
+      <div className="h-full p-2 overflow-y-auto">
         <Tabs defaultValue="settings" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>

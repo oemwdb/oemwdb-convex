@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Copy, LogOut, PanelLeftOpen } from "lucide-react";
+import { Search, X, Filter, Copy, LogOut, PanelLeftOpen, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -27,9 +27,14 @@ interface HeaderProps {
   topSuggestion?: string;
   sidebarCollapsed?: boolean;
   onSidebarToggle?: () => void;
+  showSearch?: boolean;
+  showBreadcrumb?: boolean;
+  children?: React.ReactNode;
+  actionIcon?: React.ReactNode;
 }
 
 const Header = ({
+  title,
   onFilterClick,
   showFilterButton = true,
   searchValue = '',
@@ -45,7 +50,11 @@ const Header = ({
   onAddSearchTag,
   topSuggestion = "",
   sidebarCollapsed = true,
-  onSidebarToggle
+  onSidebarToggle,
+  actionIcon,
+  showSearch = true,
+  showBreadcrumb = true,
+  children
 }: HeaderProps) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [tempSearchValue, setTempSearchValue] = useState("");
@@ -118,108 +127,133 @@ const Header = ({
       "h-12 flex items-center border-b border-border bg-sidebar px-4 gap-4 flex-shrink-0",
       className
     )}>
-      {/* Breadcrumb */}
-      <div className="flex-1 min-w-0 overflow-hidden flex items-center">
 
-
-        <SearchableBreadcrumb />
-      </div>
+      {/* Toggle Sidebar Trigger (Left) */}
+      {(showFilterButton || sidebarCollapsed) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full border border-border hover:bg-accent -ml-2"
+          onClick={onSidebarToggle || onFilterClick}
+        >
+          {actionIcon ? actionIcon : (sidebarCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />)}
+        </Button>
+      )}
 
       {/* Search */}
-      <div className="flex items-center">
-        {isSearchExpanded ? (
-          <div className="flex items-center h-8 border border-border rounded-full bg-card hover:border-muted-foreground/30 focus-within:border-muted-foreground/50 transition-colors w-[300px]">
-            <Search className="ml-3 text-muted-foreground flex-shrink-0" size={14} />
-            <div className="relative flex-1">
-              {ghostSuggestion && tempSearchValue && (
-                <div className="absolute inset-0 flex items-center px-2 pointer-events-none">
-                  <span className="text-sm opacity-0">{tempSearchValue}</span>
-                  <span className="text-sm text-muted-foreground/40">
-                    {ghostSuggestion.slice(tempSearchValue.length)}
-                  </span>
+      {showSearch && (
+        <div className="flex items-center">
+          {isSearchExpanded ? (
+            <div className="flex items-center h-8 border border-border rounded-full bg-card hover:border-muted-foreground/30 focus-within:border-muted-foreground/50 transition-colors w-[300px]">
+              <Search className="ml-3 text-muted-foreground flex-shrink-0" size={14} />
+              <div className="relative flex-1">
+                {ghostSuggestion && tempSearchValue && (
+                  <div className="absolute inset-0 flex items-center px-2 pointer-events-none">
+                    <span className="text-sm opacity-0">{tempSearchValue}</span>
+                    <span className="text-sm text-muted-foreground/40">
+                      {ghostSuggestion.slice(tempSearchValue.length)}
+                    </span>
+                  </div>
+                )}
+                <Input
+                  ref={searchInputRef}
+                  placeholder={searchPlaceholder}
+                  className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 px-2"
+                  value={tempSearchValue}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  onBlur={() => {
+                    if (!tempSearchValue && !hasActiveTags) {
+                      setTimeout(() => setIsSearchExpanded(false), 150);
+                    }
+                  }}
+                />
+              </div>
+              {/* Tags */}
+              {hasActiveTags && (
+                <div className="flex items-center gap-1 px-2">
+                  {Object.entries(parsedFilters).flatMap(([category, values]) =>
+                    values?.slice(0, 2).map((value, index) => (
+                      <span
+                        key={`${category}-${index}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-transparent text-foreground text-xs"
+                      >
+                        {value}
+                        <button
+                          onClick={() => onRemoveFilter?.(category as keyof ParsedFilters, value)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                  {totalTagCount > 2 && (
+                    <span className="text-xs text-muted-foreground">+{totalTagCount - 2}</span>
+                  )}
                 </div>
               )}
-              <Input
-                ref={searchInputRef}
-                placeholder={searchPlaceholder}
-                className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 px-2"
-                value={tempSearchValue}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                onBlur={() => {
-                  if (!tempSearchValue && !hasActiveTags) {
-                    setTimeout(() => setIsSearchExpanded(false), 150);
-                  }
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-transparent"
+                onClick={() => {
+                  setTempSearchValue("");
+                  setIsSearchExpanded(false);
                 }}
-              />
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </Button>
             </div>
-            {/* Tags */}
-            {hasActiveTags && (
-              <div className="flex items-center gap-1 px-2">
-                {Object.entries(parsedFilters).flatMap(([category, values]) =>
-                  values?.slice(0, 2).map((value, index) => (
-                    <span
-                      key={`${category}-${index}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-transparent text-foreground text-xs"
-                    >
-                      {value}
-                      <button
-                        onClick={() => onRemoveFilter?.(category as keyof ParsedFilters, value)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))
-                )}
-                {totalTagCount > 2 && (
-                  <span className="text-xs text-muted-foreground">+{totalTagCount - 2}</span>
-                )}
-              </div>
-            )}
+          ) : hasActiveTags ? (
+            <button
+              onClick={() => setIsSearchExpanded(true)}
+              className="flex items-center gap-2 h-8 px-3 border border-border rounded-full bg-card hover:border-muted-foreground/30"
+            >
+              <Search size={14} className="text-muted-foreground" />
+              {Object.entries(parsedFilters).flatMap(([category, values]) =>
+                values?.slice(0, 2).map((value, index) => (
+                  <span
+                    key={`${category}-${index}`}
+                    className="px-2 py-0.5 rounded-full border border-white/20 bg-transparent text-foreground text-[10px]"
+                  >
+                    {value}
+                  </span>
+                ))
+              )}
+              {totalTagCount > 2 && (
+                <span className="text-[10px] text-muted-foreground">+{totalTagCount - 2}</span>
+              )}
+            </button>
+          ) : (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 hover:bg-transparent"
-              onClick={() => {
-                setTempSearchValue("");
-                setIsSearchExpanded(false);
-              }}
+              className="h-8 w-8 rounded-full hover:bg-accent"
+              onClick={() => setIsSearchExpanded(true)}
             >
-              <X className="h-4 w-4 text-muted-foreground" />
+              <Search className="h-4 w-4" />
             </Button>
-          </div>
-        ) : hasActiveTags ? (
-          <button
-            onClick={() => setIsSearchExpanded(true)}
-            className="flex items-center gap-2 h-8 px-3 border border-border rounded-full bg-card hover:border-muted-foreground/30"
-          >
-            <Search size={14} className="text-muted-foreground" />
-            {Object.entries(parsedFilters).flatMap(([category, values]) =>
-              values?.slice(0, 2).map((value, index) => (
-                <span
-                  key={`${category}-${index}`}
-                  className="px-2 py-0.5 rounded-full border border-white/20 bg-transparent text-foreground text-[10px]"
-                >
-                  {value}
-                </span>
-              ))
-            )}
-            {totalTagCount > 2 && (
-              <span className="text-[10px] text-muted-foreground">+{totalTagCount - 2}</span>
-            )}
-          </button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-accent"
-            onClick={() => setIsSearchExpanded(true)}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+
+      {/* Breadcrumb or Title */}
+      {showBreadcrumb ? (
+        <div className="flex-1 min-w-0 overflow-hidden flex items-center">
+          <SearchableBreadcrumb />
+        </div>
+      ) : (
+        <div className="flex items-center px-2">
+          <h1 className="text-sm font-medium">{title}</h1>
+        </div>
+      )}
+
+      {/* Spacer if using title (to handle flex) */}
+      {!showBreadcrumb && <div className="flex-1" />}
+
+      {/* Custom Actions (Children) */}
+      {children}
 
       {/* Actions */}
       <div className="flex items-center gap-1">
@@ -235,24 +269,7 @@ const Header = ({
           >
             <LogOut className="h-4 w-4" />
           </Button>
-        ) : showFilterButton ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-accent"
-            onClick={onSidebarToggle || onFilterClick}
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-accent"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-        )}
+        ) : null}
       </div>
 
       {/* Dropdown */}

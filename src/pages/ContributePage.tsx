@@ -23,49 +23,51 @@ const ContributePage = () => {
   } = useContributeForm();
 
   return (
-    <DashboardLayout title="Contribute">
-      <div className="max-w-7xl mx-auto p-3">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Contribute to OEMWDB</h1>
-          <p className="text-muted-foreground mt-2">
-            Help expand the database by adding brands, vehicles, or wheels
-          </p>
+    <DashboardLayout title="Contribute" disableContentPadding={true}>
+      <div className="h-full p-2 overflow-y-auto">
+        <div className="max-w-7xl mx-auto p-1">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold">Contribute to OEMWDB</h1>
+            <p className="text-muted-foreground mt-2">
+              Help expand the database by adding brands, vehicles, or wheels
+            </p>
+          </div>
+
+          <Tabs defaultValue="brand" className="w-full">
+            <TabsList className="grid grid-cols-3 w-full mb-6">
+              <TabsTrigger value="brand">Add Brand</TabsTrigger>
+              <TabsTrigger value="vehicle">Add Vehicle</TabsTrigger>
+              <TabsTrigger value="wheel">Add Wheel</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="brand">
+              <BrandForm
+                brandData={brandData}
+                setBrandData={setBrandData}
+                onSubmit={handleSubmitBrand}
+                isSubmitting={isSubmitting}
+              />
+            </TabsContent>
+
+            <TabsContent value="vehicle">
+              <VehicleForm
+                vehicleData={vehicleData}
+                setVehicleData={setVehicleData}
+                onSubmit={handleSubmitVehicle}
+                isSubmitting={isSubmitting}
+              />
+            </TabsContent>
+
+            <TabsContent value="wheel">
+              <WheelForm
+                wheelData={wheelData}
+                setWheelData={setWheelData}
+                onSubmit={handleSubmitWheel}
+                isSubmitting={isSubmitting}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
-        
-        <Tabs defaultValue="brand" className="w-full">
-          <TabsList className="grid grid-cols-3 w-full mb-6">
-            <TabsTrigger value="brand">Add Brand</TabsTrigger>
-            <TabsTrigger value="vehicle">Add Vehicle</TabsTrigger>
-            <TabsTrigger value="wheel">Add Wheel</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="brand">
-            <BrandForm
-              brandData={brandData}
-              setBrandData={setBrandData}
-              onSubmit={handleSubmitBrand}
-              isSubmitting={isSubmitting}
-            />
-          </TabsContent>
-          
-          <TabsContent value="vehicle">
-            <VehicleForm
-              vehicleData={vehicleData}
-              setVehicleData={setVehicleData}
-              onSubmit={handleSubmitVehicle}
-              isSubmitting={isSubmitting}
-            />
-          </TabsContent>
-          
-          <TabsContent value="wheel">
-            <WheelForm
-              wheelData={wheelData}
-              setWheelData={setWheelData}
-              onSubmit={handleSubmitWheel}
-              isSubmitting={isSubmitting}
-            />
-          </TabsContent>
-        </Tabs>
       </div>
     </DashboardLayout>
   );

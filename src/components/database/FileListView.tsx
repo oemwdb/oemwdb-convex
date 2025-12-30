@@ -8,7 +8,7 @@ import { TableColumn } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw, Search, Plus, Download, RotateCcw } from "lucide-react";
-import { useColumnOrder } from "@/hooks/useColumnOrder";
+
 import { toast } from "sonner";
 
 interface FileListViewProps {
@@ -21,6 +21,8 @@ interface FileListViewProps {
   onDeleteRows: (rowIds: string[]) => void;
   onExport: () => void;
   onCreateRecord?: (data: Record<string, any>) => Promise<void>;
+  searchQuery: string;
+  onColumnReorder: (oldIndex: number, newIndex: number) => void;
 }
 
 export function FileListView({
@@ -33,19 +35,18 @@ export function FileListView({
   onDeleteRows,
   onExport,
   onCreateRecord,
+  searchQuery,
+  onColumnReorder,
 }: FileListViewProps) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set()); // Format: "rowId:columnId"
   const [lastSelectedCell, setLastSelectedCell] = useState<{ rowId: string; columnId: string } | null>(null);
   const [anchorCell, setAnchorCell] = useState<{ rowId: string; columnId: string } | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const { orderedColumns, reorderColumns, resetToDefault } = useColumnOrder(tableName, columns);
-
-  const filteredData = data.filter((row) => {
+  const filteredData = (data || []).filter((row) => {
     if (!searchQuery) return true;
     return Object.values(row).some((value) =>
       String(value).toLowerCase().includes(searchQuery.toLowerCase())
@@ -71,8 +72,8 @@ export function FileListView({
 
       const rowIndexStart = sortedData.findIndex((r) => r.id === anchorCell.rowId);
       const rowIndexEnd = sortedData.findIndex((r) => r.id === rowId);
-      const colIndexStart = orderedColumns.findIndex((c) => c.id === anchorCell.columnId);
-      const colIndexEnd = orderedColumns.findIndex((c) => c.id === columnId);
+      const colIndexStart = columns.findIndex((c) => c.id === anchorCell.columnId);
+      const colIndexEnd = columns.findIndex((c) => c.id === columnId);
 
       const minRow = Math.min(rowIndexStart, rowIndexEnd);
       const maxRow = Math.max(rowIndexStart, rowIndexEnd);
@@ -81,7 +82,7 @@ export function FileListView({
 
       for (let r = minRow; r <= maxRow; r++) {
         for (let c = minCol; c <= maxCol; c++) {
-          newSelected.add(`${sortedData[r].id}:${orderedColumns[c].id}`);
+          newSelected.add(`${sortedData[r].id}:${columns[c].id}`);
         }
       }
 
@@ -99,7 +100,7 @@ export function FileListView({
     if (checked) {
       const allCells = new Set<string>();
       sortedData.forEach((row) => {
-        orderedColumns.forEach((col) => {
+        columns.forEach((col) => {
           allCells.add(`${row.id}:${col.id}`);
         });
       });
@@ -116,10 +117,6 @@ export function FileListView({
       setSortColumn(columnId);
       setSortDirection("asc");
     }
-  };
-
-  const handleColumnReorder = (oldIndex: number, newIndex: number) => {
-    reorderColumns(oldIndex, newIndex);
   };
 
   // Copy selected cells to clipboard
@@ -143,7 +140,7 @@ export function FileListView({
           cellsByRow.set(rowId, new Map());
         }
         const row = sortedData.find(r => r.id === rowId);
-        const column = orderedColumns.find(c => c.id === columnId);
+        const column = columns.find(c => c.id === columnId);
         if (row && column) {
           cellsByRow.get(rowId)!.set(columnId, row[column.key]);
         }
@@ -158,7 +155,7 @@ export function FileListView({
 
       const colIds = new Set<string>();
       cellsByRow.forEach(cols => cols.forEach((_, colId) => colIds.add(colId)));
-      const sortedColIds = orderedColumns.filter(c => colIds.has(c.id)).map(c => c.id);
+      const sortedColIds = columns.filter(c => colIds.has(c.id)).map(c => c.id);
 
       const tsvData = rowIds.map(rowId => {
         const rowCells = cellsByRow.get(rowId)!;
@@ -179,13 +176,13 @@ export function FileListView({
 
     document.addEventListener('copy', handleCopy);
     return () => document.removeEventListener('copy', handleCopy);
-  }, [selectedCells, sortedData, orderedColumns]);
+  }, [selectedCells, sortedData, columns]);
 
   // Keyboard navigation with shift support (all 4 directions)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-      if (!sortedData.length || !orderedColumns.length) return;
+      if (!sortedData.length || !columns.length) return;
 
       // Don't interfere with input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -200,7 +197,7 @@ export function FileListView({
 
       if (lastSelectedCell) {
         currentRowIndex = sortedData.findIndex((r) => r.id === lastSelectedCell.rowId);
-        currentColIndex = orderedColumns.findIndex((c) => c.id === lastSelectedCell.columnId);
+        currentColIndex = columns.findIndex((c) => c.id === lastSelectedCell.columnId);
       }
 
       // Calculate new position
@@ -212,18 +209,18 @@ export function FileListView({
       } else if (e.key === 'ArrowUp') {
         newRowIndex = Math.max(currentRowIndex - 1, 0);
       } else if (e.key === 'ArrowRight') {
-        newColIndex = Math.min(currentColIndex + 1, orderedColumns.length - 1);
+        newColIndex = Math.min(currentColIndex + 1, columns.length - 1);
       } else if (e.key === 'ArrowLeft') {
         newColIndex = Math.max(currentColIndex - 1, 0);
       }
 
       const newRowId = sortedData[newRowIndex].id;
-      const newColId = orderedColumns[newColIndex].id;
+      const newColId = columns[newColIndex].id;
 
       if (e.shiftKey && anchorCell) {
         // Shift + Arrow: Range selection from anchor to new position
         const anchorRowIndex = sortedData.findIndex((r) => r.id === anchorCell.rowId);
-        const anchorColIndex = orderedColumns.findIndex((c) => c.id === anchorCell.columnId);
+        const anchorColIndex = columns.findIndex((c) => c.id === anchorCell.columnId || c.id === anchorCell.columnId);
 
         const minRow = Math.min(anchorRowIndex, newRowIndex);
         const maxRow = Math.max(anchorRowIndex, newRowIndex);
@@ -233,7 +230,7 @@ export function FileListView({
         const newSelected = new Set<string>();
         for (let r = minRow; r <= maxRow; r++) {
           for (let c = minCol; c <= maxCol; c++) {
-            newSelected.add(`${sortedData[r].id}:${orderedColumns[c].id}`);
+            newSelected.add(`${sortedData[r].id}:${columns[c].id}`);
           }
         }
         setSelectedCells(newSelected);
@@ -248,7 +245,7 @@ export function FileListView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sortedData, orderedColumns, lastSelectedCell, anchorCell]);
+  }, [sortedData, columns, lastSelectedCell, anchorCell]);
 
   // Extract unique row IDs from selected cells
   const getSelectedRowIds = (): Set<string> => {
@@ -297,53 +294,7 @@ export function FileListView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRefetch}
-            disabled={isLoading}
-            className="h-8 px-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search records..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 pr-3 text-xs w-[240px] bg-muted/30"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={resetToDefault}
-            className="h-8 text-xs"
-            title="Reset column order to default"
-          >
-            <RotateCcw className="h-3.5 w-3.5 mr-1" />
-            Reset Order
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCreateDialog(true)}
-            className="h-8 text-xs"
-          >
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            New
-          </Button>
-          <Button variant="outline" size="sm" onClick={onExport} className="h-8 text-xs">
-            <Download className="h-3.5 w-3.5 mr-1" />
-            Export
-          </Button>
-        </div>
-      </div>
+      {/* Header removed as controls are hoisted */}
 
       {selectedCells.size > 0 && (
         <BulkActionsBar
@@ -358,17 +309,17 @@ export function FileListView({
         />
       )}
 
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden border border-border rounded-xl shadow-sm bg-card">
         <CellSelectableTable
           data={sortedData}
-          columns={orderedColumns}
+          columns={columns}
           selectedCells={selectedCells}
           onCellClick={handleCellClick}
           onSelectAll={handleSelectAll}
           onSort={handleSort}
           sortColumn={sortColumn}
           sortDirection={sortDirection}
-          onColumnReorder={handleColumnReorder}
+          onColumnReorder={onColumnReorder}
           onCellEdit={onCellEdit}
         />
         <StatusBar
@@ -382,14 +333,14 @@ export function FileListView({
         open={showBulkEdit}
         onOpenChange={setShowBulkEdit}
         selectedRecords={selectedRecordsData}
-        columns={orderedColumns}
+        columns={columns}
         onSave={handleBulkUpdate}
       />
 
       <CreateRecordDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        columns={orderedColumns}
+        columns={columns}
         onSave={handleCreateRecord}
       />
     </div>

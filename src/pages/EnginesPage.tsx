@@ -10,8 +10,8 @@ const EnginesPage = () => {
 
     if (isLoading) {
         return (
-            <DashboardLayout title="Engines">
-                <div className="flex items-center justify-center py-24">
+            <DashboardLayout title="Engines" disableContentPadding={true}>
+                <div className="flex items-center justify-center py-24 p-2">
                     <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
                 </div>
             </DashboardLayout>
@@ -20,19 +20,21 @@ const EnginesPage = () => {
 
     if (error) {
         return (
-            <DashboardLayout title="Engines">
-                <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
-                    <CircleSlash2 className="h-16 w-16 mx-auto mb-4 text-destructive/50" />
-                    <h2 className="text-2xl font-bold mb-2 text-foreground">Error loading engines</h2>
-                    <p className="text-muted-foreground">{error.message}</p>
-                </Card>
+            <DashboardLayout title="Engines" disableContentPadding={true}>
+                <div className="p-2">
+                    <Card className="p-12 text-center bg-destructive/5 border-destructive/20">
+                        <CircleSlash2 className="h-16 w-16 mx-auto mb-4 text-destructive/50" />
+                        <h2 className="text-2xl font-bold mb-2 text-foreground">Error loading engines</h2>
+                        <p className="text-muted-foreground">{error.message}</p>
+                    </Card>
+                </div>
             </DashboardLayout>
         );
     }
 
     return (
-        <DashboardLayout title="OEM Engines">
-            <div className="px-4 pt-4 space-y-4">
+        <DashboardLayout title="OEM Engines" disableContentPadding={true}>
+            <div className="p-2 space-y-4">
                 {/* Results count */}
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
@@ -42,7 +44,7 @@ const EnginesPage = () => {
 
                 {/* Engine Grid */}
                 {engines && engines.length > 0 ? (
-                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
                         {engines.map((engine) => (
                             <EngineCard
                                 key={engine.id}

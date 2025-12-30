@@ -142,8 +142,9 @@ const UsersPage = () => {
       onSearchChange={setSearchValue}
       searchPlaceholder="Search users..."
       showFilterButton={false}
+      disableContentPadding={true}
     >
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Card className="p-3 border-border/50">

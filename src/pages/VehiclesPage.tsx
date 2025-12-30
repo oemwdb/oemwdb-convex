@@ -207,82 +207,85 @@ const VehiclesPage = () => {
           totalResults={filteredVehicles.length}
         />
       }
+      disableContentPadding={true}
     >
-      {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Loading vehicles...</div>
-      ) : isError ? (
-        <div className="text-center py-10 text-red-500">
-          Failed to load vehicles.
-          {error?.message && <span className="block mt-2 text-xs text-slate-400">Error: {error.message}</span>}
-        </div>
-      ) : (
-        <>
-          <VehiclesGrid
-            vehicles={paginatedVehicles}
-            flippedCards={flippedCards}
-            onFlip={toggleCardFlip}
-          />
+      <div className="h-full p-2 overflow-y-auto">
+        {isLoading ? (
+          <div className="text-center py-10 text-muted-foreground">Loading vehicles...</div>
+        ) : isError ? (
+          <div className="text-center py-10 text-red-500">
+            Failed to load vehicles.
+            {error?.message && <span className="block mt-2 text-xs text-slate-400">Error: {error.message}</span>}
+          </div>
+        ) : (
+          <>
+            <VehiclesGrid
+              vehicles={paginatedVehicles}
+              flippedCards={flippedCards}
+              onFlip={toggleCardFlip}
+            />
 
-          {totalPages > 1 && (
-            <div className="mt-6 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                  {currentPage > 2 && (
-                    <>
-                      <PaginationItem>
-                        <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">1</PaginationLink>
-                      </PaginationItem>
-                      {currentPage > 3 && <PaginationEllipsis />}
-                    </>
-                  )}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(page => page === currentPage || page === currentPage - 1 || page === currentPage + 1)
-                    .map(page => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))
-                  }
-                  {currentPage < totalPages - 1 && (
-                    <>
-                      {currentPage < totalPages - 2 && <PaginationEllipsis />}
-                      <PaginationItem>
-                        <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
-                          {totalPages}
-                        </PaginationLink>
-                      </PaginationItem>
-                    </>
-                  )}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {currentPage > 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">1</PaginationLink>
+                        </PaginationItem>
+                        {currentPage > 3 && <PaginationEllipsis />}
+                      </>
+                    )}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => page === currentPage || page === currentPage - 1 || page === currentPage + 1)
+                      .map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))
+                    }
+                    {currentPage < totalPages - 1 && (
+                      <>
+                        {currentPage < totalPages - 2 && <PaginationEllipsis />}
+                        <PaginationItem>
+                          <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
 
-          {filteredVehicles.length > 0 && (
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredVehicles.length)} of {filteredVehicles.length} vehicles
-            </div>
-          )}
-        </>
-      )}
+            {filteredVehicles.length > 0 && (
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredVehicles.length)} of {filteredVehicles.length} vehicles
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </DashboardLayout>
   );
 };

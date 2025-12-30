@@ -91,7 +91,7 @@ const MarketPage = () => {
 
   const getConditionBadge = (condition: string | null) => {
     if (!condition) return null;
-    
+
     const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
       new: "default",
       "like-new": "default",
@@ -124,8 +124,9 @@ const MarketPage = () => {
       onSearchChange={setSearchValue}
       searchPlaceholder="Search listings..."
       showFilterButton={false}
+      disableContentPadding={true}
     >
-      <div className="p-4">
+      <div className="h-full p-2 overflow-y-auto">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full sm:w-auto">
@@ -138,7 +139,7 @@ const MarketPage = () => {
           </Tabs>
 
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button 
+            <Button
               onClick={() => navigate("/market/new")}
               size="sm"
               className="h-9"
@@ -232,7 +233,7 @@ const MarketPage = () => {
                       <Package className="h-8 w-8 text-muted-foreground/50" />
                     </div>
                   )}
-                  
+
                   {/* Type Badge */}
                   <Badge className="absolute top-2 left-2 text-xs capitalize">
                     {listing.listing_type}

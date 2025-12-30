@@ -66,7 +66,7 @@ const CollectionTemplatesPage: React.FC = () => {
 
   const generateCode = () => {
     const gridClasses = `grid-cols-${config.gridCols.xs} xs:grid-cols-${config.gridCols.xs} sm:grid-cols-${config.gridCols.sm} md:grid-cols-${config.gridCols.md} lg:grid-cols-${config.gridCols.lg} xl:grid-cols-${config.gridCols.xl} 2xl:grid-cols-${config.gridCols["2xl"]}`;
-    
+
     return `import React, { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useCollectionSearch } from "@/hooks/useCollectionSearch";
@@ -122,8 +122,8 @@ const ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}Page: React.FC = 
   };
 
   return (
-    <DashboardLayout title="Collection Templates">
-      <div className="space-y-6">
+    <DashboardLayout title="Collection Templates" disableContentPadding={true}>
+      <div className="h-full p-2 overflow-y-auto space-y-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -144,7 +144,7 @@ const ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}Page: React.FC = 
           {/* Configuration Panel */}
           <Card className="p-6 space-y-6">
             <h2 className="text-lg font-semibold">Configuration</h2>
-            
+
             {/* Grid Layout Settings */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium">Grid Layout</h3>
@@ -304,7 +304,7 @@ const ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}Page: React.FC = 
                   <WheelCollectionTemplate config={config} />
                 </TabsContent>
                 <TabsContent value="brands">
-                  <BrandCollectionTemplate 
+                  <BrandCollectionTemplate
                     brands={[
                       { id: 1, name: 'Mercedes-Benz', brand_description: 'German luxury automobile manufacturer', wheel_count: 45, vehicle_count: 12 },
                       { id: 2, name: 'BMW', brand_description: 'Bavarian Motor Works', wheel_count: 38, vehicle_count: 10 },

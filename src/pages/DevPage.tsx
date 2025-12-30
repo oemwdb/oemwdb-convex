@@ -35,8 +35,8 @@ const DevPage = () => {
   const totalVehicles = vehicles.length;
 
   return (
-    <DashboardLayout title="Admin Dashboard" showFilterButton={false}>
-      <div className="p-4 space-y-4">
+    <DashboardLayout title="Admin Dashboard" showFilterButton={false} disableContentPadding={true}>
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>

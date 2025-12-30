@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { 
-  Car, 
-  CircleDot, 
-  Building2, 
-  Code2, 
+import {
+  Car,
+  CircleDot,
+  Building2,
+  Code2,
   Eye,
   Layers,
   Settings,
@@ -125,7 +125,7 @@ export default function PageTemplatesPage() {
   const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  
+
   const { mappings, loading, saving, saveMappings } = usePageMappings(activeTemplate);
   const [localMappings, setLocalMappings] = useState(mappings);
 
@@ -146,39 +146,39 @@ export default function PageTemplatesPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (active.id !== over?.id && localMappings) {
-      const activeSection = localMappings.sections.find(s => 
+      const activeSection = localMappings.sections.find(s =>
         s.fields.some(f => f.id === active.id)
       );
-      
+
       if (activeSection) {
         const oldIndex = activeSection.fields.findIndex(f => f.id === active.id);
         const newIndex = activeSection.fields.findIndex(f => f.id === over?.id);
-        
+
         if (oldIndex !== -1 && newIndex !== -1) {
           const newFields = arrayMove(activeSection.fields, oldIndex, newIndex);
           const newSections = localMappings.sections.map(s =>
             s.id === activeSection.id ? { ...s, fields: newFields } : s
           );
-          
+
           const newMappings = { ...localMappings, sections: newSections };
           setLocalMappings(newMappings);
           saveMappings(newMappings);
         }
       }
     }
-    
+
     setActiveId(null);
   };
 
   const toggleSection = (sectionId: string) => {
     if (!localMappings) return;
-    
+
     const newSections = localMappings.sections.map(section =>
       section.id === sectionId ? { ...section, enabled: !section.enabled } : section
     );
-    
+
     const newMappings = { ...localMappings, sections: newSections };
     setLocalMappings(newMappings);
     saveMappings(newMappings);
@@ -186,7 +186,7 @@ export default function PageTemplatesPage() {
 
   const toggleFieldVisibility = (sectionId: string, fieldId: string) => {
     if (!localMappings) return;
-    
+
     const newSections = localMappings.sections.map(section => {
       if (section.id === sectionId) {
         const newFields = section.fields.map(field =>
@@ -196,7 +196,7 @@ export default function PageTemplatesPage() {
       }
       return section;
     });
-    
+
     const newMappings = { ...localMappings, sections: newSections };
     setLocalMappings(newMappings);
     saveMappings(newMappings);
@@ -204,11 +204,11 @@ export default function PageTemplatesPage() {
 
   const updateSectionName = (sectionId: string, newName: string) => {
     if (!localMappings) return;
-    
+
     const newSections = localMappings.sections.map(section =>
       section.id === sectionId ? { ...section, name: newName } : section
     );
-    
+
     const newMappings = { ...localMappings, sections: newSections };
     setLocalMappings(newMappings);
     saveMappings(newMappings);
@@ -217,9 +217,9 @@ export default function PageTemplatesPage() {
 
   const generateCode = () => {
     if (!localMappings) return '';
-    
+
     const enabledSections = localMappings.sections.filter(s => s.enabled);
-    
+
     return `// ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(1)} Detail Page Template
 import React from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
@@ -229,13 +229,13 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
   return (
     <DashboardLayout>
       ${enabledSections.map(section => {
-        const visibleFields = section.fields.filter(f => f.visible);
-        return `
+      const visibleFields = section.fields.filter(f => f.visible);
+      return `
       {/* ${section.name} */}
       <${section.name.replace(/\s+/g, '')} 
         ${visibleFields.map(field => `${field.field}={data.${field.value}}`).join('\n        ')}
       />`;
-      }).join('\n      ')}
+    }).join('\n      ')}
     </DashboardLayout>
   );
 }`;
@@ -243,22 +243,22 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
 
   const renderPreview = () => {
     if (!localMappings) return null;
-    
+
     const enabledSections = localMappings.sections.filter(s => s.enabled);
-    const fields = enabledSections.flatMap(s => 
+    const fields = enabledSections.flatMap(s =>
       s.fields.filter(f => f.visible).map(f => ({
         id: f.id,
         value: f.value,
         label: f.label
       }))
     );
-    
+
     switch (activeTemplate) {
       case 'vehicle':
         return (
           <div className="space-y-6">
             {enabledSections.map(section => {
-              switch(section.id) {
+              switch (section.id) {
                 case 'header':
                   return (
                     <HighlightableVehicleHeader
@@ -315,12 +315,12 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
             })}
           </div>
         );
-        
+
       case 'wheel':
         return (
           <div className="space-y-6">
             {enabledSections.map(section => {
-              switch(section.id) {
+              switch (section.id) {
                 case 'header':
                   return (
                     <HighlightableWheelHeader
@@ -367,12 +367,12 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
             })}
           </div>
         );
-        
+
       case 'brand':
         return (
           <div className="space-y-6">
             {enabledSections.map(section => {
-              switch(section.id) {
+              switch (section.id) {
                 case 'header':
                   return (
                     <HighlightableBrandHeader
@@ -403,11 +403,12 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
   }
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Page Templates"
       showFilterButton={false}
+      disableContentPadding={true}
     >
-      <div className="h-full overflow-hidden flex flex-col p-6">
+      <div className="h-full overflow-hidden flex flex-col p-2">
         <div className="mb-4">
           <h1 className="text-2xl font-bold mb-1">Page Templates</h1>
           <p className="text-sm text-muted-foreground">
@@ -517,7 +518,7 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
                                 className="h-7 text-sm font-medium"
                               />
                             ) : (
-                              <span 
+                              <span
                                 className="text-sm font-medium cursor-pointer hover:underline"
                                 onClick={() => setEditingSectionId(section.id)}
                               >
@@ -529,7 +530,7 @@ export function ${activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(
                               onCheckedChange={() => toggleSection(section.id)}
                             />
                           </div>
-                          
+
                           {section.enabled && section.fields.length > 0 && (
                             <div className="space-y-2 mt-2">
                               <SortableContext

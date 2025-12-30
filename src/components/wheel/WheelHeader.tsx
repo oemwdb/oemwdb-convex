@@ -18,6 +18,7 @@ interface WheelHeaderProps {
     diameter_refs: string[];
     width_ref: string[];
     offset: string;
+    offset_refs?: string[]; // New field
     bolt_pattern_refs: string[];
     center_bore_ref: string[];
     color_refs: string[];
@@ -143,7 +144,15 @@ const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, i
               <div className="flex items-center gap-2">
                 <span className="font-medium text-muted-foreground min-w-[90px]">Offset:</span>
                 <div className="flex flex-wrap gap-1">
-                  {specs.offset ? (
+                  {specs.offset_refs && specs.offset_refs.length > 0 ? (
+                    specs.offset_refs.map((offset, idx) => (
+                      <Link key={idx} to={`/wheels?offset=${encodeURIComponent(offset)}`}>
+                        <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors text-xs py-0 h-5">
+                          {offset}
+                        </Badge>
+                      </Link>
+                    ))
+                  ) : specs.offset ? (
                     <Link to={`/wheels?offset=${encodeURIComponent(specs.offset)}`}>
                       <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors text-xs py-0 h-5">
                         {specs.offset}

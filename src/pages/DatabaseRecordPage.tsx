@@ -96,7 +96,7 @@ export default function DatabaseRecordPage() {
         .eq('id', recordId);
 
       if (error) throw error;
-      
+
       await refetch();
       toast.success('Record updated successfully');
     } catch (error) {
@@ -126,8 +126,8 @@ export default function DatabaseRecordPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="h-screen flex flex-col">
+    <DashboardLayout disableContentPadding={true}>
+      <div className="h-full p-2 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="border-b p-4 flex items-center gap-4">
           <Button

@@ -181,25 +181,28 @@ const WheelsPage = () => {
           totalResults={filteredWheels.length}
         />
       }
+      disableContentPadding={true}
     >
-      {error ? (
-        <Card className="p-8 text-center bg-destructive/5 border-destructive/20">
-          <CircleSlash2 className="h-10 w-10 mx-auto mb-3 text-destructive/50" />
-          <h3 className="text-base font-semibold text-destructive mb-1">Failed to Load Wheels</h3>
-          <p className="text-sm text-muted-foreground">Please try again later</p>
-        </Card>
-      ) : isLoading ? (
-        <Card className="p-8 text-center bg-muted/20">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-3 text-primary" />
-          <p className="text-muted-foreground">Loading wheels...</p>
-        </Card>
-      ) : (
-        <WheelsGrid
-          wheels={filteredWheels}
-          flippedCards={flippedCards}
-          onFlip={toggleCardFlip}
-        />
-      )}
+      <div className="h-full p-2 overflow-y-auto">
+        {error ? (
+          <Card className="p-8 text-center bg-destructive/5 border-destructive/20">
+            <CircleSlash2 className="h-10 w-10 mx-auto mb-3 text-destructive/50" />
+            <h3 className="text-base font-semibold text-destructive mb-1">Failed to Load Wheels</h3>
+            <p className="text-sm text-muted-foreground">Please try again later</p>
+          </Card>
+        ) : isLoading ? (
+          <Card className="p-8 text-center bg-muted/20">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto mb-3 text-primary" />
+            <p className="text-muted-foreground">Loading wheels...</p>
+          </Card>
+        ) : (
+          <WheelsGrid
+            wheels={filteredWheels}
+            flippedCards={flippedCards}
+            onFlip={toggleCardFlip}
+          />
+        )}
+      </div>
     </DashboardLayout>
   );
 };

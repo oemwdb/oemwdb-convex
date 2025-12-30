@@ -109,7 +109,7 @@ const SearchableBreadcrumb: React.FC = () => {
                 <button
                   onClick={() => handleItemClick(item, actualIndex)}
                   className={cn(
-                    "inline-flex items-center px-2 h-9 rounded-lg font-medium whitespace-nowrap",
+                    "inline-flex items-center px-3 h-8 rounded-full font-medium whitespace-nowrap",
                     "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
                     "border border-border hover:border-border/80",
                     "transition-all duration-200"

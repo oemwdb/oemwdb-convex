@@ -68,8 +68,8 @@ const RegisteredVehiclesPage = () => {
   };
 
   return (
-    <DashboardLayout title="Registered Vehicles" showFilterButton={false}>
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4">
+    <DashboardLayout title="Registered Vehicles" showFilterButton={false} disableContentPadding={true}>
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>

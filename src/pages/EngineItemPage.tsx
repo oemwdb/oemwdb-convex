@@ -113,8 +113,8 @@ const EngineItemPage = () => {
     };
 
     return (
-        <DashboardLayout title={engine.engine_name || engine.engine_code}>
-            <div className="p-4 space-y-4">
+        <DashboardLayout title={engine.engine_name || engine.engine_code} disableContentPadding={true}>
+            <div className="h-full p-2 space-y-4 overflow-y-auto">
                 {/* Header Card */}
                 <Card>
                     <CardContent className="p-6">

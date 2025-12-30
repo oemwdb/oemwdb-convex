@@ -26,22 +26,22 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { 
-  DndContext, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
   useSensors,
   DragOverlay,
   DragStartEvent,
   DragEndEvent
 } from '@dnd-kit/core';
-import { 
-  arrayMove, 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
-  verticalListSortingStrategy 
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -86,7 +86,7 @@ const CardSystemPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  
+
   // Custom card data for CREATE tab
   const [customCardData, setCustomCardData] = useState({
     title: "Custom Card Title",
@@ -97,7 +97,7 @@ const CardSystemPage = () => {
       { id: "field-2", label: "Field 2", value: "Value 2" },
     ]
   });
-  
+
   // Enhanced data mappings with order and location
   const [dataMappings, setDataMappings] = useState({
     master: [
@@ -164,7 +164,7 @@ const CardSystemPage = () => {
       });
 
     setIsSaving(false);
-    
+
     if (error) {
       console.error('Error saving mappings:', error);
       toast({
@@ -199,14 +199,14 @@ const CardSystemPage = () => {
     const updatedMappings = dataMappings[cardType as keyof typeof dataMappings].map(item =>
       item.field === element ? { ...item, value: newMapping } : item
     );
-    
+
     setDataMappings(prev => ({
       ...prev,
       [cardType]: updatedMappings
     }));
-    
+
     setSelectedElement(null);
-    
+
     // Save to Supabase
     saveMappings(cardType, updatedMappings);
   };
@@ -215,12 +215,12 @@ const CardSystemPage = () => {
     const updatedMappings = dataMappings[cardType as keyof typeof dataMappings].map(item =>
       item.id === id ? { ...item, label: newLabel } : item
     );
-    
+
     setDataMappings(prev => ({
       ...prev,
       [cardType]: updatedMappings
     }));
-    
+
     // Save to Supabase
     saveMappings(cardType, updatedMappings);
   };
@@ -240,15 +240,15 @@ const CardSystemPage = () => {
 
     // Get current mappings
     const currentMappings = [...dataMappings[cardType as keyof typeof dataMappings]];
-    
+
     // Find the active item (could be from mapped or unmapped)
     let activeItem = currentMappings.find(item => item.id === activeId);
-    
+
     // If not found in mappings, it's from unmapped columns
     if (!activeItem) {
       const unmappedColumn = activeId;
       const columnType = allTableColumns[cardType as keyof typeof allTableColumns][unmappedColumn] || 'text';
-      
+
       // Create new mapping for unmapped column
       activeItem = {
         id: unmappedColumn.replace(/\./g, '_'),
@@ -264,10 +264,10 @@ const CardSystemPage = () => {
     if (overId === 'droppable-back' || overId === 'droppable-unmapped') {
       // Dropped on a section header
       const targetLocation = overId === 'droppable-back' ? 'back' : 'hidden';
-      
+
       // Update or add the item
       const existingIndex = currentMappings.findIndex(item => item.id === activeItem.id);
-      
+
       if (existingIndex !== -1) {
         // Update existing item's location
         currentMappings[existingIndex] = { ...activeItem, location: targetLocation };
@@ -279,20 +279,20 @@ const CardSystemPage = () => {
     } else {
       // Dropped on another item - reorder within section
       const overItem = currentMappings.find(item => item.id === overId);
-      
+
       if (overItem) {
         // Determine target location from the over item
         const targetLocation = overItem.location;
-        
+
         // Remove active item if it exists
         const filteredMappings = currentMappings.filter(item => item.id !== activeItem.id);
-        
+
         // Update active item's location
         activeItem.location = targetLocation;
-        
+
         // Find where to insert
         const overIndex = filteredMappings.findIndex(item => item.id === overId);
-        
+
         if (overIndex !== -1) {
           // Insert at the over position
           filteredMappings.splice(overIndex, 0, activeItem);
@@ -300,7 +300,7 @@ const CardSystemPage = () => {
           // Add to end
           filteredMappings.push(activeItem);
         }
-        
+
         // Update mappings
         currentMappings.length = 0;
         currentMappings.push(...filteredMappings);
@@ -311,43 +311,43 @@ const CardSystemPage = () => {
     const backItems = currentMappings.filter(item => item.location === 'back');
     const hiddenItems = currentMappings.filter(item => item.location === 'hidden');
     const frontItems = currentMappings.filter(item => item.location === 'front');
-    
+
     backItems.forEach((item, index) => {
       item.order = index;
     });
-    
+
     hiddenItems.forEach((item, index) => {
       item.order = index;
     });
-    
+
     frontItems.forEach((item, index) => {
       item.order = index;
     });
-    
+
     const updatedMappings = [...frontItems, ...backItems, ...hiddenItems];
-    
+
     setDataMappings(prev => ({
       ...prev,
       [cardType]: updatedMappings
     }));
-    
+
     // Save to Supabase
     saveMappings(cardType, updatedMappings);
   };
 
   const toggleVisibility = (id: string) => {
     const updatedMappings = dataMappings[cardType as keyof typeof dataMappings].map(item =>
-      item.id === id ? { 
-        ...item, 
-        location: item.location === 'hidden' ? 'back' : 'hidden' 
+      item.id === id ? {
+        ...item,
+        location: item.location === 'hidden' ? 'back' : 'hidden'
       } : item
     );
-    
+
     setDataMappings(prev => ({
       ...prev,
       [cardType]: updatedMappings
     }));
-    
+
     // Save to Supabase
     saveMappings(cardType, updatedMappings);
   };
@@ -445,13 +445,13 @@ const CardSystemPage = () => {
 
   // Available columns for dropdown (only user-friendly ones)
   const availableColumns = {
-    brand: Object.keys(allTableColumns.brand || {}).filter(col => 
+    brand: Object.keys(allTableColumns.brand || {}).filter(col =>
       !col.includes('uuid') && !col.includes('created_at') && !col.includes('updated_at')
     ),
-    vehicle: Object.keys(allTableColumns.vehicle || {}).filter(col => 
+    vehicle: Object.keys(allTableColumns.vehicle || {}).filter(col =>
       !col.includes('uuid') && !col.includes('created_at') && !col.includes('updated_at')
     ),
-    wheel: Object.keys(allTableColumns.wheel || {}).filter(col => 
+    wheel: Object.keys(allTableColumns.wheel || {}).filter(col =>
       !col.includes('uuid') && !col.includes('created_at') && !col.includes('updated_at')
     )
   };
@@ -554,7 +554,7 @@ const CardSystemPage = () => {
 
   // Helper function to get data type badge variant
   const getDataTypeBadgeVariant = (type: string) => {
-    switch(type) {
+    switch (type) {
       case 'tags': return 'default';
       case 'array': return 'secondary';
       case 'boolean': return 'outline';
@@ -576,10 +576,10 @@ const CardSystemPage = () => {
         />
       );
     }
-    
+
     const currentMappings = dataMappings[cardType as keyof typeof dataMappings] || [];
     const backMappings = currentMappings.filter(m => m.location === 'back').sort((a, b) => a.order - b.order);
-    
+
     switch (cardType) {
       case "brand":
         return (
@@ -667,8 +667,8 @@ const CardSystemPage = () => {
   const gridClasses = `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4`;
 
   return (
-    <DashboardLayout title="Card System Documentation" showFilterButton={false}>
-      <div className="p-3">
+    <DashboardLayout title="Card System Documentation" showFilterButton={false} disableContentPadding={true}>
+      <div className="h-full p-2 overflow-y-auto">
         <div className="flex items-center gap-4 mb-6">
           <Link to="/dev/templates">
             <Button variant="outline" size="sm">
@@ -721,7 +721,7 @@ const CardSystemPage = () => {
                   </TabsList>
                 </Tabs>
               </div>
-              
+
               {/* Custom Template Controls for CREATE tab */}
               {cardType === 'create' && (
                 <div className="mb-6 flex gap-4">
@@ -737,7 +737,7 @@ const CardSystemPage = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
                     <DialogTrigger asChild>
                       <Button size="sm">
@@ -772,10 +772,10 @@ const CardSystemPage = () => {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  
+
                   {selectedTemplate && (
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="destructive"
                       onClick={() => deleteTemplate(selectedTemplate)}
                     >
@@ -790,14 +790,14 @@ const CardSystemPage = () => {
                 {/* Card Display */}
                 <div className="lg:col-span-1">
                   <div className="flex justify-center items-center py-8">
-                    <div 
+                    <div
                       className="perspective-1000 w-full max-w-xs"
                       style={{ perspective: "1000px" }}
                     >
                       {renderClickableCard()}
                     </div>
                   </div>
-                  
+
                   <div className="text-center mt-4">
                     <p className="text-xs text-muted-foreground">
                       Click elements to change their data source
@@ -812,7 +812,7 @@ const CardSystemPage = () => {
                       <p className="text-sm font-medium mb-2">
                         Select data source for: {selectedElement}
                       </p>
-                      <Select 
+                      <Select
                         value={dataMappings[cardType as keyof typeof dataMappings].find(m => m.field === selectedElement)?.value || ""}
                         onValueChange={(value) => handleMappingChange(selectedElement, value)}
                       >
@@ -827,9 +827,9 @@ const CardSystemPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className="mt-2"
                         onClick={() => setSelectedElement(null)}
                       >
@@ -848,9 +848,9 @@ const CardSystemPage = () => {
                       {activeDragId ? (
                         <div className="p-3 rounded-lg bg-background shadow-lg border">
                           <p className="text-sm font-medium">
-                            {dataMappings[cardType as keyof typeof dataMappings].find(m => m.id === activeDragId)?.label || 
-                             activeDragId.split('.')[1]?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 
-                             activeDragId}
+                            {dataMappings[cardType as keyof typeof dataMappings].find(m => m.id === activeDragId)?.label ||
+                              activeDragId.split('.')[1]?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) ||
+                              activeDragId}
                           </p>
                         </div>
                       ) : null}
@@ -923,7 +923,7 @@ const CardSystemPage = () => {
                           <Eye className="h-4 w-4" />
                           Back of Card (Drop Zone)
                         </h3>
-                        <div 
+                        <div
                           id="droppable-back"
                           className={cn(
                             "min-h-[100px] rounded-lg border-2 border-dashed p-2",
@@ -1014,7 +1014,7 @@ const CardSystemPage = () => {
                           <EyeOff className="h-4 w-4" />
                           Not Shown on Card (Drag to Back of Card)
                         </h3>
-                        <div 
+                        <div
                           id="droppable-unmapped"
                           className={cn(
                             "min-h-[100px] rounded-lg border-2 border-dashed p-2",
@@ -1027,19 +1027,19 @@ const CardSystemPage = () => {
                               const mappedFields = dataMappings[cardType as keyof typeof dataMappings]
                                 .filter(m => m.location !== 'hidden')
                                 .map(m => m.value);
-                              
+
                               // Get all columns from the current table
                               const tableColumns = allTableColumns[cardType as keyof typeof allTableColumns] || {};
-                              
+
                               // Filter out already mapped columns  
-                              const unmappedColumns = Object.keys(tableColumns).filter(col => 
+                              const unmappedColumns = Object.keys(tableColumns).filter(col =>
                                 !mappedFields.includes(col)
                               );
-                              
+
                               // Get hidden mappings
                               const hiddenMappings = dataMappings[cardType as keyof typeof dataMappings]
                                 .filter(m => m.location === 'hidden');
-                              
+
                               return [...hiddenMappings.map(m => m.id), ...unmappedColumns];
                             })()}
                             strategy={verticalListSortingStrategy}
@@ -1050,19 +1050,19 @@ const CardSystemPage = () => {
                                 const mappedFields = dataMappings[cardType as keyof typeof dataMappings]
                                   .filter(m => m.location !== 'hidden')
                                   .map(m => m.value);
-                                
+
                                 // Get all columns from the current table - add null check
                                 const tableColumns = allTableColumns[cardType as keyof typeof allTableColumns] || {};
-                                
+
                                 // Filter out already mapped columns - now safe with empty object
-                                const unmappedColumns = Object.entries(tableColumns).filter(([col, type]) => 
+                                const unmappedColumns = Object.entries(tableColumns).filter(([col, type]) =>
                                   !mappedFields.includes(col)
                                 );
-                                
+
                                 // First show any manually hidden mappings
                                 const hiddenMappings = dataMappings[cardType as keyof typeof dataMappings]
                                   .filter(m => m.location === 'hidden');
-                                
+
                                 return (
                                   <>
                                     {hiddenMappings.map((mapping) => (
@@ -1100,7 +1100,7 @@ const CardSystemPage = () => {
                                         </div>
                                       </SortableItem>
                                     ))}
-                              
+
                                     {/* Show all unmapped columns from the database */}
                                     {unmappedColumns.map(([column, type]) => (
                                       <SortableItem key={column} id={column}>

@@ -14,6 +14,12 @@ import {
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDevMode } from "@/contexts/DevModeContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Sidebar = ({
   className,
@@ -59,111 +65,138 @@ const Sidebar = ({
   };
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 bottom-0 z-50 flex flex-col bg-sidebar transition-all duration-200 ease-out",
-        isHovered ? "w-[150px]" : "w-[48px]",
-        className
-      )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Logo / Profile */}
-      <div className="h-12 flex items-center border-b border-border px-3 shrink-0">
-        <Link
-          to={user ? "/profile" : "/login"}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          onClick={() => startNewHistory(user ? '/profile' : '/login')}
-          title={user ? "Profile" : "Login"}
-        >
-          <img
-            src={profile?.avatar_url || "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"}
-            alt="Profile"
-            className="w-5 h-5 rounded-full object-cover flex-shrink-0"
-          />
-          {isHovered && (
-            <span className="text-sm font-medium truncate animate-in fade-in slide-in-from-left-2 duration-150">
-              {user ? (profile?.full_name || user.email?.split('@')[0] || 'User') : 'Login'}
-            </span>
-          )}
-        </Link>
-      </div>
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "flex flex-col z-50 h-full transition-all duration-300 ease-in-out",
+          isHovered ? "w-[200px]" : "w-[60px]",
+          className
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Logo / Profile - Now simpler */}
+        <div className="h-12 flex items-center px-2 mb-2 shrink-0">
+          <Link
+            to={user ? "/profile" : "/login"}
+            state={{ resetNavigation: true }}
+            className={cn(
+              "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
+              !isHovered && "justify-center"
+            )}
+            onClick={() => startNewHistory(user ? '/profile' : '/login')}
+          >
+            <div className="relative shrink-0">
+              <img
+                src={profile?.avatar_url || "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"}
+                alt="Profile"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-border/50"
+              />
+              {!user && <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />}
+            </div>
 
-      <div className="flex-1 flex flex-col border-r border-border overflow-hidden">
-        {/* Navigation */}
-        <nav className="flex-1 py-2 overflow-y-auto overflow-x-hidden">
-          <ul className="space-y-0.5 px-2">
-            {navigationItems.map((item) => {
-              if (item.adminOnly && !isAdmin) return null;
-              const active = isActive(item.path);
+            {isHovered && (
+              <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+                <span className="text-sm font-semibold truncate leading-none">
+                  {user ? (profile?.full_name || user.email?.split('@')[0] || 'User') : 'Sign In'}
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">
+                  {user ? (isAdmin ? 'Administrator' : 'Member') : 'Guest Access'}
+                </span>
+              </div>
+            )}
+          </Link>
+        </div>
 
+        <div className="flex-1 flex flex-col px-2 gap-1 overflow-hidden">
+          {navigationItems.map((item) => {
+            if (item.adminOnly && !isAdmin && !isDevMode) return null;
+            const active = isActive(item.path);
+
+            const LinkContent = (
+              <Link
+                to={item.path}
+                state={{ resetNavigation: true }}
+                onClick={() => startNewHistory(item.path)}
+                className={cn(
+                  "flex items-center gap-3 h-10 px-4 rounded-full text-sm transition-all duration-200 relative group",
+                  active
+                    ? "bg-white text-black shadow-sm font-medium"
+                    : "text-muted-foreground hover:bg-white/10 hover:text-foreground",
+                  item.adminOnly && !active && "text-amber-500/80 hover:text-amber-500",
+                  !isHovered && "justify-center",
+                  className
+                )}
+              >
+                <item.icon size={20} className={cn("shrink-0 transition-transform duration-200", active && "scale-105")} />
+
+                {isHovered && (
+                  <span className="truncate animate-in fade-in slide-in-from-left-1 duration-200">
+                    {item.label}
+                  </span>
+                )}
+
+                {/* Active Indicator Dot for Compact Mode */}
+                {!isHovered && active && (
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-black/80 dark:bg-white/80" />
+                )}
+              </Link>
+            );
+
+            if (!isHovered) {
               return (
-                <li key={item.label}>
-                  <Link
-                    to={item.path}
-                    onClick={() => startNewHistory(item.path)}
-                    className={cn(
-                      "flex items-center gap-2 h-8 px-2 rounded-md text-sm transition-colors relative group",
-                      active
-                        ? "bg-accent text-foreground font-medium"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                      item.adminOnly && "text-warning"
-                    )}
-                    title={!isHovered ? item.label : undefined}
-                  >
-                    <item.icon size={18} className="flex-shrink-0" />
-                    {isHovered && (
-                      <span className="truncate animate-in fade-in slide-in-from-left-2 duration-150 flex-1">
-                        {item.label}
-                      </span>
-                    )}
-
-                    {/* Expand Button Only - Hidden if Secondary is Open */}
-                    {active && hasSecondary && isHovered && onToggleSecondary && !isSecondaryOpen && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onToggleSecondary();
-                        }}
-                        className="p-1 rounded-md hover:bg-background/20 text-muted-foreground hover:text-foreground transition-colors absolute right-1"
-                        title="Open Menu"
-                      >
-                        <PanelLeftOpen className="h-4 w-4" />
-                      </button>
-                    )}
-                  </Link>
-                </li>
+                <Tooltip key={item.label}>
+                  <TooltipTrigger asChild>
+                    {LinkContent}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10} className="font-medium bg-zinc-900 border-zinc-800 text-zinc-100">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
               );
-            })}
-          </ul>
-        </nav>
+            }
+
+            return <div key={item.label}>{LinkContent}</div>;
+          })}
+        </div>
 
         {/* Footer */}
-        <div className="border-t border-border p-2 shrink-0">
-          {isAdmin && (
+        <div className="p-2 shrink-0">
+          {isHovered ? (
             <button
               onClick={toggleDevMode}
               className={cn(
-                "flex items-center w-full h-8 px-2 rounded-md text-sm transition-colors",
+                "flex items-center w-full h-9 px-3 rounded-full text-xs font-medium transition-colors border",
                 isDevMode
-                  ? "bg-warning/20 text-warning"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                !isHovered && "justify-center"
+                  ? "bg-amber-950/30 border-amber-900/50 text-amber-500"
+                  : "bg-transparent border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"
               )}
-              title={!isHovered ? "Dev Mode" : undefined}
             >
-              <Terminal size={16} className="flex-shrink-0" />
-              {isHovered && (
-                <span className="ml-2 text-xs animate-in fade-in duration-150">
-                  Dev Mode {isDevMode ? 'ON' : 'OFF'}
-                </span>
-              )}
+              <Terminal size={14} className="mr-2" />
+              Development Mode
+              <div className={cn("ml-auto w-1.5 h-1.5 rounded-full", isDevMode ? "bg-amber-500" : "bg-zinc-700")} />
             </button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleDevMode}
+                  className={cn(
+                    "flex items-center justify-center w-full h-10 rounded-full transition-colors",
+                    isDevMode ? "text-amber-500" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Terminal size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Dev Mode: {isDevMode ? 'ON' : 'OFF'}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
-      </div>
-    </aside>
+      </aside>
+    </TooltipProvider>
   );
 };
 

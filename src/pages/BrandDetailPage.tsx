@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
 import { Loader2, ImageOff } from "lucide-react";
 
+import CommentsSection from "@/components/vehicle/CommentsSection";
+
 const BrandDetailPage = () => {
   const { brandName } = useParams<{ brandName: string }>();
   const [activeTab, setActiveTab] = useState("vehicles");
@@ -118,9 +120,27 @@ const BrandDetailPage = () => {
     }));
   };
 
+  // Sample comments
+  const comments = [
+    { id: 1, user: "CarFan123", comment: `Love the new ${formattedBrandName} lineup!`, date: "2 days ago" },
+    { id: 2, user: "MechanicMike", comment: "Great reliability on these models.", date: "1 week ago" }
+  ];
+
   return (
-    <DashboardLayout title={`${formattedBrandName}`}>
-      <div className="p-4 space-y-4">
+    <DashboardLayout
+      title={`${formattedBrandName}`}
+      secondaryTitle="Comments"
+      secondarySidebar={
+        <div className="p-2">
+          <CommentsSection
+            vehicleName={formattedBrandName}
+            comments={comments}
+          />
+        </div>
+      }
+      disableContentPadding={true}
+    >
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4 items-center">

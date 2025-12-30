@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
-import { PanelLeftClose } from "lucide-react";
+import { PanelLeftClose, ChevronLeft } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
@@ -28,7 +28,15 @@ interface DashboardLayoutProps {
   hideHeader?: boolean;
   // Secondary sidebar props
   secondarySidebar?: React.ReactNode;
+
   secondaryTitle?: string;
+  secondaryActionIcon?: React.ReactNode;
+
+  // Header customization
+  headerActions?: React.ReactNode;
+  showSearch?: boolean;
+  showBreadcrumb?: boolean;
+  disableContentPadding?: boolean;
 }
 
 const DashboardLayout = ({
@@ -52,7 +60,13 @@ const DashboardLayout = ({
   topSuggestion,
   hideHeader = false,
   secondarySidebar,
-  secondaryTitle
+
+  secondaryTitle,
+  secondaryActionIcon,
+  headerActions,
+  showSearch = true,
+  showBreadcrumb = true,
+  disableContentPadding = false
 }: DashboardLayoutProps) => {
   const location = useLocation();
   const [showSecondary, setShowSecondary] = useState(false);
@@ -67,22 +81,19 @@ const DashboardLayout = ({
   const contentMargin = 48;
 
   return (
-    <div className="h-[100dvh] bg-sidebar transition-colors duration-200">
+    <div className="flex h-screen w-full bg-sidebar overflow-hidden p-2 gap-2">
       <Sidebar
-        className="z-50"
+        className="shrink-0"
         onHoverChange={setSidebarHovered}
         hasSecondary={!!secondarySidebar}
         isSecondaryOpen={showSecondary}
         onToggleSecondary={() => setShowSecondary((prev) => !prev)}
       />
 
-      <div
-        className="h-full flex flex-col overflow-hidden transition-all duration-200 relative"
-        style={{ marginLeft: contentMargin }}
-      >
+      <div className="flex-1 flex flex-col min-w-0 bg-background rounded-2xl border shadow-sm overflow-hidden relative">
         {!hideHeader && (
           <Header
-            className={`transition-[padding] duration-200 ease-out ${sidebarHovered ? 'pl-[120px]' : ''}`}
+            className="border-b-0 bg-background/50 backdrop-blur-sm"
             title={title}
             onFilterClick={onFilterClick}
             showFilterButton={!!secondarySidebar || showFilterButton}
@@ -101,39 +112,44 @@ const DashboardLayout = ({
             // Show toggle button if we have secondary sidebar but it's hidden
             sidebarCollapsed={!!secondarySidebar && !showSecondary}
             onSidebarToggle={() => setShowSecondary(!showSecondary)}
-          />
+            actionIcon={secondaryActionIcon}
+            showSearch={showSearch}
+            showBreadcrumb={showBreadcrumb}
+          >
+            {headerActions}
+          </Header>
         )}
 
-        {/* Secondary Sidebar - Overlay (Right Side) */}
+        <main className="flex-1 overflow-y-auto relative z-0">
+          <div className={`h-full ${disableContentPadding ? "" : "p-4"}`}>
+            {children}
+          </div>
+        </main>
+
+        {/* Secondary Sidebar - Overlay (Left Side) */}
         {secondarySidebar && showSecondary && (
-          <aside className="absolute right-0 top-12 bottom-0 w-[300px] bg-sidebar border-l border-border flex flex-col z-40 animate-in slide-in-from-right duration-200 shadow-xl">
+          <aside className="absolute left-0 top-0 bottom-0 w-[300px] bg-background border-r border-border flex flex-col z-40 animate-in slide-in-from-left duration-200 shadow-xl">
             {/* Secondary Header */}
-            <div className="h-10 flex items-center justify-between border-b border-border px-3 shrink-0">
+            <div className="h-12 flex items-center justify-between border-b border-border px-4 shrink-0">
               <span className="text-sm font-medium">{secondaryTitle || 'Menu'}</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-8 w-8 rounded-full border border-border"
                 onClick={() => setShowSecondary(false)}
                 title="Collapse Menu"
               >
-                <div className="transform rotate-180">
-                  <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                 </div>
               </Button>
             </div>
             {/* Secondary Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-4">
               {secondarySidebar}
             </div>
           </aside>
         )}
-
-        <main className="flex-1 overflow-y-auto p-4 relative z-0">
-          <div className="h-full max-w-[1920px]">
-            {children}
-          </div>
-        </main>
       </div>
     </div>
   );

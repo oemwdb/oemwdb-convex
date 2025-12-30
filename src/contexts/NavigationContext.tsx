@@ -106,11 +106,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   useEffect(() => {
     const currentPath = location.pathname;
+    const fullPath = location.pathname + location.search + location.hash;
 
-    // If we should reset (from sidebar click), start fresh
-    if (shouldResetOnNext) {
+    // If we should reset (from sidebar click/state), start fresh
+    const shouldReset = shouldResetOnNext || (location.state as any)?.resetNavigation;
+
+    if (shouldReset) {
       setHistory([{
-        path: currentPath,
+        path: fullPath,
         label: getLabelForPath(currentPath),
         icon: getIconForPath(currentPath),
         timestamp: Date.now()
@@ -119,18 +122,23 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
 
-    // Don't add duplicate - check if this path already exists anywhere in history
-    const existingIndex = history.findIndex(item => item.path === currentPath);
+    // Don't add duplicate - check if this path already exists anywhere in history (ignoring query params)
+    const existingIndex = history.findIndex(item => item.path.split('?')[0].split('#')[0] === currentPath);
     if (existingIndex !== -1) {
-      // Path exists - just update its label and move it to the end
+      // Path exists - TRUNCATE history after this item to restore hierarchy
       setHistory(prev => {
-        const updated = [...prev];
-        const [existingItem] = updated.splice(existingIndex, 1);
-        return [...updated, {
-          ...existingItem,
+        // Keep items up to existingIndex (inclusive)
+        const newHistory = prev.slice(0, existingIndex + 1);
+
+        // Update the timestamp and path (to capture current filters) of the current item
+        newHistory[existingIndex] = {
+          ...newHistory[existingIndex],
+          path: fullPath,
           label: getLabelForPath(currentPath),
           timestamp: Date.now()
-        }];
+        };
+
+        return newHistory;
       });
       return;
     }
@@ -141,16 +149,17 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Check if we're coming from a related detail page
       const isFromRelatedDetail = history.length > 0 &&
         history.some(item => {
-          if (currentPath === '/brands') return item.path.startsWith('/brand/');
-          if (currentPath === '/vehicles') return item.path.startsWith('/vehicle/');
-          if (currentPath === '/wheels') return item.path.startsWith('/wheel/');
+          const itemPath = item.path.split('?')[0];
+          if (currentPath === '/brands') return itemPath.startsWith('/brand/');
+          if (currentPath === '/vehicles') return itemPath.startsWith('/vehicle/');
+          if (currentPath === '/wheels') return itemPath.startsWith('/wheel/');
           return false;
         });
 
       // If coming from related detail, keep hierarchy; otherwise reset
       if (!isFromRelatedDetail) {
         setHistory([{
-          path: currentPath,
+          path: fullPath,
           label: getLabelForPath(currentPath),
           icon: getIconForPath(currentPath),
           timestamp: Date.now()
@@ -159,11 +168,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       // Coming from related detail - check if parent already exists
-      const hasParent = history.some(item => item.path === currentPath);
+      const hasParent = history.some(item => item.path.split('?')[0] === currentPath);
       if (!hasParent) {
         // Add parent to hierarchy
         setHistory(prev => [...prev, {
-          path: currentPath,
+          path: fullPath,
           label: getLabelForPath(currentPath),
           icon: getIconForPath(currentPath),
           timestamp: Date.now()
@@ -181,10 +190,28 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     for (const [route, config] of Object.entries(detailRoutes)) {
       if (currentPath.startsWith(route)) {
-        const hasParent = history.some(item => item.path === config.parent);
+        const hasParent = history.some(item => item.path.split('?')[0] === config.parent);
+
+        // precise check for related ancestors to avoid inserting generic parents
+        // e.g. if we went Brand -> Vehicle -> Wheel, we don't want to insert /wheels between Vehicle and Wheel
+        let hasRelatedContext = false;
+
+        if (config.parent === '/wheels') {
+          // For wheels, having a vehicle or brand in history is enough context
+          hasRelatedContext = history.some(item =>
+            item.path.includes('/vehicle/') ||
+            item.path.includes('/brand/')
+          );
+        } else if (config.parent === '/vehicles') {
+          // For vehicles, having a brand in history is enough context
+          hasRelatedContext = history.some(item =>
+            item.path.includes('/brand/')
+          );
+        }
+
         const items: NavigationItem[] = [];
 
-        if (!hasParent) {
+        if (!hasParent && !hasRelatedContext) {
           items.push({
             path: config.parent,
             label: config.label,
@@ -194,7 +221,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
 
         items.push({
-          path: currentPath,
+          path: fullPath,
           label: getLabelForPath(currentPath),
           icon: getIconForPath(currentPath),
           timestamp: Date.now()
@@ -207,14 +234,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Default behavior - just add to history
     const newItem: NavigationItem = {
-      path: currentPath,
+      path: fullPath,
       label: getLabelForPath(currentPath),
       icon: getIconForPath(currentPath),
       timestamp: Date.now()
     };
 
     setHistory(prev => [...prev, newItem]);
-  }, [location.pathname, shouldResetOnNext]);
+  }, [location.pathname, location.search, location.hash, shouldResetOnNext]);
 
   const clearHistory = React.useCallback(() => {
     setHistory([]);

@@ -56,23 +56,25 @@ const Index = () => {
   // Show search results if search params are present
   if (hasSearch) {
     return (
-      <DashboardLayout title="Search Results">
-        <SearchResults
-          searchQuery={searchQuery}
-          collection={collection}
-          brands={brands}
-          vehicles={vehicles}
-          wheels={searchWheels}
-          isLoading={searchLoading}
-        />
+      <DashboardLayout title="Search Results" disableContentPadding={true}>
+        <div className="h-full p-2 overflow-y-auto">
+          <SearchResults
+            searchQuery={searchQuery}
+            collection={collection}
+            brands={brands}
+            vehicles={vehicles}
+            wheels={searchWheels}
+            isLoading={searchLoading}
+          />
+        </div>
       </DashboardLayout>
     );
   }
 
   // Default home page view
   return (
-    <DashboardLayout title="OEM Wheel Database">
-      <div className="pl-0 pr-4 pt-0 pb-4 space-y-4 overflow-hidden">
+    <DashboardLayout title="OEM Wheel Database" disableContentPadding={true}>
+      <div className="h-full p-2 space-y-4 overflow-y-auto">
         {/* Dashboard Metrics */}
         <HomeDashboard />
 
