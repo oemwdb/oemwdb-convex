@@ -41,9 +41,30 @@ export const brandsGetByTitle = query({
   },
 });
 
-// =============================================================================
-// OEM VEHICLES
-// =============================================================================
+export const brandsGetAllWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const brands = await ctx.db
+      .query("oem_brands")
+      .withIndex("by_brand_title")
+      .order("asc")
+      .collect();
+    const result = await Promise.all(
+      brands.map(async (brand) => {
+        const vehicles = await ctx.db
+          .query("oem_vehicles")
+          .withIndex("by_brand_id", (q) => q.eq("brand_id", brand._id))
+          .collect();
+        return {
+          ...brand,
+          vehicleCount: vehicles.length,
+          wheelCount: brand.wheel_count ?? 0,
+        };
+      })
+    );
+    return result;
+  },
+});
 
 export const vehiclesGetAll = query({
   args: {},
@@ -149,6 +170,60 @@ export const vehiclesGetByIdFull = query({
       variants: variants ?? [],
       wheels: wheelDocs.filter((w): w is NonNullable<typeof w> => w !== null),
     };
+  },
+});
+
+// =============================================================================
+// OEM ENGINES
+// =============================================================================
+
+export const enginesGetAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("oem_engines")
+      .withIndex("by_engine_code")
+      .order("asc")
+      .collect();
+  },
+});
+
+export const enginesGetById = query({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("oem_engines")
+      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .first();
+  },
+});
+
+export const enginesGetByCode = query({
+  args: { engineCode: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("oem_engines")
+      .withIndex("by_engine_code", (q) => q.eq("engine_code", args.engineCode))
+      .first();
+  },
+});
+
+export const vehiclesGetByEngine = query({
+  args: { engineId: v.id("oem_engines") },
+  handler: async (ctx, args) => {
+    const vehicles = await ctx.db
+      .query("oem_vehicles")
+      .filter((q) => q.eq(q.field("oem_engine_id"), args.engineId))
+      .collect();
+    const brands = await ctx.db.query("oem_brands").collect();
+    const brandMap = new Map(brands.map((b) => [b._id, b]));
+    return vehicles.map((v) => {
+      const brand = brandMap.get(v.brand_id);
+      return {
+        ...v,
+        brand_name: brand?.brand_title ?? "Unknown",
+      };
+    });
   },
 });
 

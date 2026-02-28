@@ -1,33 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BrandCard from "@/components/brand/BrandCard";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router-dom";
-
-// Fetch brands from Supabase
-const fetchBrands = async () => {
-  const { data, error } = await supabase
-    .from("oem_brands" as any)
-    .select("brand_title, brand_description, brand_image_url, wheel_count");
-  if (error) throw error;
-
-  const brandsWithCounts = await Promise.all(
-    ((data ?? []) as any[]).map(async (brand: any) => {
-      const { data: vehicleCount } = await supabase
-        .rpc('get_brand_vehicle_count', { brand_name_param: brand.brand_title });
-      return {
-        name: brand.brand_title || "Unknown",
-        description: brand.brand_description ?? null,
-        imagelink: brand.brand_image_url ?? null,
-        wheelCount: brand.wheel_count ?? 0,
-        vehicleCount: vehicleCount ?? 0,
-      };
-    })
-  );
-  return brandsWithCounts;
-};
 
 const BrandsPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
@@ -36,10 +13,20 @@ const BrandsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { data: brands, isLoading, isError } = useQuery({
-    queryKey: ["oem-brands"],
-    queryFn: fetchBrands,
-  });
+  const rawBrands = useQuery(api.queries.brandsGetAllWithCounts);
+  const isLoading = rawBrands === undefined;
+  const isError = false;
+
+  const brands = useMemo(() => {
+    if (!rawBrands) return [];
+    return rawBrands.map((b) => ({
+      name: b.brand_title ?? "Unknown",
+      description: b.brand_description ?? null,
+      imagelink: b.brand_image_url ?? null,
+      wheelCount: b.wheelCount ?? 0,
+      vehicleCount: b.vehicleCount ?? 0,
+    }));
+  }, [rawBrands]);
 
   // Initialize from URL
   useEffect(() => {

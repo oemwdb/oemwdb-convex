@@ -71,16 +71,27 @@ export default defineSchema({
     .index("by_brand_title", ["brand_title"]),
 
   oem_engines: defineTable({
+    id: v.optional(v.string()), // Business id for URL routing
     brand_id: v.id("oem_brands"),
     engine_code: v.string(),
+    engine_name: v.optional(v.string()),
+    configuration: v.optional(v.string()), // e.g. "V", "Inline", "Flat"
+    aspiration: v.optional(v.string()),   // e.g. "Naturally Aspirated", "Turbo"
     displacement_cc: v.optional(v.number()),
+    displacement_l: v.optional(v.number()),
     cylinders: v.optional(v.number()),
     fuel_type: v.optional(v.string()),
     power_hp: v.optional(v.number()),
+    power_kw: v.optional(v.number()),
     torque_nm: v.optional(v.number()),
+    torque_lb_ft: v.optional(v.number()),
+    production_years: v.optional(v.string()),
     years_produced: v.optional(v.string()),
     notes: v.optional(v.string()),
-  }).index("by_brand_id", ["brand_id"]),
+  })
+    .index("by_brand_id", ["brand_id"])
+    .index("by_id", ["id"])
+    .index("by_engine_code", ["engine_code"]),
 
   oem_vehicles: defineTable({
     id: v.string(), // Business key e.g. "bmw-e46"
