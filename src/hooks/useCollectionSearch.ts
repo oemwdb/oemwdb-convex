@@ -1,82 +1,57 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { CollectionType, COLLECTION_CONFIGS } from '@/types/collection';
+import { useState, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { CollectionType, COLLECTION_CONFIGS } from "@/types/collection";
 
 export interface CollectionFilters {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function useCollectionSearch(collectionType: CollectionType) {
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState<CollectionFilters>({});
-  
+
   const config = COLLECTION_CONFIGS[collectionType];
 
-  // Fetch filter options for dropdown fields
-  const { data: filterOptions } = useQuery({
-    queryKey: ['collection-filter-options', collectionType],
-    queryFn: async () => {
-      const dropdownFields = config.filterableFields.filter(f => f.type === 'dropdown');
-      const options: Record<string, string[]> = {};
-      
-      if (dropdownFields.length === 0) return options;
-
-      // For fields with predefined options, use those instead of fetching from Supabase
-      dropdownFields.forEach(field => {
-        if (field.options) {
-          options[field.key] = field.options;
-        }
-      });
-
-      // For fields without predefined options, fetch from Supabase
-      const fieldsToFetch = dropdownFields.filter(f => !f.options);
-      if (fieldsToFetch.length > 0) {
-        const { data } = await supabase
-          .from(config.tableName as any)
-          .select(fieldsToFetch.map(f => `"${f.key}"`).join(', '));
-
-        fieldsToFetch.forEach(field => {
-          const values = data?.map(row => row[field.key])
-            .filter((value, index, self) => value && self.indexOf(value) === index)
-            .sort() || [];
-          options[field.key] = values;
-        });
-      }
-
-      return options;
-    },
+  const fetchedOptions = useQuery(api.queries.collectionFilterOptions, {
+    collectionType,
   });
 
-  // Build search query
-  const searchQuery = useMemo(() => {
-    if (!searchText.trim()) return '';
-    
-    const searchableFields = config.searchableFields.map(f => f.key);
-    const conditions = searchableFields.map(field => 
-      `"${field}".ilike.%${searchText}%`
+  const filterOptions: Record<string, string[]> = useMemo(() => {
+    const options: Record<string, string[]> = {};
+    const dropdownFields = config.filterableFields.filter(
+      (f) => f.type === "dropdown"
     );
-    
-    return conditions.length > 0 ? `or(${conditions.join(',')})` : '';
+    for (const field of dropdownFields) {
+      if (field.options && field.options.length > 0) {
+        options[field.key] = field.options;
+      } else if (fetchedOptions && typeof fetchedOptions === "object") {
+        const key = field.key as keyof typeof fetchedOptions;
+        const arr = fetchedOptions[key];
+        if (Array.isArray(arr)) options[field.key] = arr;
+      }
+    }
+    return options;
+  }, [config.filterableFields, fetchedOptions]);
+
+  const searchQuery = useMemo(() => {
+    if (!searchText.trim()) return "";
+    const searchableFields = config.searchableFields.map((f) => f.key);
+    const conditions = searchableFields.map(
+      (field) => `"${field}".ilike.%${searchText}%`
+    );
+    return conditions.length > 0 ? `or(${conditions.join(",")})` : "";
   }, [searchText, config.searchableFields]);
 
-  // Update search text
-  const updateSearchText = (text: string) => {
-    setSearchText(text);
+  const updateSearchText = (text: string) => setSearchText(text);
+
+  const updateFilter = (key: string, value: unknown) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Update filters
-  const updateFilter = (key: string, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  // Clear all filters
   const clearFilters = () => {
     setFilters({});
-    setSearchText('');
+    setSearchText("");
   };
 
   return {
@@ -86,7 +61,7 @@ export function useCollectionSearch(collectionType: CollectionType) {
     updateFilter,
     clearFilters,
     searchQuery,
-    filterOptions: filterOptions || {},
+    filterOptions,
     config,
   };
 }

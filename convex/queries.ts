@@ -661,6 +661,45 @@ export const registeredVehiclesGetByUser = query({
 });
 
 // =============================================================================
+// COLLECTION FILTER OPTIONS (for admin collection search)
+// =============================================================================
+
+export const collectionFilterOptions = query({
+  args: { collectionType: v.union(v.literal("brands"), v.literal("vehicles"), v.literal("wheels")) },
+  handler: async (ctx, args) => {
+    if (args.collectionType === "wheels") {
+      const [brands, diameters, boltPatterns] = await Promise.all([
+        ctx.db.query("oem_brands").withIndex("by_brand_title").order("asc").collect(),
+        ctx.db.query("oem_diameters").collect(),
+        ctx.db.query("oem_bolt_patterns").collect(),
+      ]);
+      return {
+        Brand: brands.map((b) => b.brand_title).filter(Boolean).sort(),
+        Diameter: diameters.map((d) => d.diameter).filter(Boolean).sort(),
+        BoltPattern: boltPatterns.map((p) => p.bolt_pattern).filter(Boolean).sort(),
+      };
+    }
+    return {} as Record<string, string[]>;
+  },
+});
+
+// =============================================================================
+// USER TABLE PREFERENCES (column order)
+// =============================================================================
+
+export const userTablePreferencesGetByUserAndTable = query({
+  args: { userId: v.string(), tableName: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("user_table_preferences")
+      .withIndex("by_user_table", (q) =>
+        q.eq("user_id", args.userId).eq("table_name", args.tableName)
+      )
+      .first();
+  },
+});
+
+// =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================
 

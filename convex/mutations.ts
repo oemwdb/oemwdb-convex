@@ -490,6 +490,58 @@ export const registeredVehicleDelete = mutation({
   },
 });
 
+// =============================================================================
+// USER TABLE PREFERENCES (column order)
+// =============================================================================
+
+export const userTablePreferencesUpsert = mutation({
+  args: {
+    userId: v.string(),
+    tableName: v.string(),
+    columnOrderJson: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    const existing = await ctx.db
+      .query("user_table_preferences")
+      .withIndex("by_user_table", (q) =>
+        q.eq("user_id", args.userId).eq("table_name", args.tableName)
+      )
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        column_order_json: args.columnOrderJson,
+        updated_at: now,
+      });
+      return existing._id;
+    }
+    return await ctx.db.insert("user_table_preferences", {
+      user_id: args.userId,
+      table_name: args.tableName,
+      column_order_json: args.columnOrderJson,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const userTablePreferencesDelete = mutation({
+  args: { userId: v.string(), tableName: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("user_table_preferences")
+      .withIndex("by_user_table", (q) =>
+        q.eq("user_id", args.userId).eq("table_name", args.tableName)
+      )
+      .first();
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      return existing._id;
+    }
+    return null;
+  },
+});
+
 const registeredVehicleOptional = {
   trim: optionalString,
   color: optionalString,
