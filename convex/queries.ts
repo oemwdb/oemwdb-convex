@@ -344,6 +344,154 @@ export const getWheelsByBrand = query({
 });
 
 // =============================================================================
+// GLOBAL SEARCH (text filter in handler; no index for substring match)
+// =============================================================================
+
+function normalizeSearchTerm(s: string): string {
+  return s.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function matchesSearch(text: string | undefined | null, query: string): boolean {
+  if (!text) return false;
+  return normalizeSearchTerm(text).includes(normalizeSearchTerm(query));
+}
+
+export const globalSearchBrands = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.query.trim()) return [];
+    const all = await ctx.db
+      .query("oem_brands")
+      .withIndex("by_brand_title")
+      .order("asc")
+      .collect();
+    const q = normalizeSearchTerm(args.query);
+    return all
+      .filter(
+        (b) =>
+          matchesSearch(b.brand_title, args.query) ||
+          matchesSearch(b.brand_description, args.query) ||
+          matchesSearch(b.subsidiaries, args.query)
+      )
+      .slice(0, 50);
+  },
+});
+
+export const globalSearchVehicles = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.query.trim()) return [];
+    const all = await ctx.db.query("oem_vehicles").order("asc").collect();
+    return all
+      .filter(
+        (v) =>
+          matchesSearch(v.vehicle_title, args.query) ||
+          matchesSearch(v.model_name, args.query) ||
+          matchesSearch(v.vehicle_id_only, args.query) ||
+          matchesSearch(v.generation, args.query)
+      )
+      .slice(0, 50);
+  },
+});
+
+export const globalSearchWheels = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.query.trim()) return [];
+    const all = await ctx.db.query("oem_wheels").order("asc").collect();
+    return all
+      .filter(
+        (w) =>
+          matchesSearch(w.wheel_title, args.query) ||
+          matchesSearch(w.notes, args.query)
+      )
+      .slice(0, 50);
+  },
+});
+
+// =============================================================================
+// DASHBOARD METRICS
+// =============================================================================
+
+export const dashboardMetrics = query({
+  args: {},
+  handler: async (ctx) => {
+    const [brands, vehicles, wheels] = await Promise.all([
+      ctx.db.query("oem_brands").collect(),
+      ctx.db.query("oem_vehicles").collect(),
+      ctx.db.query("oem_wheels").collect(),
+    ]);
+    return {
+      totalBrands: brands.length,
+      totalVehicles: vehicles.length,
+      totalWheels: wheels.length,
+    };
+  },
+});
+
+export const wheelsByBrandDistribution = query({
+  args: {},
+  handler: async (ctx) => {
+    const brands = await ctx.db
+      .query("oem_brands")
+      .withIndex("by_brand_title")
+      .order("asc")
+      .collect();
+    const wheels = await ctx.db.query("oem_wheels").collect();
+    const vehicles = await ctx.db.query("oem_vehicles").collect();
+    const wheelCountByBrand = new Map<string, number>();
+    const vehicleCountByBrand = new Map<string, number>();
+    for (const b of brands) {
+      wheelCountByBrand.set(b._id, 0);
+      vehicleCountByBrand.set(b._id, 0);
+    }
+    for (const w of wheels) {
+      wheelCountByBrand.set(
+        w.brand_id,
+        (wheelCountByBrand.get(w.brand_id) ?? 0) + 1
+      );
+    }
+    for (const v of vehicles) {
+      vehicleCountByBrand.set(
+        v.brand_id,
+        (vehicleCountByBrand.get(v.brand_id) ?? 0) + 1
+      );
+    }
+    const distribution = brands
+      .map((b) => ({
+        brand: b.brand_title,
+        wheels: wheelCountByBrand.get(b._id) ?? 0,
+        vehicles: vehicleCountByBrand.get(b._id) ?? 0,
+      }))
+      .sort((a, b) => b.wheels - a.wheels)
+      .slice(0, 10);
+    return distribution;
+  },
+});
+
+export const boltPatternDistribution = query({
+  args: {},
+  handler: async (ctx) => {
+    const [links, patternDocs] = await Promise.all([
+      ctx.db.query("wheel_bolt_patterns").collect(),
+      ctx.db.query("oem_bolt_patterns").collect(),
+    ]);
+    const patternById = new Map(
+      patternDocs.map((p) => [p._id, p.bolt_pattern])
+    );
+    const patternCounts = new Map<string, number>();
+    for (const link of links) {
+      const pattern = patternById.get(link.bolt_pattern_id) ?? "Unknown";
+      patternCounts.set(pattern, (patternCounts.get(pattern) ?? 0) + 1);
+    }
+    return Array.from(patternCounts.entries())
+      .map(([pattern, count]) => ({ pattern, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  },
+});
+
+// =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================
 

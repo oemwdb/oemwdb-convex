@@ -1,82 +1,79 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import type { CollectionType } from '@/components/search/CollectionCarouselSelector';
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { CollectionType } from "@/components/search/CollectionCarouselSelector";
 
 export function useGlobalSearch() {
   const [searchParams] = useSearchParams();
-  const searchQuery = searchParams.get('search') || '';
-  const collection = (searchParams.get('collection') || 'all') as CollectionType;
+  const searchQuery = searchParams.get("search") || "";
+  const collection =
+    (searchParams.get("collection") || "all") as CollectionType;
 
-  // Search brands
-  const { data: brands, isLoading: brandsLoading } = useQuery({
-    queryKey: ['global-search-brands', searchQuery, collection],
-    queryFn: async () => {
-      if (!searchQuery || (collection !== 'all' && collection !== 'brands')) {
-        return [];
-      }
+  const searchBrands =
+    !!searchQuery && (collection === "all" || collection === "brands");
+  const searchVehicles =
+    !!searchQuery && (collection === "all" || collection === "vehicles");
+  const searchWheels =
+    !!searchQuery && (collection === "all" || collection === "wheels");
 
-      const { data, error } = await supabase
-        .from('oem_brands')
-        .select('*')
-        .or(`name.ilike.%${searchQuery}%,brand_description.ilike.%${searchQuery}%,subsidiaries.ilike.%${searchQuery}%`)
-        .limit(50);
+  const brandsRaw = useQuery(
+    api.queries.globalSearchBrands,
+    searchBrands ? { query: searchQuery } : "skip"
+  );
+  const vehiclesRaw = useQuery(
+    api.queries.globalSearchVehicles,
+    searchVehicles ? { query: searchQuery } : "skip"
+  );
+  const wheelsRaw = useQuery(
+    api.queries.globalSearchWheels,
+    searchWheels ? { query: searchQuery } : "skip"
+  );
+  const allBrands = useQuery(
+    api.queries.brandsGetAll,
+    searchVehicles && vehiclesRaw && vehiclesRaw.length > 0 ? {} : "skip"
+  );
 
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!searchQuery,
-  });
+  const brandMap = new Map(
+    (allBrands ?? []).map((b) => [b._id, b.brand_title])
+  );
 
-  // Search vehicles
-  const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
-    queryKey: ['global-search-vehicles', searchQuery, collection],
-    queryFn: async () => {
-      if (!searchQuery || (collection !== 'all' && collection !== 'vehicles')) {
-        return [];
-      }
+  const brands =
+    brandsRaw?.map((b) => ({
+      ...b,
+      name: b.brand_title,
+    })) ?? [];
 
-      const { data, error } = await supabase
-        .from('oem_vehicles')
-        .select('*')
-        .or(`vehicle_title.ilike.%${searchQuery}%,model_name.ilike.%${searchQuery}%,chassis_code.ilike.%${searchQuery}%`)
-        .limit(50);
+  const vehicles =
+    vehiclesRaw?.map((v) => ({
+      ...v,
+      brand_refs: [brandMap.get(v.brand_id) ?? ""].filter(Boolean),
+      hero_image_url: v.vehicle_image ?? null,
+    })) ?? [];
 
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!searchQuery,
-  });
+  const wheels =
+    wheelsRaw?.map((w) => ({
+      ...w,
+      wheel_name: w.wheel_title,
+      diameter_refs: [] as string[],
+      bolt_pattern_refs: [] as string[],
+      width_refs: [] as string[],
+    })) ?? [];
 
-  // Search wheels
-  const { data: wheels, isLoading: wheelsLoading } = useQuery({
-    queryKey: ['global-search-wheels', searchQuery, collection],
-    queryFn: async () => {
-      if (!searchQuery || (collection !== 'all' && collection !== 'wheels')) {
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from('oem_wheels')
-        .select('*')
-        .or(`wheel_name.ilike.%${searchQuery}%,wheel_code.ilike.%${searchQuery}%,notes.ilike.%${searchQuery}%`)
-        .limit(50);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!searchQuery,
-  });
-
-  const isLoading = brandsLoading || vehiclesLoading || wheelsLoading;
+  const isLoading =
+    (searchBrands && brandsRaw === undefined) ||
+    (searchVehicles && vehiclesRaw === undefined) ||
+    (searchWheels && wheelsRaw === undefined) ||
+    (searchVehicles &&
+      vehiclesRaw &&
+      vehiclesRaw.length > 0 &&
+      allBrands === undefined);
 
   return {
     searchQuery,
     collection,
-    brands: brands || [],
-    vehicles: vehicles || [],
-    wheels: wheels || [],
+    brands,
+    vehicles,
+    wheels,
     isLoading,
     hasSearch: !!searchQuery,
   };
