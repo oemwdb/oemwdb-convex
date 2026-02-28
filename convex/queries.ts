@@ -538,6 +538,47 @@ export const savedWheelsGetByUser = query({
 });
 
 // =============================================================================
+// USER CONTENT (comments)
+// =============================================================================
+
+export const userCommentsGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const comments = await ctx.db
+      .query("vehicle_comments")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    const withVehicle = await Promise.all(
+      comments.map(async (c) => {
+        const vehicle = await ctx.db.get("oem_vehicles", c.vehicle_id);
+        return {
+          _id: c._id,
+          id: c._id,
+          comment_text: c.comment_text,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+          vehicle_id: c.vehicle_id,
+          oem_vehicles: vehicle
+            ? {
+                id: vehicle.id,
+                model_name: vehicle.model_name ?? null,
+                chassis_code: vehicle.vehicle_id_only ?? vehicle.generation ?? null,
+                hero_image_url: vehicle.vehicle_image ?? null,
+                brand_refs: null as unknown,
+              }
+            : null,
+        };
+      })
+    );
+    return withVehicle.sort((a, b) => {
+      const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tB - tA;
+    });
+  },
+});
+
+// =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================
 
