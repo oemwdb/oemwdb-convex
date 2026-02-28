@@ -478,3 +478,139 @@ export const vehicleCommentInsert = mutation({
     });
   },
 });
+
+// =============================================================================
+// REGISTERED VEHICLES
+// =============================================================================
+
+export const registeredVehicleDelete = mutation({
+  args: { id: v.id("user_registered_vehicles") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
+const registeredVehicleOptional = {
+  trim: optionalString,
+  color: optionalString,
+  purchase_date: optionalString,
+  purchase_price: optionalNumber,
+  current_value_estimate: optionalNumber,
+  license_plate: optionalString,
+  insurance_provider: optionalString,
+  insurance_policy_number: optionalString,
+  registration_expiry: optionalString,
+  last_service_date: optionalString,
+  next_service_due: optionalString,
+  notes: optionalString,
+  images: v.optional(v.array(v.string())),
+  documents: v.optional(v.array(v.string())),
+};
+
+export const registeredVehicleInsert = mutation({
+  args: {
+    userId: v.string(),
+    vin: v.string(),
+    vehicle_title: optionalString,
+    brand_ref: v.string(),
+    vehicle_ref: v.string(),
+    year: v.number(),
+    mileage: v.number(),
+    ownership_status: v.union(
+      v.literal("owned"),
+      v.literal("leased"),
+      v.literal("financed"),
+      v.literal("sold")
+    ),
+    ...registeredVehicleOptional,
+  },
+  handler: async (ctx, args) => {
+    const brand = await ctx.db
+      .query("oem_brands")
+      .withIndex("by_id", (q) => q.eq("id", args.brand_ref))
+      .first();
+    const vehicle = await ctx.db
+      .query("oem_vehicles")
+      .withIndex("by_id", (q) => q.eq("id", args.vehicle_ref))
+      .first();
+    const now = new Date().toISOString();
+    return await ctx.db.insert("user_registered_vehicles", {
+      user_id: args.userId,
+      vin: args.vin.toUpperCase(),
+      make: brand?.brand_title ?? "Unknown",
+      model: vehicle?.model_name ?? vehicle?.vehicle_title ?? "Unknown",
+      year: args.year,
+      mileage: args.mileage,
+      vehicle_title: args.vehicle_title,
+      ownership_status: args.ownership_status,
+      trim: args.trim,
+      color: args.color,
+      purchase_date: args.purchase_date,
+      purchase_price: args.purchase_price,
+      current_value_estimate: args.current_value_estimate,
+      license_plate: args.license_plate,
+      insurance_provider: args.insurance_provider,
+      insurance_policy_number: args.insurance_policy_number,
+      registration_expiry: args.registration_expiry,
+      last_service_date: args.last_service_date,
+      next_service_due: args.next_service_due,
+      notes: args.notes,
+      linked_oem_vehicle_id: vehicle?._id,
+      brand_id: brand?._id,
+      images: args.images,
+      documents: args.documents,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const registeredVehicleUpdate = mutation({
+  args: {
+    id: v.id("user_registered_vehicles"),
+    vehicle_title: optionalString,
+    brand_ref: v.optional(v.string()),
+    vehicle_ref: v.optional(v.string()),
+    year: optionalNumber,
+    mileage: optionalNumber,
+    ownership_status: v.optional(
+      v.union(
+        v.literal("owned"),
+        v.literal("leased"),
+        v.literal("financed"),
+        v.literal("sold")
+      )
+    ),
+    ...registeredVehicleOptional,
+  },
+  handler: async (ctx, args) => {
+    const { id, brand_ref, vehicle_ref, ...rest } = args;
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+    if (brand_ref) {
+      const brand = await ctx.db
+        .query("oem_brands")
+        .withIndex("by_id", (q) => q.eq("id", brand_ref))
+        .first();
+      if (brand) {
+        patch.brand_id = brand._id;
+        patch.make = brand.brand_title;
+      }
+    }
+    if (vehicle_ref) {
+      const vehicle = await ctx.db
+        .query("oem_vehicles")
+        .withIndex("by_id", (q) => q.eq("id", vehicle_ref))
+        .first();
+      if (vehicle) {
+        patch.linked_oem_vehicle_id = vehicle._id;
+        patch.model = vehicle.model_name ?? vehicle.vehicle_title ?? "Unknown";
+      }
+    }
+
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) patch[k] = v;
+    }
+    await ctx.db.patch(id, patch as any);
+  },
+});

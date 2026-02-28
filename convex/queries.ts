@@ -629,6 +629,38 @@ export const profileGetByUsername = query({
 });
 
 // =============================================================================
+// REGISTERED VEHICLES (by user)
+// =============================================================================
+
+export const registeredVehiclesGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("user_registered_vehicles")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    const result = await Promise.all(
+      rows.map(async (r) => {
+        const brand = r.brand_id ? await ctx.db.get("oem_brands", r.brand_id) : null;
+        const vehicle = r.linked_oem_vehicle_id
+          ? await ctx.db.get("oem_vehicles", r.linked_oem_vehicle_id)
+          : null;
+        return {
+          ...r,
+          brand_ref: brand?.id ?? "",
+          vehicle_ref: vehicle?.id ?? "",
+        };
+      })
+    );
+    return result.sort((a, b) => {
+      const tA = new Date(a.created_at).getTime();
+      const tB = new Date(b.created_at).getTime();
+      return tB - tA;
+    });
+  },
+});
+
+// =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================
 

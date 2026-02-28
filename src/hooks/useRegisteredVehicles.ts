@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export interface RegisteredVehicle {
@@ -16,7 +17,7 @@ export interface RegisteredVehicle {
   purchase_date?: string;
   purchase_price?: number;
   current_value_estimate?: number;
-  ownership_status: 'owned' | 'leased' | 'financed' | 'sold';
+  ownership_status: "owned" | "leased" | "financed" | "sold";
   license_plate?: string;
   insurance_provider?: string;
   insurance_policy_number?: string;
@@ -31,51 +32,57 @@ export interface RegisteredVehicle {
   updated_at: string;
 }
 
-export const useRegisteredVehicles = () => {
-  const queryClient = useQueryClient();
+export function useRegisteredVehicles() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
-  const { data: vehicles, isLoading, error } = useQuery({
-    queryKey: ["registered-vehicles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_registered_vehicles")
-        .select("*")
-        .order("created_at", { ascending: false });
+  const rows = useQuery(
+    api.queries.registeredVehiclesGetByUser,
+    userId ? { userId } : "skip"
+  );
+  const deleteMutation = useMutation(api.mutations.registeredVehicleDelete);
 
-      if (error) throw error;
-      
-      // Parse JSONB fields
-      return (data || []).map(vehicle => ({
-        ...vehicle,
-        brand_ref: vehicle.brand_ref ? JSON.parse(vehicle.brand_ref as any) : '',
-        vehicle_ref: vehicle.vehicle_ref ? JSON.parse(vehicle.vehicle_ref as any) : '',
-      })) as RegisteredVehicle[];
-    },
-  });
+  const vehicles: RegisteredVehicle[] =
+    rows?.map((r) => ({
+      id: String(r._id),
+      user_id: r.user_id,
+      vin: r.vin,
+      vehicle_title: r.vehicle_title,
+      brand_ref: r.brand_ref,
+      vehicle_ref: r.vehicle_ref,
+      year: r.year,
+      trim: r.trim,
+      color: r.color,
+      mileage: r.mileage,
+      purchase_date: r.purchase_date,
+      purchase_price: r.purchase_price,
+      current_value_estimate: r.current_value_estimate,
+      ownership_status: r.ownership_status,
+      license_plate: r.license_plate,
+      insurance_provider: r.insurance_provider,
+      insurance_policy_number: r.insurance_policy_number,
+      registration_expiry: r.registration_expiry,
+      last_service_date: r.last_service_date,
+      next_service_due: r.next_service_due,
+      notes: r.notes,
+      images: r.images,
+      documents: r.documents,
+      linked_oem_vehicle_id: r.linked_oem_vehicle_id ? String(r.linked_oem_vehicle_id) : undefined,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    })) ?? [];
 
-  const deleteMutation = useMutation({
-    mutationFn: async (vehicleId: string) => {
-      const { error } = await supabase
-        .from("user_registered_vehicles")
-        .delete()
-        .eq("id", vehicleId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["registered-vehicles"] });
-      toast.success("Vehicle deleted successfully");
-    },
-    onError: (error) => {
-      toast.error("Failed to delete vehicle: " + error.message);
-    },
-  });
+  const deleteVehicle = (vehicleId: string) => {
+    deleteMutation({ id: vehicleId as any })
+      .then(() => toast.success("Vehicle deleted successfully"))
+      .catch((err) => toast.error("Failed to delete vehicle: " + (err?.message ?? err)));
+  };
 
   return {
-    vehicles: vehicles || [],
-    isLoading,
-    error,
-    deleteVehicle: deleteMutation.mutate,
-    isDeleting: deleteMutation.isPending,
+    vehicles,
+    isLoading: !!userId && rows === undefined,
+    error: null,
+    deleteVehicle,
+    isDeleting: false,
   };
-};
+}
