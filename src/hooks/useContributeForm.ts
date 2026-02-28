@@ -1,19 +1,25 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useConvex, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+function slugify(s: string): string {
+  return s.toLowerCase().trim().replace(/\s+/g, "-");
+}
 
 export const useContributeForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const convex = useConvex();
+  const wheelVehicleLink = useMutation(api.mutations.wheelVehicleLink);
 
-  // Form states for different item types
   const [brandData, setBrandData] = useState({
     brandPage: "",
     brandDescription: "",
     oemChasisCodes: "",
     oemModelLines: "",
     oemWheels: "",
-    imagelink: ""
+    imagelink: "",
   });
 
   const [vehicleData, setVehicleData] = useState({
@@ -24,7 +30,7 @@ export const useContributeForm = () => {
     productionYearsRange: "",
     heroImage: "",
     oemWheels: "",
-    status: "active"
+    status: "active",
   });
 
   const [wheelData, setWheelData] = useState({
@@ -52,38 +58,33 @@ export const useContributeForm = () => {
     badPic: "",
     sources: "",
     userSubmissionInput: "",
-    status: "active"
+    status: "active",
   });
 
   const handleSubmitBrand = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('oem_brands')
-        .insert([{
-          id: brandData.brandPage.toLowerCase().replace(/\s+/g, '-'),
-          brand_title: brandData.brandPage,
-          brand_description: brandData.brandDescription,
-          brand_page: brandData.brandPage,
-          brand_image_url: brandData.imagelink
-        }] as any);
-
-      if (error) throw error;
-      
+      const id = slugify(brandData.brandPage);
+      await convex.mutation(api.mutations.brandsInsert, {
+        id,
+        brand_title: brandData.brandPage,
+        brand_description: brandData.brandDescription || undefined,
+        brand_page: brandData.brandPage || undefined,
+        brand_image_url: brandData.imagelink || undefined,
+      });
       toast({
         title: "Success!",
         description: "Brand added successfully to the database.",
       });
-      
       setBrandData({
         brandPage: "",
         brandDescription: "",
         oemChasisCodes: "",
         oemModelLines: "",
         oemWheels: "",
-        imagelink: ""
+        imagelink: "",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "Failed to add brand. Please try again.",
@@ -97,24 +98,33 @@ export const useContributeForm = () => {
   const handleSubmitVehicle = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('oem_vehicles')
-        .insert([{
-          id: `${vehicleData.brandName}-${vehicleData.oemChasisCode}`.toLowerCase().replace(/\s+/g, '-'),
-          brand_ref: vehicleData.brandName ? [vehicleData.brandName] : [],
-          model_name: vehicleData.modelName,
-          vehicle_id_only: vehicleData.oemChasisCode,
-          production_years: vehicleData.productionYearsRange,
-          hero_image_url: vehicleData.heroImage
-        }] as any);
-
-      if (error) throw error;
-      
+      const brandSlug = slugify(vehicleData.brandName);
+      const brand = await convex.query(api.queries.brandsGetById, {
+        id: brandSlug,
+      });
+      if (!brand) {
+        toast({
+          title: "Error",
+          description: "Brand not found. Add the brand first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const vehicleId = slugify(
+        `${vehicleData.brandName}-${vehicleData.oemChasisCode}`
+      );
+      await convex.mutation(api.mutations.vehiclesInsert, {
+        id: vehicleId,
+        brand_id: brand._id,
+        model_name: vehicleData.modelName || undefined,
+        vehicle_id_only: vehicleData.oemChasisCode || undefined,
+        production_years: vehicleData.productionYearsRange || undefined,
+        vehicle_image: vehicleData.heroImage || undefined,
+      });
       toast({
         title: "Success!",
         description: "Vehicle added successfully to the database.",
       });
-      
       setVehicleData({
         brandName: "",
         modelName: "",
@@ -123,9 +133,9 @@ export const useContributeForm = () => {
         productionYearsRange: "",
         heroImage: "",
         oemWheels: "",
-        status: "active"
+        status: "active",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "Failed to add vehicle. Please try again.",
@@ -139,34 +149,49 @@ export const useContributeForm = () => {
   const handleSubmitWheel = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('oem_wheels')
-        .insert({
-          id: wheelData.wheelName, // id is the wheel name in the oem_wheels table
-          wheel_title: wheelData.wheelName,
-          color: wheelData.colorNamesTxt,
-          wheel_offset: wheelData.offsetTxt,
-          part_numbers: wheelData.oemPartNumbersTxt,
-          good_pic_url: wheelData.goodPic,
-          notes: wheelData.userSubmissionInput,
-          // For now, set refs as empty arrays - would need proper ref handling
-          diameter_ref: [],
-          width_ref: [],
-          bolt_pattern_ref: [],
-          center_bore_ref: [],
-          brand_ref: wheelData.brandRel ? [wheelData.brandRel] : [],
-          color_ref: [],
-          vehicle_ref: [],
-          design_style_ref: wheelData.designStyleTag ? [wheelData.designStyleTag] : [],
+      const brandSlug = slugify(wheelData.brandRel);
+      const brand = await convex.query(api.queries.brandsGetById, {
+        id: brandSlug,
+      });
+      if (!brand) {
+        toast({
+          title: "Error",
+          description: "Brand not found. Add the brand first.",
+          variant: "destructive",
         });
+        return;
+      }
+      const wheelId = slugify(wheelData.wheelName) || "wheel-" + Date.now();
+      const wheelIdRes = await convex.mutation(api.mutations.wheelsInsert, {
+        id: wheelId,
+        brand_id: brand._id,
+        wheel_title: wheelData.wheelName,
+        color: wheelData.colorNamesTxt || undefined,
+        wheel_offset: wheelData.offsetTxt || undefined,
+        part_numbers: wheelData.oemPartNumbersTxt || undefined,
+        notes: wheelData.userSubmissionInput || undefined,
+        good_pic_url: wheelData.goodPic || undefined,
+        design_style_tags: wheelData.designStyleTag
+          ? [wheelData.designStyleTag]
+          : undefined,
+      });
 
-      if (error) throw error;
-      
+      if (wheelData.vehicleRel) {
+        const vehicle = await convex.query(api.queries.vehiclesGetById, {
+          id: wheelData.vehicleRel.trim(),
+        });
+        if (vehicle) {
+          await wheelVehicleLink({
+            wheel_id: wheelIdRes,
+            vehicle_id: vehicle._id,
+          });
+        }
+      }
+
       toast({
         title: "Success!",
         description: "Wheel added successfully to the database.",
       });
-      
       setWheelData({
         wheelName: "",
         diameter: "",
@@ -192,9 +217,9 @@ export const useContributeForm = () => {
         badPic: "",
         sources: "",
         userSubmissionInput: "",
-        status: "active"
+        status: "active",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "Failed to add wheel. Please try again.",
@@ -215,6 +240,6 @@ export const useContributeForm = () => {
     setWheelData,
     handleSubmitBrand,
     handleSubmitVehicle,
-    handleSubmitWheel
+    handleSubmitWheel,
   };
 };
