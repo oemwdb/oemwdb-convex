@@ -1,84 +1,74 @@
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Comment {
-    id: string;
-    user_id: string;
-    vehicle_id: string;
-    comment_text: string;
-    tag: string;
-    created_at: string;
-    user_email?: string; // Optional, might need to join with profiles or auth
+  id: string;
+  user_id: string;
+  vehicle_id: string;
+  comment_text: string;
+  tag: string;
+  created_at: string;
+  user_email?: string;
 }
 
 export const TAG_OPTIONS = [
-    "General",
-    "Brief",
-    "Variants",
-    "Wheels",
-    "Maintenance",
-    "Upgrades",
-    "Gallery"
+  "General",
+  "Brief",
+  "Variants",
+  "Wheels",
+  "Maintenance",
+  "Upgrades",
+  "Gallery",
 ] as const;
 
 export function useVehicleComments(vehicleId: string) {
-    const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const vehicle = useQuery(
+    api.queries.vehiclesGetById,
+    vehicleId ? { id: vehicleId } : "skip"
+  );
+  const vehicleConvexId = vehicle?._id;
+  const commentsRaw = useQuery(
+    api.queries.vehicleCommentsGetByVehicle,
+    vehicleConvexId ? { vehicleId: vehicleConvexId } : "skip"
+  );
+  const insertComment = useMutation(api.mutations.vehicleCommentInsert);
 
-    const { data: comments, isLoading, error } = useQuery({
-        queryKey: ["vehicle-comments", vehicleId],
-        queryFn: async () => {
-            // Fetch comments
-            // Note: We might want user details. For now, we'll just get the user_id.
-            // Ideally we join with a profiles table if it exists and has names.
-            // Checking schema earlier showed 'users' and 'profiles' table.
-            // Let's assume we can just display the email or a placeholder for now to keep it simple,
-            // or fetch user metadata if RLS allows.
+  const comments: Comment[] =
+    commentsRaw?.map((c) => ({
+      id: String(c._id),
+      user_id: c.user_id,
+      vehicle_id: String(c.vehicle_id),
+      comment_text: c.comment_text,
+      tag: c.tag ?? "General",
+      created_at: c.created_at ?? new Date().toISOString(),
+    })) ?? [];
 
-            const { data, error } = await supabase
-                .from("vehicle_comments")
-                .select("*")
-                .eq("vehicle_id", vehicleId)
-                .order("created_at", { ascending: false });
+  const addComment = {
+    mutateAsync: async ({
+      comment,
+      tag,
+    }: {
+      comment: string;
+      tag: string;
+    }) => {
+      if (!user?.id) throw new Error("Must be logged in to comment");
+      if (!vehicleConvexId) throw new Error("Vehicle not found");
+      return await insertComment({
+        vehicleId: vehicleConvexId,
+        userId: user.id,
+        comment_text: comment,
+        tag,
+      });
+    },
+  };
 
-            if (error) throw error;
-
-            // Enhance with user email if possible (client side or separate query?)
-            // For now returning raw data. We can fetch user details later if needed.
-            return data as unknown as Comment[];
-        },
-        enabled: !!vehicleId,
-    });
-
-    const addComment = useMutation({
-        mutationFn: async ({ comment, tag }: { comment: string; tag: string }) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Must be logged in to comment");
-
-            const { data, error } = await supabase
-                .from("vehicle_comments")
-                .insert({
-                    vehicle_id: vehicleId,
-                    user_id: user.id,
-                    comment_text: comment,
-                    tag: tag,
-                })
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["vehicle-comments", vehicleId] });
-        },
-    });
-
-    return {
-        comments,
-        isLoading,
-        error,
-        addComment,
-        TAG_OPTIONS
-    };
+  return {
+    comments,
+    isLoading: !!vehicleId && (vehicle === undefined || (!!vehicleConvexId && commentsRaw === undefined)),
+    error: null,
+    addComment,
+    TAG_OPTIONS,
+  };
 }

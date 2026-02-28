@@ -578,6 +578,56 @@ export const userCommentsGetByUser = query({
   },
 });
 
+export const vehicleCommentsGetByVehicle = query({
+  args: { vehicleId: v.id("oem_vehicles") },
+  handler: async (ctx, args) => {
+    const comments = await ctx.db
+      .query("vehicle_comments")
+      .withIndex("by_vehicle", (q) => q.eq("vehicle_id", args.vehicleId))
+      .collect();
+    return comments.sort((a, b) => {
+      const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tB - tA;
+    });
+  },
+});
+
+// =============================================================================
+// USER CONTENT (listings)
+// =============================================================================
+
+export const userListingsGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const listings = await ctx.db
+      .query("market_listings")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    return listings
+      .filter((l) => l.status === "active")
+      .sort((a, b) => {
+        const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tB - tA;
+      });
+  },
+});
+
+// =============================================================================
+// PUBLIC PROFILE
+// =============================================================================
+
+export const profileGetByUsername = query({
+  args: { username: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("profiles")
+      .withIndex("by_username", (q) => q.eq("username", args.username))
+      .first();
+  },
+});
+
 // =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================

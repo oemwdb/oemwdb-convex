@@ -454,3 +454,27 @@ export const wheelTireSizeUnlink = mutation({
     return link?._id ?? null;
   },
 });
+
+// =============================================================================
+// USER CONTENT (comments)
+// =============================================================================
+
+export const vehicleCommentInsert = mutation({
+  args: {
+    vehicleId: v.id("oem_vehicles"),
+    userId: v.string(),
+    comment_text: v.string(),
+    tag: optionalString,
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("vehicle_comments", {
+      vehicle_id: args.vehicleId,
+      user_id: args.userId,
+      comment_text: args.comment_text,
+      tag: args.tag ?? undefined,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});

@@ -265,6 +265,7 @@ export default defineSchema({
     user_id: v.string(),
     vehicle_id: v.id("oem_vehicles"),
     comment_text: v.string(),
+    tag: v.optional(v.string()),
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
   })
