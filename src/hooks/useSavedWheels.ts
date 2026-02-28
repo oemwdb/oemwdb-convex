@@ -1,46 +1,67 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
 
-export const useSavedWheels = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ["saved-wheels", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-
-      const { data, error } = await supabase
-        .from("saved_wheels")
-        .select(`
-          wheel_id,
-          created_at,
-          oem_wheels (
-            id,
-            wheel_name,
-            wheel_code,
-            diameter_refs,
-            width_ref,
-            bolt_pattern_refs,
-            center_bore_ref,
-            wheel_offset,
-            color,
-            good_pic_url,
-            brand_refs,
-            vehicle_refs,
-            specifications
-          )
-        `)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      // Transform the data to match wheel card format
-      return data.map((item: any) => ({
-        ...item.oem_wheels,
-        isSaved: true
-      }));
-    },
-    enabled: !!user?.id,
-  });
+/** Saved wheel shape for WheelCard: id, name, diameter, boltPattern, specs, imageUrl, refs */
+export type SavedWheelItem = {
+  id: string;
+  name: string;
+  diameter?: string;
+  boltPattern?: string;
+  specs?: string[];
+  imageUrl?: string | null;
+  imageSource?: string | null;
+  diameter_ref?: unknown;
+  width_ref?: unknown;
+  bolt_pattern_ref?: unknown;
+  center_bore_ref?: unknown;
+  color_ref?: unknown;
+  tire_size_ref?: unknown;
+  vehicle_ref?: unknown;
+  brand_ref?: unknown;
+  design_style_ref?: string[];
+  isSaved?: true;
 };
+
+export function useSavedWheels() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  const wheelsRaw = useQuery(
+    api.queries.savedWheelsGetByUser,
+    userId ? { userId } : "skip"
+  );
+
+  const data: SavedWheelItem[] =
+    wheelsRaw?.map((w) => {
+      const specs: string[] = [];
+      if (w.wheel_offset) specs.push(`Offset: ${w.wheel_offset}`);
+      if (w.color) specs.push(`Color: ${w.color}`);
+      return {
+        id: w.id,
+        name: w.wheel_title,
+        diameter: undefined,
+        boltPattern: undefined,
+        specs,
+        imageUrl: w.good_pic_url ?? null,
+        imageSource: w.image_source ?? null,
+        diameter_ref: undefined,
+        width_ref: undefined,
+        bolt_pattern_ref: undefined,
+        center_bore_ref: undefined,
+        color_ref: undefined,
+        tire_size_ref: undefined,
+        vehicle_ref: undefined,
+        brand_ref: undefined,
+        design_style_ref: w.design_style_tags ?? [],
+        isSaved: true as const,
+      };
+    }) ?? [];
+
+  return {
+    data,
+    isLoading: !!userId && wheelsRaw === undefined,
+    error: null,
+    isError: false,
+  };
+}

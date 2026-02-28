@@ -492,6 +492,52 @@ export const boltPatternDistribution = query({
 });
 
 // =============================================================================
+// SAVED ITEMS (by user)
+// =============================================================================
+
+export const savedBrandsGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const links = await ctx.db
+      .query("saved_brands")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    const brands = await Promise.all(
+      links.map((l) => ctx.db.get("oem_brands", l.brand_id))
+    );
+    return brands.filter((b): b is NonNullable<typeof b> => b !== null);
+  },
+});
+
+export const savedVehiclesGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const links = await ctx.db
+      .query("saved_vehicles")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    const vehicles = await Promise.all(
+      links.map((l) => ctx.db.get("oem_vehicles", l.vehicle_id))
+    );
+    return vehicles.filter((v): v is NonNullable<typeof v> => v !== null);
+  },
+});
+
+export const savedWheelsGetByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const links = await ctx.db
+      .query("saved_wheels")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .collect();
+    const wheels = await Promise.all(
+      links.map((l) => ctx.db.get("oem_wheels", l.wheel_id))
+    );
+    return wheels.filter((w): w is NonNullable<typeof w> => w !== null);
+  },
+});
+
+// =============================================================================
 // REFERENCE / LOOKUP TABLES
 // =============================================================================
 
