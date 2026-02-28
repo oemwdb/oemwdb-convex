@@ -1,41 +1,63 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { SupabaseBrand } from "./useSupabaseBrands";
-import { SupabaseVehicle } from "./useSupabaseVehicles";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
-export const useVehicleDetails = (brandRef?: string, vehicleRef?: string) => {
-  return useQuery({
-    queryKey: ["vehicle-details", brandRef, vehicleRef],
-    queryFn: async () => {
-      if (!brandRef || !vehicleRef) return null;
+export type VehicleDetailsData = {
+  brand: string;
+  model: string;
+  year: number | undefined;
+  brandImageUrl: string | undefined;
+  vehicleImageUrl: string | undefined;
+  productionYears: string | undefined;
+} | null;
 
-      const [brandResult, vehicleResult] = await Promise.all([
-        supabase.from("oem_brands").select("*").eq("id", brandRef).single(),
-        supabase.from("oem_vehicles").select("*").eq("id", vehicleRef).single(),
-      ]);
+export const useVehicleDetails = (
+  brandRef?: string,
+  vehicleRef?: string
+): {
+  data: VehicleDetailsData;
+  isLoading: boolean;
+  error: null;
+  isError: false;
+} => {
+  const brand = useQuery(
+    api.queries.brandsGetById,
+    brandRef ? { id: brandRef } : "skip"
+  );
+  const vehicle = useQuery(
+    api.queries.vehiclesGetById,
+    vehicleRef ? { id: vehicleRef } : "skip"
+  );
 
-      if (brandResult.error || vehicleResult.error) {
-        console.error("Error fetching vehicle details:", brandResult.error || vehicleResult.error);
-        return null;
-      }
+  const enabled = !!brandRef && !!vehicleRef;
+  const isLoading =
+    enabled && (brand === undefined || vehicle === undefined);
+  const data: VehicleDetailsData | undefined =
+    !enabled
+      ? null
+      : isLoading
+        ? undefined
+        : brand && vehicle
+          ? (() => {
+              const yearMatch = vehicle.production_years?.match(/\d{4}/);
+              const year = yearMatch ? parseInt(yearMatch[0], 10) : undefined;
+              return {
+                brand: brand.brand_title,
+                model:
+                  vehicle.vehicle_title ||
+                  vehicle.model_name ||
+                  "Unknown Model",
+                year,
+                brandImageUrl: brand.brand_image_url,
+                vehicleImageUrl: vehicle.vehicle_image,
+                productionYears: vehicle.production_years,
+              };
+            })()
+          : null;
 
-      const brand = brandResult.data as any;
-      const vehicle = vehicleResult.data as any;
-
-      // Extract year from production_years
-      const yearMatch = vehicle.production_years?.match(/\d{4}/);
-      const year = yearMatch ? parseInt(yearMatch[0]) : undefined;
-
-      return {
-        brand: brand.brand_title,
-        model: vehicle.vehicle_title || vehicle.model_name || "Unknown Model",
-        year,
-        brandImageUrl: brand.brand_image_url,
-        vehicleImageUrl: vehicle.vehicle_image,
-        productionYears: vehicle.production_years,
-      };
-    },
-    enabled: !!brandRef && !!vehicleRef,
-    staleTime: 1000 * 60 * 10, // 10 minutes
-  });
+  return {
+    data: data ?? null,
+    isLoading,
+    error: null,
+    isError: false,
+  };
 };

@@ -31,6 +31,16 @@ export const brandsGetById = query({
   },
 });
 
+export const brandsGetByTitle = query({
+  args: { brandTitle: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("oem_brands")
+      .withIndex("by_brand_title", (q) => q.eq("brand_title", args.brandTitle))
+      .first();
+  },
+});
+
 // =============================================================================
 // OEM VEHICLES
 // =============================================================================
@@ -55,6 +65,26 @@ export const vehiclesGetById = query({
   },
 });
 
+export const vehiclesGetAllWithBrands = query({
+  args: {},
+  handler: async (ctx) => {
+    const vehicles = await ctx.db
+      .query("oem_vehicles")
+      .order("asc")
+      .collect();
+    const brands = await ctx.db.query("oem_brands").collect();
+    const brandMap = new Map(brands.map((b) => [b._id, b]));
+    return vehicles.map((v) => {
+      const brand = brandMap.get(v.brand_id);
+      return {
+        ...v,
+        brand_name: brand?.brand_title ?? "Unknown",
+        brand_id: brand?.id ?? null,
+      };
+    });
+  },
+});
+
 export const vehiclesGetByBrand = query({
   args: { brandId: v.id("oem_brands") },
   handler: async (ctx, args) => {
@@ -62,6 +92,19 @@ export const vehiclesGetByBrand = query({
       .query("oem_vehicles")
       .withIndex("by_brand_id", (q) => q.eq("brand_id", args.brandId))
       .collect();
+  },
+});
+
+export const vehicleVariantsGetByVehicle = query({
+  args: { vehicleId: v.id("oem_vehicles") },
+  handler: async (ctx, args) => {
+    const variants = await ctx.db
+      .query("vehicle_variants")
+      .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", args.vehicleId))
+      .collect();
+    return variants.sort(
+      (a, b) => (a.year_from ?? 0) - (b.year_from ?? 0)
+    );
   },
 });
 
@@ -120,6 +163,26 @@ export const wheelsGetAll = query({
       .query("oem_wheels")
       .order("asc")
       .collect();
+  },
+});
+
+export const wheelsGetAllWithBrands = query({
+  args: {},
+  handler: async (ctx) => {
+    const wheels = await ctx.db
+      .query("oem_wheels")
+      .order("asc")
+      .collect();
+    const brands = await ctx.db.query("oem_brands").collect();
+    const brandMap = new Map(brands.map((b) => [b._id, b]));
+    return wheels.map((w) => {
+      const brand = brandMap.get(w.brand_id);
+      return {
+        ...w,
+        brand_name: brand?.brand_title ?? "Unknown",
+        brand_id: brand?.id ?? null,
+      };
+    });
   },
 });
 

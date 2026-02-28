@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "convex": {
+      "enabled": true
+    },
+    "cloudflare": {
+      "enabled": true
+    },
+    "supabase": {
+      "enabled": true
+    }
+  }
+}

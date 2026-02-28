@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export interface WheelWithRelations {
-  id: string;  // Changed to string since oem_wheels.id is text
+  id: string;
   wheel_name: string;
   brand_name: string | null;
   diameter: string | null;
@@ -18,362 +18,156 @@ export interface WheelWithRelations {
   metal_type: string | null;
   part_numbers: string | null;
   notes: string | null;
-  specifications?: any;  // JSON field with detailed specs
-  vehicles?: any[];
-  // Reference fields (arrays from database)
+  specifications?: unknown;
+  vehicles?: VehicleRelation[];
   brand_refs?: string[];
   diameter_refs?: string[];
   width_ref?: string[];
   bolt_pattern_refs?: string[];
   center_bore_ref?: string[];
-  offset_refs?: string[]; // New field
+  offset_refs?: string[];
   color_refs?: string[];
   tire_size_refs?: string[];
-  vehicle_refs?: any;
+  vehicle_refs?: unknown;
 }
 
-// Helper to extract values from JSONB ref arrays
-const extractRefValues = (refs: any): string[] => {
-  if (!refs || !Array.isArray(refs) || refs.length === 0) return [];
-  return refs.map(ref => {
-    // Handle both JSONB objects {id, value} and plain strings
-    if (typeof ref === 'object' && ref.value) return ref.value;
-    if (typeof ref === 'string') return ref;
-    return null;
-  }).filter(Boolean) as string[];
-};
+export interface VehicleRelation {
+  id: string;
+  chassis_code: string | null;
+  model_name: string | null;
+  vehicle_title: string | null;
+  production_years: string | null;
+  bolt_pattern: string | null;
+  center_bore: string | null;
+  bolt_pattern_ref?: unknown;
+  center_bore_ref?: unknown;
+  wheel_diameter_ref?: unknown;
+  wheel_width_ref?: unknown;
+  hero_image_url: string | null;
+  brand_name: string | null;
+  is_oem_fitment: boolean;
+}
 
-// Helper to extract first string from array
-const getFirstString = (refs: any): string | null => {
-  const values = extractRefValues(refs);
-  return values.length > 0 ? values[0] : null;
-};
-
-export const fetchWheelWithVehicles = async (wheelId: string) => {
-  // Since oem_wheels.id is now text (wheel name), query directly
-  const { data: wheelData, error: wheelError } = await supabase
-    .from("oem_wheels" as any)
-    .select("*")
-    .eq("id", wheelId)  // No parseInt needed - id is text
-    .maybeSingle();
-
-  if (wheelError) {
-    console.error("[Wheel Query] Error:", wheelError);
-    throw wheelError;
-  }
-
-  if (!wheelData) {
-    throw new Error("Wheel not found");
-  }
-
-  // Type assertion to handle the any type
-  const wheel = wheelData as any;
-
-  // Map the refs to proper values
-  const mappedWheel = {
-    id: wheel.id,
-    wheel_name: wheel.wheel_title || wheel.wheel_name,
-    brand_name: getFirstString(wheel.brand_ref),
-    diameter: getFirstString(wheel.diameter_ref),
-    width: getFirstString(wheel.width_ref),
-    bolt_pattern: getFirstString(wheel.bolt_pattern_ref),
-    center_bore: getFirstString(wheel.center_bore_ref),
-    wheel_offset: wheel.wheel_offset,
-    color: wheel.color,
-    good_pic_url: wheel.good_pic_url,
-    bad_pic_url: wheel.bad_pic_url,
-    weight: wheel.weight,
-    metal_type: wheel.metal_type,
-    part_numbers: wheel.part_numbers,
-    notes: wheel.notes,
-    specifications: wheel.specifications,
-    status: wheel.good_pic_url ? "Ready for website" : "Needs Good Pic",
-    // Extract and keep all ref values as arrays
-    brand_refs: extractRefValues(wheel.brand_ref),
-    diameter_refs: extractRefValues(wheel.diameter_ref),
-    width_ref: extractRefValues(wheel.width_ref),
-    bolt_pattern_refs: extractRefValues(wheel.bolt_pattern_ref),
-    center_bore_ref: extractRefValues(wheel.center_bore_ref),
-    offset_refs: extractRefValues(wheel.offset_ref),
-    color_refs: extractRefValues(wheel.color_ref),
-    tire_size_refs: extractRefValues(wheel.tire_size_ref),
-    vehicle_refs: wheel.vehicle_ref
+function mapVehicle(
+  raw: {
+    id: string;
+    vehicle_id_only?: string | null;
+    generation?: string | null;
+    model_name?: string | null;
+    vehicle_title?: string | null;
+    production_years?: string | null;
+    vehicle_image?: string | null;
+    brand_id: unknown;
+  },
+  brandName: string | null
+): VehicleRelation {
+  return {
+    id: raw.id,
+    chassis_code: raw.vehicle_id_only ?? raw.generation ?? null,
+    model_name: raw.model_name ?? null,
+    vehicle_title: raw.vehicle_title ?? null,
+    production_years: raw.production_years ?? null,
+    bolt_pattern: null,
+    center_bore: null,
+    bolt_pattern_ref: undefined,
+    center_bore_ref: undefined,
+    wheel_diameter_ref: undefined,
+    wheel_width_ref: undefined,
+    hero_image_url: raw.vehicle_image ?? null,
+    brand_name: brandName,
+    is_oem_fitment: true,
   };
-
-  // Fetch related vehicles if vehicle_ref exists
-  let vehicles: any[] = [];
-  if (wheel.vehicle_ref && Array.isArray(wheel.vehicle_ref)) {
-    // Extract vehicle IDs from JSONB array [{id: "...", title: "..."}]
-    const vehicleIds = wheel.vehicle_ref
-      .filter((ref: any) => ref && ref.id)
-      .map((ref: any) => ref.id);
-
-    if (vehicleIds.length > 0) {
-      const { data: vehicleData } = await supabase
-        .from('oem_vehicles' as any)
-        .select('*')
-        .in('id', vehicleIds);
-
-      if (vehicleData) {
-        vehicles = (vehicleData as any[]).map((v: any) => ({
-          id: v.id,
-          chassis_code: v.vehicle_id_only || v.generation,
-          model_name: v.model_name,
-          vehicle_title: v.vehicle_title,
-          production_years: v.production_years,
-          bolt_pattern: getFirstString(v.bolt_pattern_ref),
-          center_bore: getFirstString(v.center_bore_ref),
-          bolt_pattern_ref: v.bolt_pattern_ref,
-          center_bore_ref: v.center_bore_ref,
-          wheel_diameter_ref: v.wheel_diameter_ref,
-          wheel_width_ref: v.wheel_width_ref,
-          hero_image_url: v.hero_image_url || v.vehicle_image,
-          brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
-          is_oem_fitment: true
-        }));
-
-      }
-    }
-  }
-
-  // Method 2: Spec-based matching - find vehicles with matching bolt pattern AND center bore
-  // This ensures bidirectional linking based on actual compatibility
-  const wheelBoltPatterns = extractRefValues(wheel.bolt_pattern_ref);
-  const wheelCenterBores = extractRefValues(wheel.center_bore_ref);
-
-  if ((wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) && mappedWheel.brand_name) {
-    console.log("[Wheel Query] Searching vehicles by specs - Bolt Patterns:", wheelBoltPatterns, "Center Bores:", wheelCenterBores);
-
-    // Fetch all vehicles and filter by spec match
-    const { data: allVehiclesData } = await supabase
-      .from("oem_vehicles" as any)
-      .select("*");
-
-    if (allVehiclesData) {
-      const specMatchedVehicles = (allVehiclesData as any[]).filter((v: any) => {
-        // Extract bolt patterns from vehicle
-        const vehicleBoltPatterns = extractRefValues(v.bolt_pattern_ref).map((bp: string) =>
-          bp?.toLowerCase().replace(/\s+/g, '')
-        );
-
-        // Extract center bores from vehicle
-        const vehicleCenterBores = extractRefValues(v.center_bore_ref).map((cb: string) =>
-          cb?.toLowerCase().replace(/[mm\s]/g, '')
-        );
-
-        // Normalize wheel specs for comparison
-        const normalizedWheelBP = wheelBoltPatterns.map((bp: string) => bp?.toLowerCase().replace(/\s+/g, ''));
-        const normalizedWheelCB = wheelCenterBores.map((cb: string) => cb?.toLowerCase().replace(/[mm\s]/g, ''));
-
-        // Match if any bolt pattern matches AND any center bore matches
-        const boltPatternMatch = normalizedWheelBP.length > 0 &&
-          normalizedWheelBP.some((wbp: string) => vehicleBoltPatterns.includes(wbp));
-        const centerBoreMatch = normalizedWheelCB.length > 0 &&
-          normalizedWheelCB.some((wcb: string) => vehicleCenterBores.includes(wcb));
-
-        // Also check brand compatibility (loosely)
-        const vehicleBrand = getFirstString(v.brand_ref)?.toLowerCase() || '';
-        const wheelBrand = mappedWheel.brand_name?.toLowerCase() || '';
-        const brandMatch = vehicleBrand === wheelBrand;
-
-        return boltPatternMatch && centerBoreMatch && brandMatch;
-      }).map((v: any) => ({
-        id: v.id,
-        chassis_code: v.vehicle_id_only || v.generation,
-        model_name: v.model_name,
-        vehicle_title: v.vehicle_title,
-        production_years: v.production_years,
-        bolt_pattern: getFirstString(v.bolt_pattern_ref),
-        center_bore: getFirstString(v.center_bore_ref),
-        bolt_pattern_ref: v.bolt_pattern_ref,
-        center_bore_ref: v.center_bore_ref,
-        wheel_diameter_ref: v.wheel_diameter_ref,
-        wheel_width_ref: v.wheel_width_ref,
-        hero_image_url: v.hero_image_url || v.vehicle_image,
-        brand_name: getFirstString(v.brand_ref) || 'Unknown',
-        is_oem_fitment: false // Mark as spec-matched, not direct OEM fitment
-      }));
-
-
-      // Merge spec-matched vehicles, avoiding duplicates
-      const existingIds = new Set(vehicles.map((v: any) => v.id));
-      for (const v of specMatchedVehicles) {
-        if (!existingIds.has(v.id)) {
-          vehicles.push(v);
-        }
-      }
-
-      console.log("[Wheel Query] Found", specMatchedVehicles.length, "spec-matched vehicles");
-    }
-  }
-
-  console.log("[Wheel Query] Total vehicles for wheel:", vehicles.length);
-
-  const wheelWithVehicles: WheelWithRelations = {
-    ...mappedWheel,
-    vehicles
-  };
-
-  console.log("[Wheel Query] Fetched wheel with vehicles:", wheelWithVehicles);
-  return wheelWithVehicles;
-};
-
-export const fetchWheelByName = async (wheelName: string) => {
-  // Since oem_wheels.id is now the wheel name, we can query directly by id
-  const { data: wheelData, error: wheelError } = await supabase
-    .from("oem_wheels" as any)
-    .select("*")
-    .eq("id", wheelName)  // Use id directly as it contains the wheel name
-    .maybeSingle();
-
-  if (wheelError) {
-    console.error("[Wheel Query] Error:", wheelError);
-    throw wheelError;
-  }
-
-  if (!wheelData) {
-    throw new Error("Wheel not found");
-  }
-
-  // Type assertion to handle the any type
-  const wheel = wheelData as any;
-
-  // Map the refs to proper values
-  const mappedWheel = {
-    id: wheel.id,
-    wheel_name: wheel.wheel_title || wheel.wheel_name,
-    brand_name: getFirstString(wheel.brand_ref),
-    diameter: getFirstString(wheel.diameter_ref),
-    width: getFirstString(wheel.width_ref),
-    bolt_pattern: getFirstString(wheel.bolt_pattern_ref),
-    center_bore: getFirstString(wheel.center_bore_ref),
-    wheel_offset: wheel.wheel_offset,
-    color: wheel.color,
-    good_pic_url: wheel.good_pic_url,
-    bad_pic_url: wheel.bad_pic_url,
-    weight: wheel.weight,
-    metal_type: wheel.metal_type,
-    part_numbers: wheel.part_numbers,
-    notes: wheel.notes,
-    specifications: wheel.specifications,
-    status: wheel.good_pic_url ? "Ready for website" : "Needs Good Pic",
-    // Extract and keep all ref values as arrays
-    brand_refs: extractRefValues(wheel.brand_ref),
-    diameter_refs: extractRefValues(wheel.diameter_ref),
-    width_ref: extractRefValues(wheel.width_ref),
-    bolt_pattern_refs: extractRefValues(wheel.bolt_pattern_ref),
-    center_bore_ref: extractRefValues(wheel.center_bore_ref),
-    offset_refs: extractRefValues(wheel.offset_ref),
-    color_refs: extractRefValues(wheel.color_ref),
-    tire_size_refs: extractRefValues(wheel.tire_size_ref),
-    vehicle_refs: wheel.vehicle_ref
-  };
-
-  // Fetch related vehicles if vehicle_ref exists
-  let vehicles: any[] = [];
-  if (wheel.vehicle_ref && Array.isArray(wheel.vehicle_ref)) {
-    // Extract vehicle IDs from JSONB array [{id: "...", title: "..."}]
-    const vehicleIds = wheel.vehicle_ref
-      .filter((ref: any) => ref && ref.id)
-      .map((ref: any) => ref.id);
-
-    if (vehicleIds.length > 0) {
-      const { data: vehicleData } = await supabase
-        .from('oem_vehicles' as any)
-        .select('*')
-        .in('id', vehicleIds);
-
-      if (vehicleData) {
-        vehicles = (vehicleData as any[]).map((v: any) => ({
-          id: v.id,
-          chassis_code: v.vehicle_id_only || v.generation,
-          model_name: v.model_name,
-          vehicle_title: v.vehicle_title,
-          production_years: v.production_years,
-          bolt_pattern: getFirstString(v.bolt_pattern_ref),
-          center_bore: getFirstString(v.center_bore_ref),
-          hero_image_url: v.hero_image_url || v.vehicle_image,
-          brand_name: getFirstString(v.brand_ref) || 'Rolls-Royce',
-          is_oem_fitment: true
-        }));
-      }
-    }
-  }
-
-  // Method 2: Spec-based matching - find vehicles with matching bolt pattern AND center bore
-  const wheelBoltPatterns = extractRefValues(wheel.bolt_pattern_ref);
-  const wheelCenterBores = extractRefValues(wheel.center_bore_ref);
-
-  if (wheelBoltPatterns.length > 0 || wheelCenterBores.length > 0) {
-    console.log("[Wheel Query] Searching vehicles by specs");
-
-    const { data: allVehiclesData } = await supabase
-      .from("oem_vehicles" as any)
-      .select("*");
-
-    if (allVehiclesData) {
-      const specMatchedVehicles = (allVehiclesData as any[]).filter((v: any) => {
-        const vehicleBoltPatterns = extractRefValues(v.bolt_pattern_ref).map((bp: string) =>
-          bp?.toLowerCase().replace(/\s+/g, '')
-        );
-        const vehicleCenterBores = extractRefValues(v.center_bore_ref).map((cb: string) =>
-          cb?.toLowerCase().replace(/[mm\s]/g, '')
-        );
-
-        const normalizedWheelBP = wheelBoltPatterns.map((bp: string) => bp?.toLowerCase().replace(/\s+/g, ''));
-        const normalizedWheelCB = wheelCenterBores.map((cb: string) => cb?.toLowerCase().replace(/[mm\s]/g, ''));
-
-        const boltPatternMatch = normalizedWheelBP.length === 0 ||
-          normalizedWheelBP.some((wbp: string) => vehicleBoltPatterns.includes(wbp));
-        const centerBoreMatch = normalizedWheelCB.length === 0 ||
-          normalizedWheelCB.some((wcb: string) => vehicleCenterBores.includes(wcb));
-
-        return boltPatternMatch && centerBoreMatch;
-      }).map((v: any) => ({
-        id: v.id,
-        chassis_code: v.vehicle_id_only || v.generation,
-        model_name: v.model_name,
-        vehicle_title: v.vehicle_title,
-        production_years: v.production_years,
-        bolt_pattern: getFirstString(v.bolt_pattern_ref),
-        center_bore: getFirstString(v.center_bore_ref),
-        hero_image_url: v.hero_image_url || v.vehicle_image,
-        brand_name: getFirstString(v.brand_ref) || 'Unknown',
-        is_oem_fitment: false
-      }));
-
-      const existingIds = new Set(vehicles.map((v: any) => v.id));
-      for (const v of specMatchedVehicles) {
-        if (!existingIds.has(v.id)) {
-          vehicles.push(v);
-        }
-      }
-    }
-  }
-
-  const wheelWithVehicles: WheelWithRelations = {
-    ...mappedWheel,
-    vehicles
-  };
-
-  console.log("[Wheel Query] Fetched wheel by name:", wheelWithVehicles);
-  return wheelWithVehicles;
-};
+}
 
 export function useWheelWithVehicles(wheelId: string) {
-  return useQuery({
-    queryKey: ["wheel-with-vehicles", wheelId],
-    queryFn: () => fetchWheelWithVehicles(wheelId),
-    enabled: !!wheelId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const wheel = useQuery(
+    api.queries.wheelsGetById,
+    wheelId ? { id: wheelId } : "skip"
+  );
+  const wheelConvexId = wheel?._id;
+  const vehiclesData = useQuery(
+    api.queries.getVehiclesByWheel,
+    wheelConvexId ? { wheelId: wheelConvexId } : "skip"
+  );
+  const brandsData = useQuery(
+    api.queries.brandsGetAll,
+    wheelId ? {} : "skip"
+  );
+
+  const brandMap = new Map(
+    (brandsData ?? []).map((b) => [b._id, b])
+  );
+
+  const vehicles: VehicleRelation[] =
+    vehiclesData && brandsData
+      ? vehiclesData.map((v) =>
+          mapVehicle(v, brandMap.get(v.brand_id)?.brand_title ?? null)
+        )
+      : [];
+
+  let specifications: unknown = null;
+  if (wheel?.specifications_json) {
+    try {
+      specifications = JSON.parse(wheel.specifications_json) as unknown;
+    } catch {
+      specifications = null;
+    }
+  }
+
+  const data: WheelWithRelations | null | undefined =
+    !wheelId
+      ? null
+      : wheel === undefined ||
+        (!!wheelConvexId && vehiclesData === undefined) ||
+        (!!wheelId && brandsData === undefined)
+        ? undefined
+        : wheel
+          ? {
+              id: wheel.id,
+              wheel_name: wheel.wheel_title ?? "",
+              brand_name: brandMap.get(wheel.brand_id)?.brand_title ?? null,
+              diameter: null,
+              width: null,
+              bolt_pattern: null,
+              center_bore: null,
+              wheel_offset: wheel.wheel_offset ?? null,
+              color: wheel.color ?? null,
+              good_pic_url: wheel.good_pic_url ?? null,
+              bad_pic_url: null,
+              status: wheel.good_pic_url ? "Ready for website" : "Needs Good Pic",
+              weight: wheel.weight ?? null,
+              metal_type: wheel.metal_type ?? null,
+              part_numbers: wheel.part_numbers ?? null,
+              notes: wheel.notes ?? null,
+              specifications,
+              vehicles,
+              brand_refs: [],
+              diameter_refs: [],
+              width_ref: [],
+              bolt_pattern_refs: [],
+              center_bore_ref: [],
+              offset_refs: [],
+              color_refs: [],
+              tire_size_refs: [],
+              vehicle_refs: undefined,
+            }
+          : null;
+
+  const isLoading =
+    !!wheelId &&
+    (wheel === undefined ||
+      (!!wheelConvexId && vehiclesData === undefined) ||
+      (!!wheel && brandsData === undefined));
+
+  return {
+    data: data ?? null,
+    isLoading,
+    error: null,
+    isError: false,
+  };
 }
 
+/** Uses same lookup as useWheelWithVehicles (wheel id is the business key). */
 export function useWheelByName(wheelName: string) {
-  return useQuery({
-    queryKey: ["wheel-by-name", wheelName],
-    queryFn: () => fetchWheelByName(wheelName),
-    enabled: !!wheelName,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  return useWheelWithVehicles(wheelName);
 }
