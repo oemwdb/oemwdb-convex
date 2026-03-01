@@ -13,3 +13,4 @@ vite.config.ts.timestamp-*.mjs
 
 # Temp import files (should never be committed)
 temp_*_import/
+.env.local
