@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Import vehicle components
 import VehicleHeader from "@/components/vehicle/VehicleHeader";
 import VehicleBriefSection from "@/components/vehicle/VehicleBriefSection";
+import { SaveButton } from "@/components/SaveButton";
 import DiscussionSection from "@/components/vehicle/DiscussionSection";
 import GallerySection from "@/components/vehicle/GallerySection";
 import WheelCard from "@/components/wheel/WheelCard";
@@ -111,8 +112,9 @@ const VehicleDetailPage = () => {
         {/* Grid layout with vehicle header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Vehicle Header - Takes 2 columns on large screens */}
-          <div className="lg:col-span-2">
-            <VehicleHeader
+          <div className="lg:col-span-2 flex gap-2 items-start">
+            <div className="flex-1 min-w-0">
+              <VehicleHeader
               name={vehicleDisplayName || "Unknown Vehicle"}
               generation={vehicleData.lineage || "Current Generation"}
               years={vehicleData.production_years || ""}
@@ -131,6 +133,12 @@ const VehicleDetailPage = () => {
                 wheel_diameter_ref: extractRefValues(vehicleData.diameter_ref),
                 wheel_width_ref: extractRefValues(vehicleData.width_ref)
               }}
+              />
+            </div>
+            <SaveButton
+              itemId={vehicleData.id}
+              itemType="vehicle"
+              convexId={vehicleData._id}
             />
           </div>
 

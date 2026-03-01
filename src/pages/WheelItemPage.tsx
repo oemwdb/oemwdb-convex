@@ -13,6 +13,7 @@ import { useNavigation } from "@/contexts/NavigationContext";
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
 import FitmentSection from "@/components/wheel/FitmentSection";
+import { SaveButton } from "@/components/SaveButton";
 import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
 import CommentsSection from "@/components/vehicle/CommentsSection";
 import GallerySection from "@/components/vehicle/GallerySection";
@@ -154,15 +155,22 @@ const WheelItemPage = () => {
         {/* Grid layout with wheel header and ad */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Wheel Header - Takes 2 columns on large screens */}
-          <div className="lg:col-span-2">
-            <WheelHeader
-              name={wheel.wheel_name}
-              brand={wheel.brand_name || "Unknown Brand"}
+          <div className="lg:col-span-2 flex gap-2 items-start">
+            <div className="flex-1 min-w-0">
+              <WheelHeader
+                name={wheel.wheel_name}
+                brand={wheel.brand_name || "Unknown Brand"}
               price="$249.99"
               description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
               goodPicUrl={wheel.good_pic_url}
               badPicUrl={wheel.bad_pic_url}
               specs={wheelSpecs}
+              />
+            </div>
+            <SaveButton
+              itemId={wheel.id}
+              itemType="wheel"
+              convexId={wheel._id}
             />
           </div>
 

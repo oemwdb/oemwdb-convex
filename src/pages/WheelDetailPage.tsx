@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
 import FitmentSection from "@/components/wheel/FitmentSection";
+import { SaveButton } from "@/components/SaveButton";
 import CommentsSection from "@/components/vehicle/CommentsSection";
 import GallerySection from "@/components/vehicle/GallerySection";
 
@@ -125,9 +126,16 @@ const WheelDetailPage = () => {
                   Back to Wheels
                 </Link>
               </Button>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                {wheel.wheel_name}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                  {wheel.wheel_name}
+                </h1>
+                <SaveButton
+                  itemId={wheel.id}
+                  itemType="wheel"
+                  convexId={wheel._id}
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                   {wheel.brand_name || "Unknown Brand"}

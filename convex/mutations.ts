@@ -12,6 +12,112 @@ const optionalBoolean = v.optional(v.boolean());
 const optionalStringArray = v.optional(v.array(v.string()));
 
 // =============================================================================
+// REFERENCE TABLES (for migration script — get-or-create, return _id)
+// =============================================================================
+
+export const boltPatternsInsert = mutation({
+  args: { bolt_pattern: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("oem_bolt_patterns")
+      .filter((q) => q.eq(q.field("bolt_pattern"), args.bolt_pattern))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("oem_bolt_patterns", {
+      bolt_pattern: args.bolt_pattern,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const centerBoresInsert = mutation({
+  args: { center_bore: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("oem_center_bores")
+      .filter((q) => q.eq(q.field("center_bore"), args.center_bore))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("oem_center_bores", {
+      center_bore: args.center_bore,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const colorsInsert = mutation({
+  args: { color: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("oem_colors")
+      .filter((q) => q.eq(q.field("color"), args.color))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("oem_colors", {
+      color: args.color,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const diametersInsert = mutation({
+  args: { diameter: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("oem_diameters")
+      .filter((q) => q.eq(q.field("diameter"), args.diameter))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("oem_diameters", {
+      diameter: args.diameter,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const widthsInsert = mutation({
+  args: { width: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("oem_widths")
+      .filter((q) => q.eq(q.field("width"), args.width))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("oem_widths", {
+      width: args.width,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const tireSizesInsert = mutation({
+  args: { tire_size: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("tire_sizes")
+      .filter((q) => q.eq(q.field("tire_size"), args.tire_size))
+      .first();
+    if (existing) return existing._id;
+    const now = new Date().toISOString();
+    return await ctx.db.insert("tire_sizes", {
+      tire_size: args.tire_size,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+// =============================================================================
 // OEM BRANDS
 // =============================================================================
 
@@ -456,6 +562,121 @@ export const wheelTireSizeUnlink = mutation({
 });
 
 // =============================================================================
+// USER SAVED ITEMS (link / unlink)
+// =============================================================================
+
+export const savedBrandLink = mutation({
+  args: {
+    userId: v.string(),
+    brandId: v.id("oem_brands"),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("saved_brands")
+      .withIndex("by_user_brand", (q) =>
+        q.eq("user_id", args.userId).eq("brand_id", args.brandId)
+      )
+      .first();
+    if (existing) return existing._id;
+    return await ctx.db.insert("saved_brands", {
+      user_id: args.userId,
+      brand_id: args.brandId,
+    });
+  },
+});
+
+export const savedBrandUnlink = mutation({
+  args: {
+    userId: v.string(),
+    brandId: v.id("oem_brands"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_brands")
+      .withIndex("by_user_brand", (q) =>
+        q.eq("user_id", args.userId).eq("brand_id", args.brandId)
+      )
+      .first();
+    if (link) await ctx.db.delete(link._id);
+    return link?._id ?? null;
+  },
+});
+
+export const savedVehicleLink = mutation({
+  args: {
+    userId: v.string(),
+    vehicleId: v.id("oem_vehicles"),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("saved_vehicles")
+      .withIndex("by_user_vehicle", (q) =>
+        q.eq("user_id", args.userId).eq("vehicle_id", args.vehicleId)
+      )
+      .first();
+    if (existing) return existing._id;
+    return await ctx.db.insert("saved_vehicles", {
+      user_id: args.userId,
+      vehicle_id: args.vehicleId,
+    });
+  },
+});
+
+export const savedVehicleUnlink = mutation({
+  args: {
+    userId: v.string(),
+    vehicleId: v.id("oem_vehicles"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_vehicles")
+      .withIndex("by_user_vehicle", (q) =>
+        q.eq("user_id", args.userId).eq("vehicle_id", args.vehicleId)
+      )
+      .first();
+    if (link) await ctx.db.delete(link._id);
+    return link?._id ?? null;
+  },
+});
+
+export const savedWheelLink = mutation({
+  args: {
+    userId: v.string(),
+    wheelId: v.id("oem_wheels"),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("saved_wheels")
+      .withIndex("by_user_wheel", (q) =>
+        q.eq("user_id", args.userId).eq("wheel_id", args.wheelId)
+      )
+      .first();
+    if (existing) return existing._id;
+    return await ctx.db.insert("saved_wheels", {
+      user_id: args.userId,
+      wheel_id: args.wheelId,
+    });
+  },
+});
+
+export const savedWheelUnlink = mutation({
+  args: {
+    userId: v.string(),
+    wheelId: v.id("oem_wheels"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_wheels")
+      .withIndex("by_user_wheel", (q) =>
+        q.eq("user_id", args.userId).eq("wheel_id", args.wheelId)
+      )
+      .first();
+    if (link) await ctx.db.delete(link._id);
+    return link?._id ?? null;
+  },
+});
+
+// =============================================================================
 // USER CONTENT (comments)
 // =============================================================================
 
@@ -579,11 +800,11 @@ export const registeredVehicleInsert = mutation({
   handler: async (ctx, args) => {
     const brand = await ctx.db
       .query("oem_brands")
-      .withIndex("by_id", (q) => q.eq("id", args.brand_ref))
+      .withIndex("by_business_id", (q) => q.eq("id", args.brand_ref))
       .first();
     const vehicle = await ctx.db
       .query("oem_vehicles")
-      .withIndex("by_id", (q) => q.eq("id", args.vehicle_ref))
+      .withIndex("by_business_id", (q) => q.eq("id", args.vehicle_ref))
       .first();
     const now = new Date().toISOString();
     return await ctx.db.insert("user_registered_vehicles", {
@@ -642,7 +863,7 @@ export const registeredVehicleUpdate = mutation({
     if (brand_ref) {
       const brand = await ctx.db
         .query("oem_brands")
-        .withIndex("by_id", (q) => q.eq("id", brand_ref))
+        .withIndex("by_business_id", (q) => q.eq("id", brand_ref))
         .first();
       if (brand) {
         patch.brand_id = brand._id;
@@ -652,7 +873,7 @@ export const registeredVehicleUpdate = mutation({
     if (vehicle_ref) {
       const vehicle = await ctx.db
         .query("oem_vehicles")
-        .withIndex("by_id", (q) => q.eq("id", vehicle_ref))
+        .withIndex("by_business_id", (q) => q.eq("id", vehicle_ref))
         .first();
       if (vehicle) {
         patch.linked_oem_vehicle_id = vehicle._id;

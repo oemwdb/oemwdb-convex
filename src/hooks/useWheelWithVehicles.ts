@@ -3,6 +3,7 @@ import { api } from "../../convex/_generated/api";
 
 export interface WheelWithRelations {
   id: string;
+  _id: string;
   wheel_name: string;
   brand_name: string | null;
   diameter: string | null;
@@ -124,6 +125,7 @@ export function useWheelWithVehicles(wheelId: string) {
         : wheel
           ? {
               id: wheel.id,
+              _id: wheel._id,
               wheel_name: wheel.wheel_title ?? "",
               brand_name: brandMap.get(wheel.brand_id)?.brand_title ?? null,
               diameter: null,

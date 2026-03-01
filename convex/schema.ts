@@ -67,7 +67,7 @@ export default defineSchema({
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
   })
-    .index("by_id", ["id"])
+    .index("by_business_id", ["id"])
     .index("by_brand_title", ["brand_title"]),
 
   oem_engines: defineTable({
@@ -90,7 +90,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
   })
     .index("by_brand_id", ["brand_id"])
-    .index("by_id", ["id"])
+    .index("by_business_id", ["id"])
     .index("by_engine_code", ["engine_code"]),
 
   oem_vehicles: defineTable({
@@ -107,7 +107,7 @@ export default defineSchema({
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
   })
-    .index("by_id", ["id"])
+    .index("by_business_id", ["id"])
     .index("by_brand_id", ["brand_id"]),
 
   vehicle_variants: defineTable({
@@ -140,7 +140,7 @@ export default defineSchema({
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
   })
-    .index("by_id", ["id"])
+    .index("by_business_id", ["id"])
     .index("by_brand_id", ["brand_id"]),
 
   // =============================================================================

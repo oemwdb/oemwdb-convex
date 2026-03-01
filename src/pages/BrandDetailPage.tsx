@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";
 import { useBrandVehicles, useBrandWheels } from "@/hooks/useBrandDetail";
+import { SaveButton } from "@/components/SaveButton";
 import { Loader2, ImageOff } from "lucide-react";
 
 import CommentsSection from "@/components/vehicle/CommentsSection";
@@ -79,8 +80,17 @@ const BrandDetailPage = () => {
               <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-3xl font-bold">
                 {formattedBrandName.charAt(0)}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">{formattedBrandName}</h1>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{formattedBrandName}</h1>
+                  {brand && (
+                    <SaveButton
+                      itemId={brand.id}
+                      itemType="brand"
+                      convexId={brand._id}
+                    />
+                  )}
+                </div>
                 <p className="text-slate-500">
                   {vehicleCardList.length} vehicles • {wheelCardList.length} wheels
                 </p>

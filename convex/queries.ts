@@ -26,7 +26,7 @@ export const brandsGetById = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("oem_brands")
-      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .withIndex("by_business_id", (q) => q.eq("id", args.id))
       .first();
   },
 });
@@ -81,7 +81,7 @@ export const vehiclesGetById = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("oem_vehicles")
-      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .withIndex("by_business_id", (q) => q.eq("id", args.id))
       .first();
   },
 });
@@ -138,7 +138,7 @@ export const vehiclesGetByIdFull = query({
       typeof args.id === "string"
         ? await ctx.db
             .query("oem_vehicles")
-            .withIndex("by_id", (q) => q.eq("id", args.id as string))
+            .withIndex("by_business_id", (q) => q.eq("id", args.id as string))
             .first()
         : await ctx.db.get("oem_vehicles", args.id);
     if (!vehicle) return null;
@@ -193,7 +193,7 @@ export const enginesGetById = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("oem_engines")
-      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .withIndex("by_business_id", (q) => q.eq("id", args.id))
       .first();
   },
 });
@@ -266,7 +266,7 @@ export const wheelsGetById = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("oem_wheels")
-      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .withIndex("by_business_id", (q) => q.eq("id", args.id))
       .first();
   },
 });
@@ -290,7 +290,7 @@ export const wheelsGetByIdFull = query({
       typeof args.id === "string"
         ? await ctx.db
             .query("oem_wheels")
-            .withIndex("by_id", (q) => q.eq("id", args.id as string))
+            .withIndex("by_business_id", (q) => q.eq("id", args.id as string))
             .first()
         : await ctx.db.get("oem_wheels", args.id);
     if (!wheel) return null;
@@ -609,6 +609,54 @@ export const savedWheelsGetByUser = query({
       links.map((l) => ctx.db.get("oem_wheels", l.wheel_id))
     );
     return wheels.filter((w): w is NonNullable<typeof w> => w !== null);
+  },
+});
+
+export const savedBrandCheck = query({
+  args: {
+    userId: v.string(),
+    brandId: v.id("oem_brands"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_brands")
+      .withIndex("by_user_brand", (q) =>
+        q.eq("user_id", args.userId).eq("brand_id", args.brandId)
+      )
+      .first();
+    return link !== null;
+  },
+});
+
+export const savedVehicleCheck = query({
+  args: {
+    userId: v.string(),
+    vehicleId: v.id("oem_vehicles"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_vehicles")
+      .withIndex("by_user_vehicle", (q) =>
+        q.eq("user_id", args.userId).eq("vehicle_id", args.vehicleId)
+      )
+      .first();
+    return link !== null;
+  },
+});
+
+export const savedWheelCheck = query({
+  args: {
+    userId: v.string(),
+    wheelId: v.id("oem_wheels"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("saved_wheels")
+      .withIndex("by_user_wheel", (q) =>
+        q.eq("user_id", args.userId).eq("wheel_id", args.wheelId)
+      )
+      .first();
+    return link !== null;
   },
 });
 

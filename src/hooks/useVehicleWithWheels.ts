@@ -3,6 +3,7 @@ import { api } from "../../convex/_generated/api";
 
 export interface VehicleWithRelations {
   id: string;
+  _id: string;
   chassis_code: string;
   model_name: string | null;
   formatted_name: string | null;
@@ -115,6 +116,7 @@ export function useVehicleWithWheels(vehicleId: string) {
         : vehicle
           ? {
               id: vehicle.id,
+              _id: vehicle._id,
               chassis_code: vehicle.vehicle_id_only ?? "",
               model_name: vehicle.model_name ?? null,
               formatted_name: vehicle.vehicle_title ?? null,
