@@ -166,7 +166,8 @@ export const SaveButton = ({
     // Supabase path
     setSupabaseLoading(true);
     try {
-      if (isSavedSupabase) {
+      if (isSaved) {
+        // Remove from saved items
         switch (itemType) {
           case "wheel":
             await supabase
