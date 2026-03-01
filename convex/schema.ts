@@ -984,4 +984,656 @@ export default defineSchema({
     .index("by_registered_vehicle", ["registered_vehicle_id"])
     .index("by_wheel_variant", ["wheel_variant_id"])
     .index("by_registered_vehicle_wheel_variant", ["registered_vehicle_id", "wheel_variant_id"]),
+
+  // =============================================================================
+  // WORKSHOP STAGING TABLES
+  // =============================================================================
+
+  ws_944racing_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_944racing_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_944racing_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_944racing_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_944racing_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_944racing_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_ferrari_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_jaguar_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_lamborghini_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_land_rover_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_mercedes_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_porsche_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_wheel_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_vehicles: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_vehicle_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_brands: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_vw_junction_vehicles_wheels: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_chassis_groups: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_audi_chassis_group_urls: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_models: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_alfa_romeo_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_models: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
+
+  ws_fiat_variants: defineTable({
+    source_id: v.optional(v.string()),
+    title: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    status: v.optional(v.string()),
+    imported_at: v.optional(v.string()),
+    data: v.string(),
+  }).index("by_status", ["status"]),
 });
