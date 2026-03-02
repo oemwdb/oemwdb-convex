@@ -23,9 +23,9 @@ export function useSavedBrands() {
 
   const data: SavedBrandItem[] =
     brandsRaw?.map((b) => ({
-      id: b.id,
-      name: b.brand_title,
-      wheelCount: b.wheel_count ?? 0,
+      id: b.id ?? "",
+      name: b.brand_title ?? "",
+      wheelCount: 0,
       description: b.brand_description ?? null,
       imagelink: b.brand_image_url ?? null,
       isSaved: true as const,

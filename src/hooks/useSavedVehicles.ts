@@ -36,8 +36,8 @@ export function useSavedVehicles() {
   const data: SavedVehicleItem[] =
     vehiclesRaw?.map((v) => ({
       id: v.id,
-      name: v.vehicle_title || v.model_name || v.vehicle_id_only || v.generation || "Unknown",
-      brand: brandMap.get(v.brand_id) ?? "Unknown",
+      name: v.vehicle_title || v.model_name || v.generation || "Unknown",
+      brand: "Unknown",
       wheels: 0,
       image: v.vehicle_image ?? null,
       bolt_pattern_ref: undefined,

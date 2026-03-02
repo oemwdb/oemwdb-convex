@@ -31,13 +31,9 @@ function mapToWheelShape(raw: {
   id: string;
   wheel_title: string;
   brand_name?: string | null;
-  brand_id?: string | null;
-  color?: string | null;
-  wheel_offset?: string | null;
   good_pic_url?: string | null;
   image_source?: string | null;
   specifications_json?: string | null;
-  design_style_tags?: string[] | null;
 }): Wheel {
   let specifications: Record<string, unknown> | null = null;
   if (raw.specifications_json) {
@@ -55,8 +51,8 @@ function mapToWheelShape(raw: {
     width: null,
     bolt_pattern: null,
     center_bore: null,
-    wheel_offset: raw.wheel_offset ?? null,
-    color: raw.color ?? null,
+    wheel_offset: null,
+    color: null,
     good_pic_url: raw.good_pic_url ?? null,
     bad_pic_url: null,
     status: "active",
@@ -70,7 +66,7 @@ function mapToWheelShape(raw: {
     tire_size_ref: [],
     vehicle_ref: [],
     brand_ref: [],
-    design_style_ref: raw.design_style_tags ?? [],
+    design_style_ref: [],
   };
 }
 

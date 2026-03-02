@@ -46,7 +46,7 @@ export function useGlobalSearch() {
   const vehicles =
     vehiclesRaw?.map((v) => ({
       ...v,
-      brand_refs: [brandMap.get(v.brand_id) ?? ""].filter(Boolean),
+      brand_refs: [] as string[],
       hero_image_url: v.vehicle_image ?? null,
     })) ?? [];
 

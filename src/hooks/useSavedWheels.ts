@@ -33,30 +33,25 @@ export function useSavedWheels() {
   );
 
   const data: SavedWheelItem[] =
-    wheelsRaw?.map((w) => {
-      const specs: string[] = [];
-      if (w.wheel_offset) specs.push(`Offset: ${w.wheel_offset}`);
-      if (w.color) specs.push(`Color: ${w.color}`);
-      return {
-        id: w.id,
-        name: w.wheel_title,
-        diameter: undefined,
-        boltPattern: undefined,
-        specs,
-        imageUrl: w.good_pic_url ?? null,
-        imageSource: w.image_source ?? null,
-        diameter_ref: undefined,
-        width_ref: undefined,
-        bolt_pattern_ref: undefined,
-        center_bore_ref: undefined,
-        color_ref: undefined,
-        tire_size_ref: undefined,
-        vehicle_ref: undefined,
-        brand_ref: undefined,
-        design_style_ref: w.design_style_tags ?? [],
-        isSaved: true as const,
-      };
-    }) ?? [];
+    wheelsRaw?.map((w) => ({
+      id: w.id,
+      name: w.wheel_title ?? "",
+      diameter: undefined,
+      boltPattern: undefined,
+      specs: [],
+      imageUrl: w.good_pic_url ?? null,
+      imageSource: w.image_source ?? null,
+      diameter_ref: undefined,
+      width_ref: undefined,
+      bolt_pattern_ref: undefined,
+      center_bore_ref: undefined,
+      color_ref: undefined,
+      tire_size_ref: undefined,
+      vehicle_ref: undefined,
+      brand_ref: undefined,
+      design_style_ref: [],
+      isSaved: true as const,
+    })) ?? [];
 
   return {
     data,

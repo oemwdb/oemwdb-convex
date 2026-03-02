@@ -101,9 +101,7 @@ export function useWheelWithVehicles(wheelId: string) {
 
   const vehicles: VehicleRelation[] =
     vehiclesData && brandsData
-      ? vehiclesData.map((v) =>
-          mapVehicle(v, brandMap.get(v.brand_id)?.brand_title ?? null)
-        )
+      ? vehiclesData.map((v) => mapVehicle(v, null))
       : [];
 
   let specifications: unknown = null;
@@ -127,13 +125,13 @@ export function useWheelWithVehicles(wheelId: string) {
               id: wheel.id,
               _id: wheel._id,
               wheel_name: wheel.wheel_title ?? "",
-              brand_name: brandMap.get(wheel.brand_id)?.brand_title ?? null,
+              brand_name: null,
               diameter: null,
               width: null,
               bolt_pattern: null,
               center_bore: null,
-              wheel_offset: wheel.wheel_offset ?? null,
-              color: wheel.color ?? null,
+              wheel_offset: null,
+              color: null,
               good_pic_url: wheel.good_pic_url ?? null,
               bad_pic_url: null,
               status: wheel.good_pic_url ? "Ready for website" : "Needs Good Pic",

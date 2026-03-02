@@ -115,9 +115,9 @@ export const useContributeForm = () => {
       );
       await convex.mutation(api.mutations.vehiclesInsert, {
         id: vehicleId,
-        brand_id: brand._id,
         model_name: vehicleData.modelName || undefined,
-        vehicle_id_only: vehicleData.oemChasisCode || undefined,
+        vehicle_title: vehicleData.modelName || undefined,
+        generation: vehicleData.oemChasisCode || undefined,
         production_years: vehicleData.productionYearsRange || undefined,
         vehicle_image: vehicleData.heroImage || undefined,
       });
@@ -164,16 +164,10 @@ export const useContributeForm = () => {
       const wheelId = slugify(wheelData.wheelName) || "wheel-" + Date.now();
       const wheelIdRes = await convex.mutation(api.mutations.wheelsInsert, {
         id: wheelId,
-        brand_id: brand._id,
         wheel_title: wheelData.wheelName,
-        color: wheelData.colorNamesTxt || undefined,
-        wheel_offset: wheelData.offsetTxt || undefined,
         part_numbers: wheelData.oemPartNumbersTxt || undefined,
         notes: wheelData.userSubmissionInput || undefined,
         good_pic_url: wheelData.goodPic || undefined,
-        design_style_tags: wheelData.designStyleTag
-          ? [wheelData.designStyleTag]
-          : undefined,
       });
 
       if (wheelData.vehicleRel) {

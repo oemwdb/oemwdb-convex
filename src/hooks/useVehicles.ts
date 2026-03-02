@@ -23,7 +23,6 @@ export interface Vehicle {
 
 function mapToVehicleShape(raw: {
   id: string;
-  vehicle_id_only?: string | null;
   generation?: string | null;
   model_name?: string | null;
   vehicle_title?: string | null;
@@ -31,14 +30,13 @@ function mapToVehicleShape(raw: {
   brand_id?: string | null;
   production_years?: string | null;
   vehicle_image?: string | null;
-  oem_engine_id?: string | null;
 }): Vehicle {
   return {
     id: raw.id,
-    chassis_code: raw.vehicle_id_only || raw.generation || "",
+    chassis_code: raw.generation ?? "",
     model_name: raw.model_name ?? null,
     vehicle_title: raw.vehicle_title ?? null,
-    brand_name: raw.brand_name ?? "Unknown",
+    brand_name: raw.brand_name ?? null,
     brand_id: raw.brand_id ?? null,
     production_years: raw.production_years ?? null,
     platform: null,

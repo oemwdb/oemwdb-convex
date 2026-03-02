@@ -18,8 +18,9 @@ const BrandsPage = () => {
   const isError = false;
 
   const brands = useMemo(() => {
-    if (!rawBrands) return [];
-    return rawBrands.map((b) => ({
+    const data = rawBrands ?? [];
+    if (!Array.isArray(data)) return [];
+    return data.map((b) => ({
       name: b.brand_title ?? "Unknown",
       description: b.brand_description ?? null,
       imagelink: b.brand_image_url ?? null,

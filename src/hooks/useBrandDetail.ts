@@ -55,8 +55,6 @@ function mapToBrandWheel(
   raw: {
     id: string;
     wheel_title: string;
-    wheel_offset?: string | null;
-    color?: string | null;
     good_pic_url?: string | null;
   },
   brandName: string | null
@@ -69,8 +67,8 @@ function mapToBrandWheel(
     width: null,
     bolt_pattern: null,
     center_bore: null,
-    wheel_offset: raw.wheel_offset ?? null,
-    color: raw.color ?? null,
+    wheel_offset: null,
+    color: null,
     good_pic_url: raw.good_pic_url ?? null,
     status: "active",
   };

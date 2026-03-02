@@ -56,9 +56,6 @@ function mapWheel(
   raw: {
     id: string;
     wheel_title: string;
-    brand_id: unknown;
-    wheel_offset?: string | null;
-    color?: string | null;
     good_pic_url?: string | null;
   },
   brandName: string | null
@@ -71,8 +68,8 @@ function mapWheel(
     width: null,
     bolt_pattern: null,
     center_bore: null,
-    wheel_offset: raw.wheel_offset ?? null,
-    color: raw.color ?? null,
+    wheel_offset: null,
+    color: null,
     good_pic_url: raw.good_pic_url ?? null,
     bad_pic_url: null,
     is_oem_fitment: true,
@@ -101,9 +98,7 @@ export function useVehicleWithWheels(vehicleId: string) {
 
   const wheels: WheelRelation[] =
     wheelsData && brandsData
-      ? wheelsData.map((w) =>
-          mapWheel(w, brandMap.get(w.brand_id)?.brand_title ?? null)
-        )
+      ? wheelsData.map((w) => mapWheel(w, null))
       : [];
 
   const data: VehicleWithRelations | null | undefined =
@@ -117,10 +112,10 @@ export function useVehicleWithWheels(vehicleId: string) {
           ? {
               id: vehicle.id,
               _id: vehicle._id,
-              chassis_code: vehicle.vehicle_id_only ?? "",
+              chassis_code: vehicle.generation ?? "",
               model_name: vehicle.model_name ?? null,
               formatted_name: vehicle.vehicle_title ?? null,
-              brand_name: brandMap.get(vehicle.brand_id)?.brand_title ?? null,
+              brand_name: null,
               production_years: vehicle.production_years ?? null,
               platform: null,
               engine_details: null,
