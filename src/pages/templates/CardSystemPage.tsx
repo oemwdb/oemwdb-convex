@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Code, Database, Grid3x3, Sparkles, Eye, EyeOff, GripVertical, Edit2, Loader2, Save, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";

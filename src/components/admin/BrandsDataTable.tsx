@@ -12,12 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSupabaseBrands, SupabaseBrand } from "@/hooks/useSupabaseBrands";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function BrandsDataTable() {
-  const { data: brands = [], isLoading } = useSupabaseBrands();
+  const { data: brands = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
   const columns: ColumnDef<SupabaseBrand>[] = [
     {

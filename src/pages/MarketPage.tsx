@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, MapPin, Package, Filter, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

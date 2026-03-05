@@ -6,16 +6,28 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
+const LOAD_TIMEOUT_MS = 12_000;
+
 const BrandsPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [parsedFilters, setParsedFilters] = useState<Record<string, string[] | undefined>>({});
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const rawBrands = useQuery(api.queries.brandsGetAllWithCounts);
   const isLoading = rawBrands === undefined;
   const isError = false;
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadTimedOut(false);
+      return;
+    }
+    const t = setTimeout(() => setLoadTimedOut(true), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   const brands = useMemo(() => {
     const data = rawBrands ?? [];
@@ -140,7 +152,14 @@ const BrandsPage = () => {
       disableContentPadding={true}
     >
       <div className="h-full p-2 overflow-y-auto">
-        {isLoading ? (
+        {loadTimedOut ? (
+          <div className="text-center py-10 max-w-md mx-auto space-y-2">
+            <p className="text-amber-600 font-medium">Loading is taking longer than usual</p>
+            <p className="text-sm text-muted-foreground">
+              Check that <code className="bg-muted px-1 rounded">VITE_CONVEX_URL</code> is set in <code className="bg-muted px-1 rounded">.env.local</code> and that <code className="bg-muted px-1 rounded">npx convex dev</code> is running (or your Convex deployment is up). Then refresh the page.
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className="text-center py-10 text-muted-foreground">Loading brands...</div>
         ) : isError ? (
           <div className="text-center py-10 text-red-500">Failed to load brands.</div>

@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Copy, LogOut, PanelLeftOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, X, Filter, Copy, PanelLeftOpen, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchableBreadcrumb from "@/components/navigation/SearchableBreadcrumb";
 import type { ParsedFilters } from '@/utils/filterParser';
@@ -60,7 +59,6 @@ const Header = ({
   const [tempSearchValue, setTempSearchValue] = useState("");
   const [ghostSuggestion, setGhostSuggestion] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -256,21 +254,7 @@ const Header = ({
       {children}
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
-        {location.pathname === '/profile' ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
-            onClick={async () => {
-              await signOut();
-              navigate('/');
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        ) : null}
-      </div>
+      <div className="flex items-center gap-1" />
 
       {/* Dropdown */}
       {(searchDropdown || filterSearchDropdown) && (

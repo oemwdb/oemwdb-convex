@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export const useImageLoader = (imagelink?: string | null) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);

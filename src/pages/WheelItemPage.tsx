@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
-import { useWheelWithVehicles } from "@/hooks/useWheelWithVehicles";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigation } from "@/contexts/NavigationContext";
 
@@ -25,7 +24,7 @@ const WheelItemPage = () => {
   const { updateCurrentLabel } = useNavigation();
 
   // Fetch wheel with related vehicles from Supabase
-  const { data: wheel, isLoading, error } = useWheelWithVehicles(wheelId || "");
+  const { data: wheel, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {

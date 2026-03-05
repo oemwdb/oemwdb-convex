@@ -272,14 +272,7 @@ export default defineSchema({
   // USER TABLES (Pass 2 of 4)
   // =============================================================================
 
-  users: defineTable({
-    id: v.string(),
-    email: v.string(),
-    full_name: v.optional(v.string()),
-    avatar_url: v.optional(v.string()),
-    created_at: v.optional(v.string()),
-    updated_at: v.optional(v.string()),
-  }),
+  // users table is now provided by ...authTables
 
   profiles: defineTable({
     id: v.string(),

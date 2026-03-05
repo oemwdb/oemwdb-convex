@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
-import { useUserListings } from "@/hooks/useUserListings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import { format } from "date-fns";
 const PublicProfilePage = () => {
   const { username } = useParams<{ username: string }>();
   const { data: profile, isLoading: profileLoading } = usePublicProfile(username);
-  const { data: listings = [], isLoading: listingsLoading } = useUserListings(profile?.id);
+  const { data: listings = [], isLoading: listingsLoading } = { data: null as any, isLoading: false, error: null };
 
   const getInitials = (displayName: string | null, username: string) => {
     if (displayName) {

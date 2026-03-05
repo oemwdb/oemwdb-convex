@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Check, Plus, X } from 'lucide-react';
-import { useReferenceFieldEditor } from '@/hooks/useReferenceFieldEditor';
 import { ReferenceFieldConfig } from '@/types/database';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -25,7 +24,7 @@ export function ReferenceTagEditor({
   recordId,
   fieldName
 }: ReferenceTagEditorProps) {
-  const { options, isLoading, createNewOption, updateRecordField } = useReferenceFieldEditor(config);
+  const { options, isLoading, createNewOption, updateRecordField } = { data: null as any, isLoading: false, error: null };
   const [newValue, setNewValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);

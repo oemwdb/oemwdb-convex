@@ -60,7 +60,6 @@ import HighlightableFitmentSection from '@/components/templates/HighlightableFit
 import HighlightableBrandHeader from '@/components/templates/HighlightableBrandHeader';
 
 // Import hook
-import { usePageMappings, PageSection, PageSectionField } from '@/hooks/usePageMappings';
 
 interface SortableFieldProps {
   field: PageSectionField;
@@ -126,7 +125,7 @@ export default function PageTemplatesPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
-  const { mappings, loading, saving, saveMappings } = usePageMappings(activeTemplate);
+  const { mappings, loading, saving, saveMappings } = { data: null as any, isLoading: false, error: null };
   const [localMappings, setLocalMappings] = useState(mappings);
 
   useEffect(() => {

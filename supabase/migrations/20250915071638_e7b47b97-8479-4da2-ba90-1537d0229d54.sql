@@ -1,2 +1,0 @@
--- Skipped: Duplicate of 20250915070953_a0c311bf-d185-473b-9946-660e13714b6d.sql
--- Content removed to prevent 'type "app_role" already exists' error during migration.

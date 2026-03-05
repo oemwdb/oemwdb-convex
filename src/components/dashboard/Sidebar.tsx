@@ -12,8 +12,9 @@ import {
   PanelLeftOpen
 } from "lucide-react";
 import { useNavigation } from "@/contexts/NavigationContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { useDevMode } from "@/contexts/DevModeContext";
+import { useUser } from "@clerk/react";
+import { UserButton } from "@clerk/react";
 import {
   Tooltip,
   TooltipContent,
@@ -35,11 +36,11 @@ const Sidebar = ({
   onToggleSecondary?: () => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const { user, role, profile } = useAuth();
+  const { user: clerkUser, isSignedIn } = useUser();
   const { startNewHistory } = useNavigation();
   const location = useLocation();
   const { isDevMode, toggleDevMode } = useDevMode();
-  const isAdmin = role === 'admin';
+  const isAdmin = false; // TODO: implement RBAC via Clerk metadata
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -75,37 +76,53 @@ const Sidebar = ({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Logo / Profile - Now simpler */}
+        {/* Logo / Profile */}
         <div className="h-12 flex items-center px-2 mb-2 shrink-0">
-          <Link
-            to={user ? "/profile" : "/login"}
-            state={{ resetNavigation: true }}
-            className={cn(
+          {isSignedIn ? (
+            // Signed in: show Clerk UserButton + name when expanded
+            <div className={cn(
               "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
               !isHovered && "justify-center"
-            )}
-            onClick={() => startNewHistory(user ? '/profile' : '/login')}
-          >
-            <div className="relative shrink-0">
-              <img
-                src={profile?.avatar_url || "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-border/50"
-              />
-              {!user && <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />}
+            )}>
+              <UserButton afterSignOutUrl="/" />
+              {isHovered && (
+                <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <span className="text-sm font-semibold truncate leading-none">
+                    {clerkUser?.fullName || clerkUser?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">
+                    {isAdmin ? 'Administrator' : 'Member'}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {isHovered && (
-              <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
-                <span className="text-sm font-semibold truncate leading-none">
-                  {user ? (profile?.full_name || user.email?.split('@')[0] || 'User') : 'Sign In'}
-                </span>
-                <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">
-                  {user ? (isAdmin ? 'Administrator' : 'Member') : 'Guest Access'}
-                </span>
+          ) : (
+            // Not signed in: show guest link to login
+            <Link
+              to="/login"
+              state={{ resetNavigation: true }}
+              className={cn(
+                "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
+                !isHovered && "justify-center"
+              )}
+              onClick={() => startNewHistory('/login')}
+            >
+              <div className="relative shrink-0">
+                <img
+                  src="/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"
+                  alt="Guest"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-border/50"
+                />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />
               </div>
-            )}
-          </Link>
+              {isHovered && (
+                <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <span className="text-sm font-semibold truncate leading-none">Sign In</span>
+                  <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">Guest Access</span>
+                </div>
+              )}
+            </Link>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col px-2 gap-1 overflow-hidden">

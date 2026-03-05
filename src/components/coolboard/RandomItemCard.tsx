@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import BrandCard from "@/components/brand/BrandCard";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";

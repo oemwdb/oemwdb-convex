@@ -186,9 +186,9 @@ export const vehiclesGetByIdFull = query({
       const vehicle =
         typeof args.id === "string"
           ? await ctx.db
-              .query("oem_vehicles")
-              .filter((q) => q.eq(q.field("id"), args.id as string))
-              .first()
+            .query("oem_vehicles")
+            .filter((q) => q.eq(q.field("id"), args.id as string))
+            .first()
           : await ctx.db.get("oem_vehicles", args.id);
       if (!vehicle) return null;
 
@@ -398,9 +398,9 @@ export const wheelsGetByIdFull = query({
       const wheel =
         typeof args.id === "string"
           ? await ctx.db
-              .query("oem_wheels")
-              .filter((q) => q.eq(q.field("id"), args.id as string))
-              .first()
+            .query("oem_wheels")
+            .filter((q) => q.eq(q.field("id"), args.id as string))
+            .first()
           : await ctx.db.get("oem_wheels", args.id);
       if (!wheel) return null;
       return {
@@ -791,12 +791,12 @@ export const userCommentsGetByUser = query({
             vehicle_id: c.vehicle_id,
             oem_vehicles: vehicle
               ? {
-                  id: vehicle.id,
-                  model_name: vehicle.model_name ?? null,
-                  chassis_code: vehicle.generation ?? null,
-                  hero_image_url: vehicle.vehicle_image ?? null,
-                  brand_refs: null as unknown,
-                }
+                id: vehicle.id,
+                model_name: vehicle.model_name ?? null,
+                chassis_code: vehicle.generation ?? null,
+                hero_image_url: vehicle.vehicle_image ?? null,
+                brand_refs: null as unknown,
+              }
               : null,
           };
         })
@@ -839,6 +839,7 @@ export const userListingsGetByUser = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
     try {
+      /*
       const listings = await ctx.db
         .query("market_listings")
         .withIndex("by_user", (q) => q.eq("user_id", args.userId))
@@ -850,6 +851,8 @@ export const userListingsGetByUser = query({
           const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return tB - tA;
         });
+      */
+      return [];
     } catch {
       return [];
     }

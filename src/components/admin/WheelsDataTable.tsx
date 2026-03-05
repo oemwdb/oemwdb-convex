@@ -12,12 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSupabaseWheels, SupabaseWheel } from "@/hooks/useSupabaseWheels";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function WheelsDataTable() {
-  const { data: wheels = [], isLoading } = useSupabaseWheels();
+  const { data: wheels = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
   const columns: ColumnDef<SupabaseWheel>[] = [
     {

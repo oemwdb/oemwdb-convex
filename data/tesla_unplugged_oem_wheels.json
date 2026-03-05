@@ -1,0 +1,292 @@
+{
+    "Model S": [
+        {
+            "model_years": "2021+",
+            "wheel_name": "19\" Cardenio Aero Wheel",
+            "size": "Front: 19x9.5\", Rear: 19x10.5\"",
+            "offset": "Front: +40, Rear: +45",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 26.3 lbs (27.9 w/ cover), Rear: 27.2 lbs (28.8 w/ cover)",
+            "recommended_tire_sizes": "Front: 255/45R19, Rear: 285/40R19"
+        },
+        {
+            "model_years": "2021+",
+            "wheel_name": "21\" Arachnid Wheel",
+            "size": "Front: 21x9.5\", Rear: 21x10.5\"",
+            "offset": "Front: +40, Rear: +45",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 32.0 lbs, Rear: 36.0 lbs",
+            "recommended_tire_sizes": "Front: 265/35R21, Rear: 295/30R21"
+        },
+        {
+            "model_years": "2021+",
+            "wheel_name": "20\" Zero G Wheel",
+            "size": "Front: 20x10\", Rear: 20x11\"",
+            "offset": "TBD",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 27.95 lbs, Rear: 29.95 lbs",
+            "recommended_tire_sizes": "Front: 285/35R20, Rear: 305/30R20"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "19\" Tempest Aero Wheel (2020)",
+            "size": "19x8.5\"",
+            "offset": "+35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "29.6 lbs",
+            "recommended_tire_sizes": "245/45R19"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "21\" Twin Turbine Wheel (2020)",
+            "size": "Front: 21x8.5\", Rear: 21x9.0\"",
+            "offset": "Front: +40, Rear: +40",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 33.8 lbs, Rear: 35.8 lbs",
+            "recommended_tire_sizes": "Front: 245/35R21, Rear: 265/35R21"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "19\" Slipstream Wheel (2016-2020)",
+            "size": "19x8.0\"",
+            "offset": "+40",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "29.0 lbs",
+            "recommended_tire_sizes": "245/45R19"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "19\" Base Wheel (2012-2016)",
+            "size": "19x8.0\"",
+            "offset": "+40",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "29.5 lbs",
+            "recommended_tire_sizes": "245/45R19"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "19\" Cyclone Wheel (2012-2016)",
+            "size": "19x8.0\"",
+            "offset": "+40",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "29.5 lbs",
+            "recommended_tire_sizes": "245/45R19"
+        },
+        {
+            "model_years": "2012-2020",
+            "wheel_name": "21\" Turbine Wheel (2012-2020)",
+            "size": "Front: 21x8.5\", Rear: 21x9.0\"",
+            "offset": "Front: +40, Rear: +40",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 35.2 lbs, Rear: 38 lbs",
+            "recommended_tire_sizes": "Front: 245/35R21, Rear: 265/35R21"
+        }
+    ],
+    "Model 3": [
+        {
+            "model_years": "2024+",
+            "wheel_name": "18\" Photon Aero Wheel",
+            "size": "18x8.5\"",
+            "offset": "+40",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "23 lbs (25 lbs w/ cover)",
+            "recommended_tire_sizes": "235/45R18"
+        },
+        {
+            "model_years": "2024+",
+            "wheel_name": "19\" Nova Wheel",
+            "size": "19x8.5\"",
+            "offset": "+40",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "26.5 lbs",
+            "recommended_tire_sizes": "235/40R19"
+        },
+        {
+            "model_years": "2024+",
+            "wheel_name": "20\" Warp Wheel",
+            "size": "Front: 20x9\", Rear: 20x10\"",
+            "offset": "Front: +34, Rear: +45",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "Front: 22.7 lbs (24.3 w/ cover), Rear: 23.4 lbs (25.0 w/ cover)",
+            "recommended_tire_sizes": "Front: 235/35R20, Rear: 275/30R20"
+        },
+        {
+            "model_years": "2017-2023",
+            "wheel_name": "18\" Aero Wheel",
+            "size": "18x8.5\"",
+            "offset": "+40",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "21.6 lbs (23 lbs w/ cover)",
+            "recommended_tire_sizes": "235/45R18"
+        },
+        {
+            "model_years": "2017-2023",
+            "wheel_name": "19\" Sport Wheel (V2)",
+            "size": "19x8.5\"",
+            "offset": "+40",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "25 lbs",
+            "recommended_tire_sizes": "235/40R19"
+        },
+        {
+            "model_years": "2017-2023",
+            "wheel_name": "20\" Stiletto Wheel",
+            "size": "20x8.5\"",
+            "offset": "+35",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "28.5 lbs",
+            "recommended_tire_sizes": "235/35R20"
+        },
+        {
+            "model_years": "2017-2023",
+            "wheel_name": "20\" Zero G Wheel",
+            "size": "20x9.0\"",
+            "offset": "+34",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "21.5 lbs",
+            "recommended_tire_sizes": "245/35R20"
+        },
+        {
+            "model_years": "2017-2023",
+            "wheel_name": "20\" Überturbine Wheel",
+            "size": "20x9.0\"",
+            "offset": "+34",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "32 lbs",
+            "recommended_tire_sizes": "235/35R20"
+        }
+    ],
+    "Model X": [
+        {
+            "model_years": "2016-2020",
+            "wheel_name": "20\" Slipstream Wheel",
+            "size": "Front: 20x9.0\", Rear: 20x9.5\"",
+            "offset": "Front: +35, Rear: +35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 32 lbs, Rear: 33 lbs",
+            "recommended_tire_sizes": "Front: 265/45R20, Rear: 275/45R20"
+        },
+        {
+            "model_years": "2016-2020",
+            "wheel_name": "22\" Turbine Wheel",
+            "size": "Front: 22x9.0\", Rear: 22x10.0\"",
+            "offset": "Front: +35, Rear: +35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 37.6 lbs, Rear: 40.5 lbs",
+            "recommended_tire_sizes": "Front: 265/35R22, Rear: 285/35R22"
+        },
+        {
+            "model_years": "2016-2020",
+            "wheel_name": "20\" Helix Wheel",
+            "size": "Front: 22x9.0\", Rear: 22x10.0\"",
+            "offset": "Front: +35, Rear: +35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 34.5 lbs, Rear: 36.4 lbs",
+            "recommended_tire_sizes": "Front: 265/45R20, Rear: 275/45R20"
+        },
+        {
+            "model_years": "2021+",
+            "wheel_name": "20\" Cyberstream Wheel",
+            "size": "Front: 20x9.0\", Rear: 20x10.0\"",
+            "offset": "Front: +40, Rear: +35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 33.5 lbs, Rear: 35 lbs",
+            "recommended_tire_sizes": "Front: 265/45R20, Rear: 275/45R20"
+        },
+        {
+            "model_years": "2021+",
+            "wheel_name": "22\" Turbine Wheel",
+            "size": "Front: 22x9.0\", Rear: 22x10.0\"",
+            "offset": "Front: +35, Rear: +35",
+            "bolt_pattern": "5x120",
+            "center_bore": "64.1mm",
+            "weight": "Front: 36.6 lbs, Rear: 41.6 lbs",
+            "recommended_tire_sizes": "Front: 265/35R22, Rear: 285/35R22"
+        }
+    ],
+    "Model Y": [
+        {
+            "model_years": "2026+",
+            "wheel_name": "19\" Crossflow Wheel",
+            "size": "19x9.5\"",
+            "offset": "+45",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "26.24 lbs (29.74 w/ cover)",
+            "recommended_tire_sizes": "255/45R19"
+        },
+        {
+            "model_years": "2026+",
+            "wheel_name": "20\" Helix 2.0 Wheel",
+            "size": "20x9.5\"",
+            "offset": "+45",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "33.06 lbs",
+            "recommended_tire_sizes": "255/40R20"
+        },
+        {
+            "model_years": "2020-2025",
+            "wheel_name": "19\" Gemini Aero Wheel",
+            "size": "19x9.5\"",
+            "offset": "+45",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "29.5 lbs",
+            "recommended_tire_sizes": "255/45R19"
+        },
+        {
+            "model_years": "2020-2025",
+            "wheel_name": "20\" Induction Wheel",
+            "size": "20x9.5\"",
+            "offset": "+45",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "31.6 lbs",
+            "recommended_tire_sizes": "255/40R20"
+        },
+        {
+            "model_years": "2020-2025",
+            "wheel_name": "21\" Überturbine Wheel",
+            "size": "Front: 21x9.5\", Rear: 21x10.5\"",
+            "offset": "Front: +40, Rear: +48",
+            "bolt_pattern": "5x114.3",
+            "center_bore": "64.1mm",
+            "weight": "Front: 38.1 lbs, Rear: 39.0 lbs",
+            "recommended_tire_sizes": "Front: 255/35R21, Rear: 275/35R21"
+        }
+    ],
+    "Cybertruck": [
+        {
+            "model_years": "2024+",
+            "wheel_name": "20\" Cybertruck OEM Wheel",
+            "size": "20x9\"",
+            "offset": "+58.5",
+            "bolt_pattern": "6x139.7",
+            "center_bore": "84 mm",
+            "weight": "35.2 lbs (39.6 lbs w/ cover)",
+            "recommended_tire_sizes": "285/65R20"
+        }
+    ]
+}

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { useSupabaseTable } from "@/hooks/useSupabaseTable";
 import { TableName } from "@/components/datatable/EditableDataTable";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 import { FileListView } from "@/components/database/FileListView";
 import { useColumnOrder } from "@/hooks/useColumnOrder";
@@ -44,7 +43,7 @@ import { TableColumn } from "@/types/database";
 
 export default function TablesPage() {
   const [activeTable, setActiveTable] = useState<TableName>("oem_brands");
-  const { data, columns: rawColumns, isLoading, error, refetch } = useSupabaseTable(activeTable);
+  const { data, columns: rawColumns, isLoading, error, refetch } = { data: null as any, isLoading: false, error: null };
 
   // Reset search when table changes
   useEffect(() => {

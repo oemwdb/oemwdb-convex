@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
 
 interface VehicleSelectorProps {
   brandId?: string;
@@ -18,7 +17,7 @@ interface VehicleSelectorProps {
 
 export function VehicleSelector({ brandId, value, onValueChange, disabled }: VehicleSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: allVehicles = [], isLoading } = useSupabaseVehicles();
+  const { data: allVehicles = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
   // Filter vehicles by selected brand
   const vehicles = useMemo(() => {

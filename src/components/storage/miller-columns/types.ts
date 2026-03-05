@@ -1,5 +1,4 @@
 
-import { StorageFile } from "@/hooks/useStorage";
 
 export interface ColumnItem extends StorageFile {
     kind: "file" | "folder";

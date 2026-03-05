@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Package, CircleDot, Circle as CircleIcon, Calendar, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SupabaseVehicle } from "@/hooks/useSupabaseVehicles";
 import { ParsedVehicleFilters } from "@/utils/vehicleFilterParser";
 import { cn } from "@/lib/utils";
 

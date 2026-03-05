@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";
-import { useBrandVehicles, useBrandWheels } from "@/hooks/useBrandDetail";
 import { SaveButton } from "@/components/SaveButton";
 import { Loader2, ImageOff } from "lucide-react";
 

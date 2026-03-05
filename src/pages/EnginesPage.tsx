@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import EngineCard from "@/components/engine/EngineCard";
-import { useSupabaseEngines } from "@/hooks/useSupabaseEngines";
 import { CircleSlash2, Loader2 } from "lucide-react";
 
 const EnginesPage = () => {
-    const { data: engines, isLoading, error } = useSupabaseEngines();
+    const { data: engines, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
     if (isLoading) {
         return (

@@ -1,7 +1,6 @@
 
 import React from "react";
 import VehicleCard from "@/components/vehicle/VehicleCard";
-import { Vehicle } from "@/hooks/useVehicles";
 
 interface VehiclesGridProps {
   vehicles: Vehicle[];

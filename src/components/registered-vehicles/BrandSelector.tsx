@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSupabaseBrands } from "@/hooks/useSupabaseBrands";
 
 interface BrandSelectorProps {
   value?: string;
@@ -17,7 +16,7 @@ interface BrandSelectorProps {
 
 export function BrandSelector({ value, onValueChange, disabled }: BrandSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: brands = [], isLoading } = useSupabaseBrands();
+  const { data: brands = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
   const selectedBrand = brands?.find((brand) => brand.id === value);
 

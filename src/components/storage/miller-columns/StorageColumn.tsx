@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useDroppable, DragEndEvent } from "@dnd-kit/core";
 import { Loader2, FolderPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useFiles, useStorageActions } from "@/hooks/useStorage";
 import { StorageItem } from "./StorageItem";
 import { StorageGridItem } from "./StorageGridItem";
 import { ColumnItem, ViewMode } from "./types";

@@ -14,12 +14,11 @@ import { useSavedWheels } from "@/hooks/useSavedWheels";
 import { useSavedVehicles } from "@/hooks/useSavedVehicles";
 import { useSavedBrands } from "@/hooks/useSavedBrands";
 import { useUserComments } from "@/hooks/useUserComments";
-import { useUserListings } from "@/hooks/useUserListings";
 import WheelCard from "@/components/vehicle/WheelCard";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import BrandCard from "@/components/brand/BrandCard";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+
 import { LogOut, Loader2, Plus, Package, Trash2, DollarSign, MapPin, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
@@ -43,7 +42,7 @@ const ProfilePage = () => {
   const { data: userComments, isLoading: commentsLoading } = useUserComments();
 
   // Fetch user's market listings
-  const { data: userListings, isLoading: listingsLoading, refetch: refetchListings } = useUserListings(user?.id);
+  const { data: userListings, isLoading: listingsLoading, refetch: refetchListings } = { data: null as any, isLoading: false, refetch: () => { } };
 
   // Card flip state
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
@@ -70,33 +69,24 @@ const ProfilePage = () => {
     try {
       // Update username
       if (username !== profile?.username) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ username })
-          .eq("id", user.id);
-
-        if (profileError) throw profileError;
+        toast({ title: "Profile update disabled", description: "Pending Convex data migration." });
       }
 
       // Update email
-      if (email !== user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({ email });
-        if (emailError) throw emailError;
+      if (email !== user?.email) {
+        toast({ title: "Email update disabled", description: "Pending Convex data migration." });
       }
 
       // Update password
       if (newPassword) {
-        const { error: passwordError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
-        if (passwordError) throw passwordError;
+        toast({ title: "Password update disabled", description: "Pending Convex data migration." });
         setCurrentPassword("");
         setNewPassword("");
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        title: "Profile info updated",
+        description: "Your local profile state has updated.",
       });
     } catch (error: any) {
       toast({
@@ -315,24 +305,7 @@ const ProfilePage = () => {
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (confirm("Delete this listing?")) {
-                            const { error } = await supabase
-                              .from("market_listings")
-                              .delete()
-                              .eq("id", listing.id);
-
-                            if (error) {
-                              toast({
-                                title: "Error",
-                                description: "Failed to delete listing",
-                                variant: "destructive"
-                              });
-                            } else {
-                              toast({
-                                title: "Deleted",
-                                description: "Listing removed"
-                              });
-                              refetchListings();
-                            }
+                            toast({ title: "Delete disabled", description: "Convex migration pending." });
                           }
                         }}
                       >

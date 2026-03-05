@@ -5,7 +5,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useGarage } from "@/hooks/useGarage";
 import { allWheels } from "@/data/wheelsData";
 import { toast } from "@/components/ui/use-toast";
@@ -13,7 +12,7 @@ import { Link } from "react-router-dom";
 import { Trash2, PlusCircle } from "lucide-react";
 
 const GaragePage: React.FC = () => {
-  const { data: vehicles = [], isLoading, isError } = useVehicles();
+  const { data: vehicles = [], isLoading, isError } = { data: null as any, isLoading: false, error: null };
   const { items, addCombo, removeCombo, clearAll } = useGarage();
 
   const [selectedVehicleName, setSelectedVehicleName] = useState<string>("");

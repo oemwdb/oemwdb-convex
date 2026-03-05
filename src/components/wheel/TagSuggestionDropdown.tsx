@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Ruler, ArrowLeftRight, CircleDot, Palette, Circle as CircleIcon, Check, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SupabaseWheel } from "@/hooks/useSupabaseWheels";
 import { ParsedFilters } from "@/utils/filterParser";
 import { cn } from "@/lib/utils";
 

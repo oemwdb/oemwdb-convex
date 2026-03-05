@@ -7,7 +7,6 @@ import SavedWheelsTab from "@/components/home/SavedWheelsTab";
 import PremiumMarketListings from "@/components/home/PremiumMarketListings";
 import HomeDashboard from "@/components/home/HomeDashboard";
 import { SearchResults } from "@/components/search/SearchResults";
-import { useSupabaseWheels } from "@/hooks/useSupabaseWheels";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import { Loader2 } from "lucide-react";
 
@@ -18,8 +17,8 @@ const Index = () => {
   // Check for search parameters
   const { searchQuery, collection, brands, vehicles, wheels: searchWheels, isLoading: searchLoading, hasSearch } = useGlobalSearch();
 
-  // Fetch wheels for home page display
-  const { data: wheels, isLoading, error } = useSupabaseWheels();
+  // Fetch wheels for home page display (stubbed for Convex migration)
+  const { data: wheels, isLoading, error } = { data: [], isLoading: false, error: null };
 
   // Toggle the flipped state of a card
   const toggleCardFlip = (id: string) => {

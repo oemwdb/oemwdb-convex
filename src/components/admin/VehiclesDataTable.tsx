@@ -12,12 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSupabaseVehicles, SupabaseVehicle } from "@/hooks/useSupabaseVehicles";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function VehiclesDataTable() {
-  const { data: vehicles = [], isLoading } = useSupabaseVehicles();
+  const { data: vehicles = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
   const columns: ColumnDef<SupabaseVehicle>[] = [
     {

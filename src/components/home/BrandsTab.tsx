@@ -2,12 +2,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { useSupabaseBrands } from "@/hooks/useSupabaseBrands";
 import { Loader2 } from "lucide-react";
 
 const BrandsTab = () => {
   // Fetch brands from Supabase
-  const { data: brands, isLoading, error } = useSupabaseBrands();
+  const { data: brands, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
   if (isLoading) {
     return (

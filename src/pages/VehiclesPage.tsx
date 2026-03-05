@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
-import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ParsedVehicleFilters } from "@/utils/vehicleFilterParser";
 import {
@@ -15,16 +14,28 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+const LOAD_TIMEOUT_MS = 12_000;
+
 const VehiclesPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [parsedFilters, setParsedFilters] = useState<ParsedVehicleFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const itemsPerPage = 20;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { data: supabaseVehicles, isLoading, isError, error } = useSupabaseVehicles();
+  const { data: supabaseVehicles, isLoading, isError, error } = { data: null as any, isLoading: false, error: null };
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadTimedOut(false);
+      return;
+    }
+    const t = setTimeout(() => setLoadTimedOut(true), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   // Map Supabase vehicles to grid format
   const vehicles = (supabaseVehicles ?? []).map(v => ({
@@ -210,7 +221,14 @@ const VehiclesPage = () => {
       disableContentPadding={true}
     >
       <div className="h-full p-2 overflow-y-auto">
-        {isLoading ? (
+        {loadTimedOut ? (
+          <div className="text-center py-10 max-w-md mx-auto space-y-2">
+            <p className="text-amber-600 font-medium">Loading is taking longer than usual</p>
+            <p className="text-sm text-muted-foreground">
+              Check that <code className="bg-muted px-1 rounded">VITE_CONVEX_URL</code> is set in <code className="bg-muted px-1 rounded">.env.local</code> and that <code className="bg-muted px-1 rounded">npx convex dev</code> is running (or your Convex deployment is up). Then refresh the page.
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className="text-center py-10 text-muted-foreground">Loading vehicles...</div>
         ) : isError ? (
           <div className="text-center py-10 text-red-500">

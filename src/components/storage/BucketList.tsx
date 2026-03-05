@@ -1,4 +1,3 @@
-import { StorageBucket } from "@/hooks/useStorage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 

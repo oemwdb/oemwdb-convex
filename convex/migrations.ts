@@ -3,8 +3,26 @@
  * Run via script (e.g. scripts/backfill-slugs.ts) using Convex HTTP API.
  */
 
-import { mutation } from "./_generated/server";
+import { mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+
+/**
+ * Internal: patch a wheel's image URL field after storing the image in Convex storage.
+ * Called from imageMigrations:migrateWheelImageFromUrl action.
+ */
+export const patchWheelImageUrl = internalMutation({
+  args: {
+    wheelId: v.id("oem_wheels"),
+    field: v.string(),
+    convexUrl: v.string(),
+    imageSource: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: Record<string, string> = { [args.field]: args.convexUrl };
+    if (args.imageSource != null) patch.image_source = args.imageSource;
+    await ctx.db.patch(args.wheelId, patch);
+  },
+});
 
 const workshopRowValidator = v.object({
   source_id: v.optional(v.string()),

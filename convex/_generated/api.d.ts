@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
+import type * as imageMigrations from "../imageMigrations.js";
 import type * as migrations from "../migrations.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -19,9 +22,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  imageMigrations: typeof imageMigrations;
   migrations: typeof migrations;
   mutations: typeof mutations;
   queries: typeof queries;
+  users: typeof users;
 }>;
 
 /**

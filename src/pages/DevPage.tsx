@@ -2,9 +2,6 @@ import React from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import AppIcon from "@/components/dev/AppIcon";
 import { StatsCard } from "@/components/admin/StatsCard";
-import { useSupabaseBrands } from "@/hooks/useSupabaseBrands";
-import { useSupabaseVehicles } from "@/hooks/useSupabaseVehicles";
-import { useSupabaseWheels } from "@/hooks/useSupabaseWheels";
 import {
   Link2,
   FileCode,
@@ -24,9 +21,9 @@ import {
 } from "lucide-react";
 
 const DevPage = () => {
-  const { data: brands = [] } = useSupabaseBrands();
-  const { data: vehicles = [] } = useSupabaseVehicles();
-  const { data: wheels = [] } = useSupabaseWheels();
+  const { data: brands = [] } = { data: null as any, isLoading: false, error: null };
+  const { data: vehicles = [] } = { data: null as any, isLoading: false, error: null };
+  const { data: wheels = [] } = { data: null as any, isLoading: false, error: null };
 
   // Calculate stats
   const readyWheels = wheels.filter(w => w.status === "Ready for website").length;

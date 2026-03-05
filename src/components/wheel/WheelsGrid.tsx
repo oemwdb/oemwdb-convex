@@ -2,7 +2,6 @@ import React from "react";
 import WheelCard from "@/components/wheel/WheelCard";
 import { Card } from "@/components/ui/card";
 import { CircleSlash2 } from "lucide-react";
-import type { SupabaseWheel } from "@/hooks/useSupabaseWheels";
 
 interface WheelsGridProps {
   wheels: SupabaseWheel[];

@@ -5,7 +5,6 @@ import { StorageColumn } from "./StorageColumn";
 import { ColumnItem, ViewMode } from "./types";
 import { Folder, FileText, Trash2, X, Copy, ExternalLink, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStorageActions } from "@/hooks/useStorage";
 import { toast } from "sonner";
 
 interface MillerColumnsProps {

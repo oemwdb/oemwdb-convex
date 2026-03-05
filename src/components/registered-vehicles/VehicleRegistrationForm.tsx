@@ -27,11 +27,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useVehicleRegistration } from "@/hooks/useVehicleRegistration";
 import { RegisteredVehicle } from "@/hooks/useRegisteredVehicles";
 import { BrandSelector } from "./BrandSelector";
 import { VehicleSelector } from "./VehicleSelector";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const formSchema = z.object({
   vin: z.string().length(17, "VIN must be exactly 17 characters"),
@@ -66,7 +65,7 @@ const VehicleRegistrationForm = ({
   onOpenChange,
   vehicle,
 }: VehicleRegistrationFormProps) => {
-  const { createVehicle, updateVehicle, isCreating, isUpdating } = useVehicleRegistration();
+  const { createVehicle, updateVehicle, isCreating, isUpdating } = { data: null as any, isLoading: false, error: null };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

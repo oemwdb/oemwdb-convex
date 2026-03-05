@@ -3,20 +3,31 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import WheelsGrid from "@/components/wheel/WheelsGrid";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
-import { useSupabaseWheels } from "@/hooks/useSupabaseWheels";
 import { CircleSlash2, Loader2 } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseFilterString, ParsedFilters } from "@/utils/filterParser";
+import { useSupabaseWheels } from "@/hooks/useSupabaseWheels";
+
+const LOAD_TIMEOUT_MS = 12_000;
 
 const WheelsPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [parsedFilters, setParsedFilters] = useState<ParsedFilters>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Fetch wheels from Supabase
   const { data: wheels, isLoading, error } = useSupabaseWheels();
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadTimedOut(false);
+      return;
+    }
+    const t = setTimeout(() => setLoadTimedOut(true), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   // Initialize search and parsed filters from URL params
   useEffect(() => {
@@ -189,6 +200,13 @@ const WheelsPage = () => {
             <CircleSlash2 className="h-10 w-10 mx-auto mb-3 text-destructive/50" />
             <h3 className="text-base font-semibold text-destructive mb-1">Failed to Load Wheels</h3>
             <p className="text-sm text-muted-foreground">Please try again later</p>
+          </Card>
+        ) : loadTimedOut ? (
+          <Card className="p-8 text-center max-w-md mx-auto bg-muted/20">
+            <p className="text-amber-600 font-medium mb-2">Loading is taking longer than usual</p>
+            <p className="text-sm text-muted-foreground">
+              Check that <code className="bg-muted px-1 rounded">VITE_CONVEX_URL</code> is set in <code className="bg-muted px-1 rounded">.env.local</code> and that <code className="bg-muted px-1 rounded">npx convex dev</code> is running (or your Convex deployment is up). Then refresh the page.
+            </p>
           </Card>
         ) : isLoading ? (
           <Card className="p-8 text-center bg-muted/20">

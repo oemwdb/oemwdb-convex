@@ -3,7 +3,6 @@ import React, { useState, useCallback, useRef } from "react";
 import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, pointerWithin, rectIntersection, CollisionDetection } from "@dnd-kit/core";
 import { BucketList } from "./BucketList";
 import { MillerColumns } from "./miller-columns/MillerColumns";
-import { useBuckets, useStorageActions } from "@/hooks/useStorage";
 import { Loader2, Upload, FolderPlus, RefreshCw, X, Search, LayoutGrid, LayoutList, CheckSquare, Folder, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ViewMode, ColumnItem } from "./miller-columns/types";

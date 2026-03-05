@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Zap, TrendingUp, Settings } from "lucide-react";
-import { useVehicleUpgrades } from "@/hooks/useVehicleUpgrades";
 import { Loader2 } from "lucide-react";
 
 interface UpgradesSectionProps {
@@ -17,7 +16,7 @@ const levelConfig = {
 
 
 const UpgradesSection: React.FC<UpgradesSectionProps> = ({ vehicleId }) => {
-    const { data: items, isLoading, error } = useVehicleUpgrades(vehicleId);
+    const { data: items, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
     if (isLoading) {
         return (

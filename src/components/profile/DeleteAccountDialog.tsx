@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 interface DeleteAccountDialogProps {

@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Calendar, Wrench } from "lucide-react";
-import { useVehicleMaintenance } from "@/hooks/useVehicleMaintenance";
 import { Loader2 } from "lucide-react";
 
 interface MaintenanceSectionProps {
@@ -10,7 +9,7 @@ interface MaintenanceSectionProps {
 }
 
 const MaintenanceSection: React.FC<MaintenanceSectionProps> = ({ vehicleId }) => {
-    const { data: items, isLoading, error } = useVehicleMaintenance(vehicleId);
+    const { data: items, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
     if (isLoading) {
         return (

@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useVehicleVariants } from "@/hooks/useVehicleVariants";
 import { Loader2 } from "lucide-react";
 
 interface VariantsSectionProps {
@@ -8,7 +7,7 @@ interface VariantsSectionProps {
 }
 
 const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId }) => {
-    const { data: variants, isLoading, error } = useVehicleVariants(vehicleId);
+    const { data: variants, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
     if (isLoading) {
         return (

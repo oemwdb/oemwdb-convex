@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVehicleWithWheels } from "@/hooks/useVehicleWithWheels";
 import { Loader2, Layers, ImageOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -25,7 +24,7 @@ const VehicleDetailPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   // Fetch vehicle with related wheels from Supabase
-  const { data: vehicleData, isLoading, error } = useVehicleWithWheels(vehicleName || "");
+  const { data: vehicleData, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
   const toggleCardFlip = (id: string) => {
     setFlippedCards((prev) => ({

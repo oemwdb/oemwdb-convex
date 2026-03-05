@@ -1,7 +1,7 @@
 import React from "react";
 import WheelCard from "@/components/vehicle/WheelCard";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PremiumMarketListingsProps {
