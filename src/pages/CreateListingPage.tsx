@@ -12,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { toast } from "@/hooks/use-toast";
-
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CreateListingPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("wheels");
   const [loading, setLoading] = useState(false);
@@ -70,8 +71,6 @@ export default function CreateListingPage() {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       if (!user) {
         toast({
           title: "Authentication required",
@@ -127,44 +126,17 @@ export default function CreateListingPage() {
         return;
       }
 
-      // Fetch user profile to include in seller_profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, display_name, avatar_url, verification_status")
-        .eq("id", user.id)
-        .single();
-
       const descriptionWithSpecs = `${currentFormData.description}\n\n--- Specifications ---\n${JSON.stringify(specifications, null, 2)}`;
 
-      const { error } = await supabase.from("market_listings").insert({
-        user_id: user.id,
-        listing_type: listingType,
-        linked_item_id: 0,
-        title: currentFormData.title,
-        description: descriptionWithSpecs,
-        price: parseFloat(currentFormData.price) || null,
-        condition: currentFormData.condition,
-        location: currentFormData.location,
-        shipping_available: currentFormData.shippingAvailable,
-        images: currentFormData.images.length > 0 ? currentFormData.images : null,
-        documents: currentFormData.documents.length > 0 ? currentFormData.documents : null,
-        status: "active",
-        seller_profile: profile ? {
-          username: profile.username,
-          display_name: profile.display_name,
-          avatar_url: profile.avatar_url,
-          verification_status: profile.verification_status
-        } : null
-      });
-
-      if (error) throw error;
-
+      // TODO: use Convex mutation for market_listings when schema is ready
+      void descriptionWithSpecs;
       toast({
-        title: "Listing created!",
-        description: "Your listing is now live on the marketplace"
+        title: "Not available",
+        description: "Listing creation will use Convex when market_listings is wired.",
+        variant: "destructive"
       });
-
-      navigate("/market");
+      setLoading(false);
+      return;
     } catch (error) {
       console.error("Error creating listing:", error);
       toast({
@@ -178,11 +150,10 @@ export default function CreateListingPage() {
   };
 
   const handleFileUpload = async (
-    files: File[],
-    formSetter: any,
-    fieldName: 'images' | 'documents'
+    _files: File[],
+    _formSetter: (fn: (prev: any) => any) => void,
+    _fieldName: 'images' | 'documents'
   ) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({
         title: "Authentication required",
@@ -191,44 +162,11 @@ export default function CreateListingPage() {
       });
       return;
     }
-
-    const uploadedUrls: string[] = [];
-
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      const { data, error } = await supabase.storage
-        .from('listing-files')
-        .upload(fileName, file);
-
-      if (error) {
-        toast({
-          title: "Upload failed",
-          description: error.message,
-          variant: "destructive"
-        });
-        continue;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('listing-files')
-        .getPublicUrl(fileName);
-
-      uploadedUrls.push(publicUrl);
-    }
-
-    if (uploadedUrls.length > 0) {
-      formSetter((prev: any) => ({
-        ...prev,
-        [fieldName]: [...prev[fieldName], ...uploadedUrls]
-      }));
-
-      toast({
-        title: "Upload successful",
-        description: `${uploadedUrls.length} file(s) uploaded`
-      });
-    }
+    toast({
+      title: "Upload not available",
+      description: "File upload will use Convex storage when wired.",
+      variant: "destructive"
+    });
   };
 
   const removeFile = (formSetter: any, currentFiles: string[], index: number, fieldName: 'images' | 'documents') => {

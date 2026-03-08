@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,14 +18,19 @@ interface BrandSelectorProps {
 
 export function BrandSelector({ value, onValueChange, disabled }: BrandSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: brands = [], isLoading } = { data: null as any, isLoading: false, error: null };
+  const brandsRaw = useQuery(api.queries.brandsGetAll, {});
+  const brands = useMemo(() => {
+    const arr = Array.isArray(brandsRaw) ? brandsRaw : [];
+    return arr.map((b) => ({ ...b, id: String(b._id) }));
+  }, [brandsRaw]);
+  const isLoading = brandsRaw === undefined;
 
   const selectedBrand = brands?.find((brand) => brand.id === value);
 
   const filteredBrands = useMemo(() => {
     if (!searchTerm) return brands;
     return brands.filter((brand) =>
-      brand.brand_title.toLowerCase().includes(searchTerm.toLowerCase())
+      (brand.brand_title ?? "").toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [brands, searchTerm]);
 

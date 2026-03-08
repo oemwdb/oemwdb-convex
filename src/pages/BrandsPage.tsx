@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BrandCard from "@/components/brand/BrandCard";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -12,6 +13,7 @@ const BrandsPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [parsedFilters, setParsedFilters] = useState<Record<string, string[] | undefined>>({});
+  const [sortBy, setSortBy] = useState("imageFirst");
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -35,7 +37,7 @@ const BrandsPage = () => {
     return data.map((b) => ({
       name: b.brand_title ?? "Unknown",
       description: b.brand_description ?? null,
-      imagelink: b.brand_image_url ?? null,
+      imagelink: b.brand_image_url ?? b.good_pic_url ?? null,
       wheelCount: b.wheelCount ?? 0,
       vehicleCount: b.vehicleCount ?? 0,
     }));
@@ -113,11 +115,24 @@ const BrandsPage = () => {
       return true;
     })
     .sort((a, b) => {
-      const aHasImage = a.imagelink && a.imagelink.trim() !== '';
-      const bHasImage = b.imagelink && b.imagelink.trim() !== '';
-      if (aHasImage && !bHasImage) return -1;
-      if (!aHasImage && bHasImage) return 1;
-      return a.name.localeCompare(b.name);
+      const aHasImage = !!(a.imagelink && a.imagelink.trim() !== '');
+      const bHasImage = !!(b.imagelink && b.imagelink.trim() !== '');
+
+      switch (sortBy) {
+        case "nameAsc":
+          return a.name.localeCompare(b.name);
+        case "nameDesc":
+          return b.name.localeCompare(a.name);
+        case "mostWheels":
+          return (b.wheelCount ?? 0) - (a.wheelCount ?? 0) || a.name.localeCompare(b.name);
+        case "mostVehicles":
+          return (b.vehicleCount ?? 0) - (a.vehicleCount ?? 0) || a.name.localeCompare(b.name);
+        case "imageFirst":
+        default:
+          if (aHasImage && !bHasImage) return -1;
+          if (!aHasImage && bHasImage) return 1;
+          return a.name.localeCompare(b.name);
+      }
     });
 
   const toggleCardFlip = (name: string) => {
@@ -128,6 +143,14 @@ const BrandsPage = () => {
   const filterFields = [
     { label: 'Has Wheels', category: 'hasWheels', values: ['Yes', 'No'] },
     { label: 'Has Image', category: 'hasImage', values: ['Yes', 'No'] },
+  ];
+
+  const sortOptions = [
+    { label: "Has Image First", value: "imageFirst" },
+    { label: "Name A-Z", value: "nameAsc" },
+    { label: "Name Z-A", value: "nameDesc" },
+    { label: "Most Wheels", value: "mostWheels" },
+    { label: "Most Vehicles", value: "mostVehicles" },
   ];
 
   return (
@@ -146,6 +169,16 @@ const BrandsPage = () => {
           searchTags={searchTags}
           onAddSearchTag={handleAddSearchTag}
           onRemoveSearchTag={handleRemoveSearchTag}
+          totalResults={filteredBrands.length}
+        />
+      }
+      sortTitle="Sort Brands"
+      sortSidebar={
+        <CollectionSortSidebar
+          title="Sort Brands"
+          options={sortOptions}
+          selectedValue={sortBy}
+          onChange={setSortBy}
           totalResults={filteredBrands.length}
         />
       }

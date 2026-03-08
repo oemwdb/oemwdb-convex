@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
@@ -30,6 +31,7 @@ export const DeleteAccountDialog = ({ userEmail }: DeleteAccountDialogProps) => 
     const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
     const navigate = useNavigate();
+    const { user, signOut } = useAuth();
 
     const canDelete = confirmText === "DELETE" && understood;
 
@@ -38,34 +40,24 @@ export const DeleteAccountDialog = ({ userEmail }: DeleteAccountDialogProps) => 
 
         setIsDeleting(true);
         try {
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-
             if (!user) {
                 throw new Error("No user found");
             }
 
-            // Delete user profile data first (if exists)
-            await supabase
-                .from("profiles")
-                .delete()
-                .eq("id", user.id);
-
-            // Sign out the user (Supabase doesn't allow self-deletion via client SDK)
-            // The actual account deletion would need to be done via admin API or Edge Function
-            await supabase.auth.signOut();
+            // Profile data is in Convex; deletion can be done via Convex mutation if needed.
+            await signOut();
 
             toast({
-                title: "Account Deletion Requested",
-                description: "Your account has been marked for deletion. You have been signed out.",
+                title: "Signed Out",
+                description: "You have been signed out. To fully delete your account, use your auth provider (e.g. Clerk) settings.",
             });
 
             navigate("/");
         } catch (error) {
-            console.error("Error deleting account:", error);
+            console.error("Error during sign out:", error);
             toast({
                 title: "Error",
-                description: "Failed to delete account. Please contact support.",
+                description: "Failed to sign out. Please try again or contact support.",
                 variant: "destructive",
             });
         } finally {

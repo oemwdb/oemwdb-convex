@@ -10,11 +10,8 @@ export const useImageLoader = (imagelink?: string | null) => {
       if (imagelink.startsWith('http')) {
         setImageUrl(imagelink);
       } else {
-        // Otherwise, get the public URL from Supabase storage
-        const { data } = supabase.storage
-          .from('brand-images')
-          .getPublicUrl(imagelink);
-        setImageUrl(data.publicUrl);
+        // Relative path: use as-is (e.g. Convex storage URL or relative path)
+        setImageUrl(imagelink);
       }
     }
   }, [imagelink]);

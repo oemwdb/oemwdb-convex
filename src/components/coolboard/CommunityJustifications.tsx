@@ -66,23 +66,8 @@ const CommunityJustifications: React.FC<CommunityJustificationsProps> = ({
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('cool_ratings')
-        .select(`
-          id,
-          user_id,
-          rating,
-          justification,
-          created_at
-        `)
-        .eq('item_type', itemType)
-        .eq('item_id', itemId)
-        .not('justification', 'is', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedData = (data || []).map(item => ({
+      // TODO: use Convex query for cool_ratings when wired
+      const formattedData: Array<{ id: string; userId: string; rating: number; justification: string; createdAt: string; userProfile?: unknown }> = ([]).map((item: { id: string; user_id: string; rating: number; justification: string; created_at: string }) => ({
         id: item.id,
         userId: item.user_id,
         rating: item.rating,
@@ -90,6 +75,7 @@ const CommunityJustifications: React.FC<CommunityJustificationsProps> = ({
         createdAt: item.created_at,
         userProfile: undefined
       }));
+      void itemType; void itemId;
 
       setJustifications(formattedData);
 
@@ -127,18 +113,11 @@ const CommunityJustifications: React.FC<CommunityJustificationsProps> = ({
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('cool_ratings')
-        .update({ justification: myJustification })
-        .eq('user_id', userId)
-        .eq('item_type', itemType)
-        .eq('item_id', itemId);
-
-      if (error) throw error;
-
+      // TODO: use Convex mutation for cool_ratings when wired
+      void myJustification; void userId; void itemType; void itemId;
       toast({
-        title: "Justification saved!",
-        description: "Your thoughts have been shared with the community",
+        title: "Not available",
+        description: "Justifications use Convex when wired.",
       });
 
       fetchJustifications();

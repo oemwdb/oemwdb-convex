@@ -81,17 +81,9 @@ export function EditableCell({
     }
 
     if (targetTable) {
-      const { data, error } = await supabase
-        .from(targetTable as any)
-        .select("*")
-        .order(displayField);
-      
-      if (!error && data) {
-        setReferenceOptions(data.map((item: any) => ({
-          id: item.id,
-          value: item[displayField] || (item as any).name || item.id,
-        })));
-      }
+      // TODO: load reference options from Convex when wired
+      void targetTable; void displayField;
+      setReferenceOptions([]);
     }
   };
 

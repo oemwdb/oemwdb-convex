@@ -14,3 +14,23 @@ vite.config.ts.timestamp-*.mjs
 # Temp import files (should never be committed)
 temp_*_import/
 .env.local
+
+# MCP config may contain API tokens — use .mcp.json.example as template
+.mcp.json
+
+# Data and docs (local/generated; don’t commit)
+data/
+docs/
+
+# Local agent prompts (don’t commit)
+PROMPTS.md
+
+# Editor / OS
+.cursor/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+
+# Convex (optional: uncomment if you use a separate Convex project and don’t want to commit)
+# .env.convex

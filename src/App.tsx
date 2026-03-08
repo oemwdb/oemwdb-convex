@@ -17,6 +17,7 @@ import WheelsPage from "./pages/WheelsPage";
 import ContributePage from "./pages/ContributePage";
 
 import LoginPage from "./pages/LoginPage";
+import AccountPage from "./pages/AccountPage";
 import ProfilePage from "./pages/ProfilePage";
 import BrandDetailPage from "./pages/BrandDetailPage";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/dev/garage" element={<ProtectedRoute requireAdmin={true}><GaragePage /></ProtectedRoute>} />
                 <Route path="/dev/buckets" element={<ProtectedRoute requireAdmin={true}><BucketsPage /></ProtectedRoute>} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/account/*" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/chart-comparison" element={<ChartComparison />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />

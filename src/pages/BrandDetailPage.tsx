@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useBrandVehicles, useBrandWheels } from "@/hooks/useBrandDetail";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";
 import { SaveButton } from "@/components/SaveButton";
-import { Loader2, ImageOff } from "lucide-react";
-
-import CommentsSection from "@/components/vehicle/CommentsSection";
+import { Loader2, ImageOff, MessageSquare } from "lucide-react";
+import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
 
 const BrandDetailPage = () => {
   const { brandName } = useParams<{ brandName: string }>();
@@ -56,20 +56,18 @@ const BrandDetailPage = () => {
     setFlippedCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const comments = [
-    { id: 1, user: "CarFan123", comment: `Love the new ${formattedBrandName} lineup!`, date: "2 days ago" },
-    { id: 2, user: "MechanicMike", comment: "Great reliability on these models.", date: "1 week ago" },
-  ];
-
   return (
     <DashboardLayout
       title={formattedBrandName}
       secondaryTitle="Comments"
       secondarySidebar={
-        <div className="p-2">
-          <CommentsSection vehicleName={formattedBrandName} comments={comments} />
-        </div>
+        <ItemCommentsPanel
+          itemType="brand"
+          itemId={brand?._id}
+          itemName={formattedBrandName}
+        />
       }
+      secondaryActionIcon={<MessageSquare className="h-4 w-4" />}
       disableContentPadding={true}
     >
       <div className="h-full p-2 space-y-4 overflow-y-auto">

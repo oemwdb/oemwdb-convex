@@ -1,8 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 
-// Credentials from clean_rr_tags.mjs
-const SUPABASE_URL = "https://jnzfebtczqxxnvwgypgk.supabase.co";
-const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpuemZlYnRjenF4eG52d2d5cGdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjUwNTY2NiwiZXhwIjoyMDgyMDgxNjY2fQ.YnJPSYbegFBT18MAEGT09QOOMhjUp0jvC59a15LIn5Q";
+config({ path: resolve(process.cwd(), '.env.local') });
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://jnzfebtczqxxnvwgypgk.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+if (!SUPABASE_SERVICE_KEY) {
+  console.error('Missing SUPABASE_SERVICE_KEY or SUPABASE_KEY in .env.local');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 

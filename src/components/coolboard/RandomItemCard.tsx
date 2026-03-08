@@ -32,55 +32,9 @@ const RandomItemCard = forwardRef<RandomItemCardRef, RandomItemCardProps>(
         setIsLoading(true);
 
         try {
-          let items: any[] = [];
-
-          if (!filterType || filterType === 'brand') {
-            const { data: brands } = await supabase
-              .from('oem_brands')
-              .select('*')
-              .not('brand_image_url', 'is', null);
-
-            if (brands) {
-              // Fetch vehicle count for each brand
-              const brandsWithCounts = await Promise.all(
-                brands.map(async (brand) => {
-                  const { data: vehicleCount } = await supabase
-                    .rpc('get_brand_vehicle_count', { brand_name_param: brand.brand_title });
-
-                  return {
-                    ...brand,
-                    type: 'brand',
-                    vehicle_count: vehicleCount || 0
-                  };
-                })
-              );
-              items = items.concat(brandsWithCounts);
-            }
-          }
-
-          if (!filterType || filterType === 'vehicle') {
-            const { data: vehicles } = await supabase
-              .from('oem_vehicles')
-              .select('*')
-              .not('hero_image_url', 'is', null);
-
-            if (vehicles) {
-              items = items.concat(vehicles.map(v => ({ ...v, type: 'vehicle' })));
-            }
-          }
-
-          if (!filterType || filterType === 'wheel') {
-            const { data: wheels } = await supabase
-              .from('oem_wheels')
-              .select('*')
-              .not('good_pic_url', 'is', null);
-
-            if (wheels) {
-              items = items.concat(wheels.map(w => ({ ...w, type: 'wheel' })));
-            }
-          }
-
-          console.log('[CoolBoard] Total items fetched:', items.length);
+          // TODO: use Convex queries for brands/vehicles/wheels when wired
+          void filterType;
+          const items: unknown[] = [];
           setAllItems(items);
 
           // Set the first item

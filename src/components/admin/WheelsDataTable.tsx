@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { OemWheel } from "@/types/oem";
 
 export function WheelsDataTable() {
   const { data: wheels = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
-  const columns: ColumnDef<SupabaseWheel>[] = [
+  const columns: ColumnDef<OemWheel>[] = [
     {
       id: "select",
       header: ({ table }) => (

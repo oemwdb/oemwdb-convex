@@ -29,7 +29,8 @@ export interface BrandWheel {
 
 function mapToBrandVehicle(
   raw: {
-    id: string;
+    _id?: string;
+    id?: string;
     vehicle_id_only?: string | null;
     generation?: string | null;
     model_name?: string | null;
@@ -39,7 +40,7 @@ function mapToBrandVehicle(
   brandName: string | null
 ): BrandVehicle {
   return {
-    id: raw.id,
+    id: (raw.id ?? raw._id ?? "") as string,
     chassis_code: raw.vehicle_id_only || raw.generation || "",
     model_name: raw.model_name ?? null,
     brand_name: brandName,
@@ -53,14 +54,15 @@ function mapToBrandVehicle(
 
 function mapToBrandWheel(
   raw: {
-    id: string;
+    _id?: string;
+    id?: string;
     wheel_title: string;
     good_pic_url?: string | null;
   },
   brandName: string | null
 ): BrandWheel {
   return {
-    id: raw.id,
+    id: (raw.id ?? raw._id ?? "") as string,
     wheel_name: raw.wheel_title ?? "",
     brand_name: brandName,
     diameter: null,

@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { OemVehicle } from "@/types/oem";
 
 export function VehiclesDataTable() {
   const { data: vehicles = [], isLoading } = { data: null as any, isLoading: false, error: null };
 
-  const columns: ColumnDef<SupabaseVehicle>[] = [
+  const columns: ColumnDef<OemVehicle>[] = [
     {
       id: "select",
       header: ({ table }) => (

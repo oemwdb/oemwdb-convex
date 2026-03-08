@@ -38,6 +38,7 @@ const getIconForPath = (path: string): React.ElementType => {
   if (path.includes('/wheels') || path.includes('/wheel/')) return CircleDot;
   if (path.includes('/garage')) return Wrench;
   if (path.includes('/contribute')) return Plus;
+  if (path.includes('/account')) return User;
   if (path.includes('/profile')) return User;
   if (path.includes('/dev')) return Code;
   if (path.includes('/login')) return LogIn;
@@ -56,6 +57,7 @@ const getLabelForPath = (path: string, params?: any): string => {
   if (path === '/wheels') return 'Wheels';
   if (path === '/garage') return 'Garage';
   if (path === '/contribute') return 'Contribute';
+  if (path === '/account') return 'Account';
   if (path === '/profile') return 'Profile';
   if (path === '/dev') return 'Dev';
   if (path === '/login') return 'Login';

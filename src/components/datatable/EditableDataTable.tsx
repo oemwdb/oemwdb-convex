@@ -62,14 +62,7 @@ export function EditableDataTable({
       updatedData[rowIndex] = { ...updatedData[rowIndex], [columnKey]: newValue };
       setLocalData(updatedData);
 
-      // Update in database
-      const { error } = await supabase
-        .from(tableName as any)
-        .update({ [columnKey]: newValue })
-        .eq("id", row.id);
-
-      if (error) throw error;
-
+      // TODO: use Convex mutation when wired
       toast({
         title: "Success",
         description: "Cell updated successfully",

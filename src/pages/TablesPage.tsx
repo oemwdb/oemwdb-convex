@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { TableName } from "@/components/datatable/EditableDataTable";
 
 import { toast } from "sonner";
 import { FileListView } from "@/components/database/FileListView";
 import { useColumnOrder } from "@/hooks/useColumnOrder";
+import { useAdvancedTable } from "@/hooks/useAdvancedTable";
 import { CreateRecordDialog } from "@/components/database/CreateRecordDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +27,7 @@ import {
   Plus
 } from "lucide-react";
 
+import { TABLE_CONFIGS } from "@/config/tableConfigs";
 
 const TABLES = [
   { name: "oem_brands", label: "Brands", icon: Package },
@@ -37,67 +41,110 @@ const TABLES = [
   { name: "users", label: "Users", icon: Users },
 ] as const;
 
-import { TableColumn } from "@/types/database";
+const CORE_TABLES = ["oem_brands", "oem_vehicles", "oem_wheels"] as const;
+const REF_TABLES = ["oem_bolt_patterns", "oem_center_bores", "oem_colors", "oem_diameters", "oem_widths"] as const;
 
-// ... (existing imports)
+function mapRefRows<T extends { _id: string }>(rows: T[] | undefined): (T & { id: string })[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((r) => ({ ...r, id: String(r._id) }));
+}
 
 export default function TablesPage() {
   const [activeTable, setActiveTable] = useState<TableName>("oem_brands");
-  const { data, columns: rawColumns, isLoading, error, refetch } = { data: null as any, isLoading: false, error: null };
+  const [refSearchQuery, setRefSearchQuery] = useState("");
 
-  // Reset search when table changes
-  useEffect(() => {
-    setSearchQuery("");
-  }, [activeTable]);
+  const isCoreTable = CORE_TABLES.includes(activeTable as (typeof CORE_TABLES)[number]);
+  const isRefTable = REF_TABLES.includes(activeTable as (typeof REF_TABLES)[number]);
+  const isUsersTable = activeTable === "users";
 
-  const columns: TableColumn[] = rawColumns?.map(col => ({
-    ...col,
-    id: col.key,
-  })) as any[] || [];
+  const advancedTable = useAdvancedTable({
+    tableName: isCoreTable ? (activeTable as "oem_brands" | "oem_vehicles" | "oem_wheels") : "oem_brands",
+    defaultView: { type: "table", groupBy: undefined },
+  });
 
-  // Hoisted state for FileListView control
-  const { orderedColumns, resetToDefault, reorderColumns } = useColumnOrder(activeTable, columns);
-  const [searchQuery, setSearchQuery] = useState("");
+  const boltPatterns = useQuery(
+    activeTable === "oem_bolt_patterns" ? api.queries.boltPatternsGetAll : "skip",
+    {}
+  );
+  const centerBores = useQuery(
+    activeTable === "oem_center_bores" ? api.queries.centerBoresGetAll : "skip",
+    {}
+  );
+  const colors = useQuery(activeTable === "oem_colors" ? api.queries.colorsGetAll : "skip", {});
+  const diameters = useQuery(activeTable === "oem_diameters" ? api.queries.diametersGetAll : "skip", {});
+  const widths = useQuery(activeTable === "oem_widths" ? api.queries.widthsGetAll : "skip", {});
+  const profiles = useQuery(
+    activeTable === "users" ? api.queries.profilesList : "skip",
+    { search: refSearchQuery || undefined }
+  );
+
+  const refData = useMemo(() => {
+    if (activeTable === "oem_bolt_patterns") return mapRefRows(boltPatterns);
+    if (activeTable === "oem_center_bores") return mapRefRows(centerBores);
+    if (activeTable === "oem_colors") return mapRefRows(colors);
+    if (activeTable === "oem_diameters") return mapRefRows(diameters);
+    if (activeTable === "oem_widths") return mapRefRows(widths);
+    if (activeTable === "users") {
+      if (!Array.isArray(profiles)) return [];
+      return profiles.map((p) => ({ ...p, id: p.id ?? (p as { _id?: string })._id ?? "" }));
+    }
+    return [];
+  }, [activeTable, boltPatterns, centerBores, colors, diameters, widths, profiles]);
+
+  const refIsLoading =
+    (activeTable === "oem_bolt_patterns" && boltPatterns === undefined) ||
+    (activeTable === "oem_center_bores" && centerBores === undefined) ||
+    (activeTable === "oem_colors" && colors === undefined) ||
+    (activeTable === "oem_diameters" && diameters === undefined) ||
+    (activeTable === "oem_widths" && widths === undefined) ||
+    (activeTable === "users" && profiles === undefined);
+
+  const { data, isLoading, refetch, updateCell, deleteRows, searchQuery, setSearchQuery } = isCoreTable
+    ? advancedTable
+    : {
+        data: refData,
+        isLoading: refIsLoading,
+        refetch: () => {},
+        updateCell: async () => {
+          toast.info("Ref table edits not yet supported.");
+        },
+        deleteRows: async () => {
+          toast.info("Ref table delete not yet supported.");
+        },
+        searchQuery: refSearchQuery,
+        setSearchQuery: setRefSearchQuery,
+      };
+
+  const defaultColumns = TABLE_CONFIGS[activeTable] ?? [];
+  const { orderedColumns, resetToDefault, reorderColumns } = useColumnOrder(activeTable, defaultColumns);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const handleCellEdit = async (rowId: string, columnId: string, value: any) => {
-    try {
-      const { error } = await supabase
-        .from(activeTable as any)
-        .update({ [columnId]: value })
-        .eq("id", rowId);
+  useEffect(() => {
+    if (!isCoreTable) setRefSearchQuery("");
+  }, [activeTable, isCoreTable]);
 
-      if (error) throw error;
-
-      toast.success("Cell updated successfully");
-      refetch();
-    } catch (error: any) {
-      console.error("Cell edit error:", error);
-      toast.error(`Failed to update cell: ${error.message}`);
+  const handleCellEdit = async (rowId: string, columnId: string, value: unknown) => {
+    if (isCoreTable) {
+      await updateCell({ rowId, column: columnId, value });
+    } else {
+      await updateCell();
     }
   };
 
   const handleDeleteRows = async (rowIds: string[]) => {
-    try {
-      const { error } = await supabase
-        .from(activeTable as any)
-        .delete()
-        .in("id", rowIds);
-
-      if (error) throw error;
-
-      toast.success(`Deleted ${rowIds.length} row(s)`);
-      refetch();
-    } catch (error: any) {
-      console.error("Delete error:", error);
-      toast.error(`Failed to delete rows: ${error.message}`);
+    if (isCoreTable) {
+      await deleteRows(rowIds);
+    } else {
+      await deleteRows();
     }
   };
 
   const handleExport = () => {
+    const cols = orderedColumns;
+    const rows = data ?? [];
     const csv = [
-      columns.map((col) => col.label).join(","),
-      ...data.map((row) => columns.map((col) => JSON.stringify(row[col.key] || "")).join(",")),
+      cols.map((col) => col.label).join(","),
+      ...rows.map((row) => cols.map((col) => JSON.stringify(row[col.key] ?? "")).join(",")),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -110,19 +157,13 @@ export default function TablesPage() {
     toast.success("Data exported successfully");
   };
 
-  const handleCreateRecord = async (data: Record<string, any>) => {
+  const handleCreateRecord = async (_data: Record<string, unknown>) => {
     try {
-      const { error } = await supabase
-        .from(activeTable as any)
-        .insert([data]);
-
-      if (error) throw error;
-
-      toast.success("Record created successfully");
+      toast.info("Create uses Convex mutations when wired.");
       refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Create error:", error);
-      toast.error(`Failed to create record: ${error.message}`);
+      toast.error(`Failed to create record: ${error instanceof Error ? error.message : "Unknown error"}`);
       throw error;
     }
   };

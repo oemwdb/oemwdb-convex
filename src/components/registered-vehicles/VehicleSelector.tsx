@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -17,13 +19,18 @@ interface VehicleSelectorProps {
 
 export function VehicleSelector({ brandId, value, onValueChange, disabled }: VehicleSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: allVehicles = [], isLoading } = { data: null as any, isLoading: false, error: null };
+  const vehiclesRaw = useQuery(api.queries.vehiclesGetAllWithBrands, {});
+  const allVehicles = useMemo(() => {
+    const arr = Array.isArray(vehiclesRaw) ? vehiclesRaw : [];
+    return arr.map((v) => ({ ...v, id: String(v._id) }));
+  }, [vehiclesRaw]);
+  const isLoading = vehiclesRaw === undefined;
 
-  // Filter vehicles by selected brand
+  // Filter vehicles by selected brand (brand_id is Convex Id<"oem_brands">)
   const vehicles = useMemo(() => {
     return allVehicles.filter((vehicle) => {
       if (!brandId || !vehicle.brand_id) return false;
-      return vehicle.brand_id === brandId;
+      return String(vehicle.brand_id) === brandId;
     });
   }, [allVehicles, brandId]);
 

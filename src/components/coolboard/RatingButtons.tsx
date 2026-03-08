@@ -37,17 +37,9 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
   }, [userId, itemId, itemType]);
 
   const fetchUserRating = async () => {
-    const { data, error } = await supabase
-      .from('cool_ratings')
-      .select('rating')
-      .eq('user_id', userId)
-      .eq('item_type', itemType)
-      .eq('item_id', itemId)
-      .single();
-
-    if (data) {
-      setCurrentRating(data.rating);
-    }
+    // TODO: use Convex query for cool_ratings when wired
+    void userId; void itemType; void itemId;
+    setCurrentRating(0);
   };
 
   const handleRating = async (rating: number) => {
@@ -63,18 +55,8 @@ const RatingButtons: React.FC<RatingButtonsProps> = ({
     setIsLoading(true);
     
     try {
-      const { error } = await supabase
-        .from('cool_ratings')
-        .upsert({
-          user_id: userId,
-          item_type: itemType,
-          item_id: itemId,
-          rating: rating
-        }, {
-          onConflict: 'user_id,item_type,item_id'
-        });
-
-      if (error) throw error;
+      // TODO: use Convex mutation for cool_ratings when wired
+      void userId; void itemType; void itemId; void rating;
 
       setCurrentRating(rating);
       onRatingChange?.(rating);

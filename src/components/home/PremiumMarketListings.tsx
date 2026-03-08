@@ -10,19 +10,11 @@ interface PremiumMarketListingsProps {
 }
 
 const PremiumMarketListings = ({ flippedCards, toggleCardFlip }: PremiumMarketListingsProps) => {
-  const { data: listings, isLoading } = useQuery({
+  const { data: listings = [], isLoading } = useQuery({
     queryKey: ["premium-listings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("market_listings")
-        .select("*")
-        .eq("status", "active")
-        .eq("listing_type", "wheel")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      return data || [];
+      // TODO: use Convex query for market_listings when wired
+      return [];
     },
   });
 

@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 const BrandsTab = () => {
-  // Fetch brands from Supabase
   const { data: brands, isLoading, error } = { data: null as any, isLoading: false, error: null };
 
   if (isLoading) {

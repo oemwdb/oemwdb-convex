@@ -48,44 +48,12 @@ const MarketPage = () => {
   const [selectedCondition, setSelectedCondition] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
 
-  const { data: listings, isLoading } = useQuery({
+  const { data: listings = [], isLoading } = useQuery({
     queryKey: ["market-listings", searchValue, selectedType, selectedCondition, sortBy],
-    queryFn: async () => {
-      let query = supabase
-        .from("market_listings")
-        .select("*")
-        .eq("status", "active");
-
-      if (searchValue) {
-        query = query.ilike("title", `%${searchValue}%`);
-      }
-
-      if (selectedType !== "all") {
-        query = query.eq("listing_type", selectedType);
-      }
-
-      if (selectedCondition !== "all") {
-        query = query.eq("condition", selectedCondition);
-      }
-
-      // Apply sorting
-      switch (sortBy) {
-        case "price-low":
-          query = query.order("price", { ascending: true });
-          break;
-        case "price-high":
-          query = query.order("price", { ascending: false });
-          break;
-        case "oldest":
-          query = query.order("created_at", { ascending: true });
-          break;
-        default:
-          query = query.order("created_at", { ascending: false });
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as any[];
+    queryFn: async (): Promise<MarketListing[]> => {
+      // TODO: use Convex query for market_listings when wired
+      void searchValue; void selectedType; void selectedCondition; void sortBy;
+      return [];
     },
   });
 
@@ -120,6 +88,7 @@ const MarketPage = () => {
   return (
     <DashboardLayout
       title="Marketplace"
+      showSearch={true}
       searchValue={searchValue}
       onSearchChange={setSearchValue}
       searchPlaceholder="Search listings..."

@@ -49,7 +49,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, linkToDetail = false, dataMapping
   const textRef = useRef<HTMLParagraphElement>(null);
   const backTextRef = useRef<HTMLParagraphElement>(null);
   const isMobile = useIsMobile();
-  const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, getTransformStyle } = useWheelRotation();
+  const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, wheelImageRef } = useWheelRotation();
 
   const [viewBadPic, setViewBadPic] = useState(false);
   const { isDevMode } = useDevMode();
@@ -167,7 +167,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, linkToDetail = false, dataMapping
           onToggleSource={toggleSource}
           handleWheelMouseEnter={handleWheelMouseEnter}
           handleWheelMouseLeave={handleWheelMouseLeave}
-          getTransformStyle={getTransformStyle}
+          wheelImageRef={wheelImageRef}
           linkToDetail={linkToDetail}
           showBadPicToggle={isDevMode && hasBadPic}
           isBadPicActive={viewBadPic}

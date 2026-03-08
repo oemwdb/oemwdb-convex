@@ -4,6 +4,7 @@ export interface ParsedFilters {
   width?: string[];
   boltPattern?: string[];
   centerBore?: string[];
+  tireSize?: string[];
   offset?: string[];
   color?: string[];
 }

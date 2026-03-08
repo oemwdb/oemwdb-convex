@@ -143,6 +143,7 @@ export const brandsInsert = mutation({
 export const brandsUpdate = mutation({
   args: {
     id: v.id("oem_brands"),
+    slug: optionalString,
     brand_title: optionalString,
     brand_description: optionalString,
     brand_image_url: optionalString,
@@ -177,6 +178,13 @@ export const vehiclesInsert = mutation({
     model_name: optionalString,
     vehicle_title: optionalString,
     generation: optionalString,
+    body_type: optionalString,
+    platform: optionalString,
+    drive_type: optionalString,
+    segment: optionalString,
+    engine_details: optionalString,
+    price_range: optionalString,
+    special_notes: optionalString,
     production_years: optionalString,
     production_stats: optionalString,
     vehicle_image: optionalString,
@@ -194,12 +202,25 @@ export const vehiclesInsert = mutation({
 export const vehiclesUpdate = mutation({
   args: {
     id: v.id("oem_vehicles"),
+    slug: optionalString,
+    text_brands: optionalString,
     model_name: optionalString,
     vehicle_title: optionalString,
     generation: optionalString,
+    body_type: optionalString,
+    platform: optionalString,
+    drive_type: optionalString,
+    segment: optionalString,
+    engine_details: optionalString,
+    price_range: optionalString,
+    special_notes: optionalString,
     production_years: optionalString,
     production_stats: optionalString,
     vehicle_image: optionalString,
+    text_widths: optionalString,
+    text_diameters: optionalString,
+    text_bolt_patterns: optionalString,
+    text_center_bores: optionalString,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -247,9 +268,176 @@ export const wheelsInsert = mutation({
   },
 });
 
+/** Extract spec fields from specifications_json for backfill (same keys as backfill script). */
+function extractSpecFromJson(spec: string | undefined | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!spec?.trim()) return out;
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(spec) as Record<string, unknown>;
+  } catch {
+    return out;
+  }
+  if (!obj || typeof obj !== "object") return out;
+  const get = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = obj[k];
+      if (v !== undefined && v !== null) return v;
+    }
+    const nested = obj.specifications ?? obj.specs ?? obj.data;
+    if (nested && typeof nested === "object") {
+      const n = nested as Record<string, unknown>;
+      for (const k of keys) {
+        const v = n[k];
+        if (v !== undefined && v !== null) return v;
+      }
+    }
+    return undefined;
+  };
+  let diameter = get("diameter", "diameters", "rim_diameter", "wheel_diameter");
+  const sizeStr = get("size");
+  if (sizeStr != null && typeof sizeStr === "string") {
+    const pair = sizeStr.match(/(\d{2})\s*[x×]\s*(\d+(?:\.\d+)?)\s*J?/i);
+    if (pair) {
+      if (!out.text_diameters) out.text_diameters = pair[1];
+      out.text_widths = pair[2];
+    }
+  }
+  if (diameter != null) out.text_diameters = out.text_diameters ?? (Array.isArray(diameter) ? String(diameter[0]).trim() : String(diameter).trim());
+  if (!out.text_diameters) {
+    const notes = (obj.notes ?? obj.notes_text ?? "") + " " + spec;
+    const inchMatch = notes.match(/\b(1[7-9]|2[0-2])\s*(?:inch|[""]|in\.?)\b/i) ?? notes.match(/\b(1[7-9]|2[0-2])\s*[x×]/);
+    if (inchMatch) out.text_diameters = inchMatch[1];
+  }
+  let width = get("width", "widths", "rim_width", "wheel_width", "j_width");
+  if (width != null) out.text_widths = Array.isArray(width) ? String(width[0]).trim() : String(width).trim();
+  if (!out.text_widths && spec) {
+    const sizeMatch = spec.match(/(\d{2})\s*[x×]\s*(\d+(?:\.\d+)?)\s*J?/i);
+    if (sizeMatch) out.text_widths = sizeMatch[2];
+  }
+  const bolt = get("bolt_pattern", "boltPattern", "bolt", "pcd", "lug_pattern");
+  if (bolt != null) out.text_bolt_patterns = Array.isArray(bolt) ? String(bolt[0]).trim() : String(bolt).trim();
+  if (!out.text_bolt_patterns && spec && /\b\d+x\d+\b/.test(spec)) {
+    const bp = spec.match(/\b(\d+x\d+)\b/);
+    if (bp) out.text_bolt_patterns = bp[1];
+  }
+  const cb = get("center_bore", "centerBore", "cb", "hub_bore");
+  if (cb != null) out.text_center_bores = Array.isArray(cb) ? String(cb[0]).trim() : String(cb).trim();
+  if (!out.text_center_bores && spec && /\d+\.?\d*\s*mm/.test(spec)) {
+    const mm = spec.match(/(\d+\.?\d*)\s*mm/i);
+    if (mm) out.text_center_bores = mm[1] + "mm";
+  }
+  const color = get("color", "colors", "finish");
+  if (color != null) out.text_colors = Array.isArray(color) ? String(color[0]).trim() : String(color).trim();
+  return out;
+}
+
+/** Backfill text_* from specifications_json for a batch of wheels (run server-side). */
+export const backfillWheelSpecsFromJsonBatch = mutation({
+  args: { ids: v.array(v.id("oem_wheels")), maxBatch: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const ids = args.maxBatch ? args.ids.slice(0, args.maxBatch) : args.ids;
+    let updated = 0;
+    const now = new Date().toISOString();
+    for (const id of ids) {
+      const w = await ctx.db.get("oem_wheels", id);
+      if (!w) continue;
+      const raw = (w.specifications_json ?? "").trim();
+      if (!raw) continue;
+      const extracted = extractSpecFromJson(raw);
+      if (Object.keys(extracted).length === 0) continue;
+      const updates: Record<string, string> = {};
+      if (!(w.text_diameters ?? "").trim() && extracted.text_diameters) updates.text_diameters = extracted.text_diameters;
+      if (!(w.text_widths ?? "").trim() && extracted.text_widths) updates.text_widths = extracted.text_widths;
+      if (!(w.text_bolt_patterns ?? "").trim() && extracted.text_bolt_patterns) updates.text_bolt_patterns = extracted.text_bolt_patterns;
+      if (!(w.text_center_bores ?? "").trim() && extracted.text_center_bores) updates.text_center_bores = extracted.text_center_bores;
+      if (!(w.text_colors ?? "").trim() && extracted.text_colors) updates.text_colors = extracted.text_colors;
+      if (Object.keys(updates).length === 0) continue;
+      await ctx.db.patch(id, { ...updates, updated_at: now });
+      updated++;
+    }
+    return { updated };
+  },
+});
+
+const commonSpecShape = v.object({
+  diameter: v.optional(v.string()),
+  width: v.optional(v.string()),
+  boltPattern: v.optional(v.string()),
+  centerBore: v.optional(v.string()),
+});
+
+/** One-off: fix wheels that got bad global fallback values (e.g. width 1.5, center_bore 398mm). */
+export const fixWheelSpecsBadDefaults = mutation({
+  args: {
+    widthReplace: v.optional(v.object({ from: v.string(), to: v.string() })),
+    centerBoreReplace: v.optional(v.object({ from: v.string(), to: v.string() })),
+    maxWheels: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const wheels = await ctx.db.query("oem_wheels").collect();
+    const toPatch = wheels.filter((w) => {
+      if (args.widthReplace && (w.text_widths ?? "").trim() === args.widthReplace.from) return true;
+      if (args.centerBoreReplace && (w.text_center_bores ?? "").trim() === args.centerBoreReplace.from) return true;
+      return false;
+    });
+    const slice = args.maxWheels ? toPatch.slice(0, args.maxWheels) : toPatch;
+    const now = new Date().toISOString();
+    for (const w of slice) {
+      const updates: Record<string, string> = {};
+      if (args.widthReplace && (w.text_widths ?? "").trim() === args.widthReplace.from) updates.text_widths = args.widthReplace.to;
+      if (args.centerBoreReplace && (w.text_center_bores ?? "").trim() === args.centerBoreReplace.from) updates.text_center_bores = args.centerBoreReplace.to;
+      if (Object.keys(updates).length > 0) await ctx.db.patch(w._id, { ...updates, updated_at: now });
+    }
+    return { fixed: slice.length };
+  },
+});
+
+/** Backfill empty wheel text_* from common specs per brand (or global fallback). */
+export const backfillWheelSpecsFromCommonByBrand = mutation({
+  args: {
+    ids: v.array(v.id("oem_wheels")),
+    byBrand: v.record(v.string(), commonSpecShape),
+    global: commonSpecShape,
+    maxBatch: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const ids = args.maxBatch ? args.ids.slice(0, args.maxBatch) : args.ids;
+    let updated = 0;
+    const now = new Date().toISOString();
+    for (const id of ids) {
+      const w = await ctx.db.get("oem_wheels", id);
+      if (!w) continue;
+      const updates: Record<string, string> = {};
+      const needD = !(w.text_diameters ?? "").trim();
+      const needW = !(w.text_widths ?? "").trim();
+      const needB = !(w.text_bolt_patterns ?? "").trim();
+      const needC = !(w.text_center_bores ?? "").trim();
+      if (!needD && !needW && !needB && !needC) continue;
+
+      const brandLink = await ctx.db
+        .query("j_wheel_brand")
+        .withIndex("by_wheel", (q) => q.eq("wheel_id", id))
+        .first();
+      const brandId = brandLink?.brand_id as string | undefined;
+      const common = (brandId && args.byBrand[brandId]) ? args.byBrand[brandId] : args.global;
+
+      if (needD && common.diameter) updates.text_diameters = common.diameter;
+      if (needW && common.width) updates.text_widths = common.width;
+      if (needB && common.boltPattern) updates.text_bolt_patterns = common.boltPattern;
+      if (needC && common.centerBore) updates.text_center_bores = common.centerBore;
+      if (Object.keys(updates).length === 0) continue;
+      await ctx.db.patch(id, { ...updates, updated_at: now });
+      updated++;
+    }
+    return { updated };
+  },
+});
+
 export const wheelsUpdate = mutation({
   args: {
     id: v.id("oem_wheels"),
+    slug: optionalString,
     wheel_title: optionalString,
     weight: optionalString,
     metal_type: optionalString,
@@ -260,6 +448,12 @@ export const wheelsUpdate = mutation({
     uuid: optionalString,
     ai_processing_complete: optionalBoolean,
     specifications_json: optionalString,
+    text_diameters: optionalString,
+    text_widths: optionalString,
+    text_bolt_patterns: optionalString,
+    text_center_bores: optionalString,
+    text_colors: optionalString,
+    text_offsets: optionalString,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -276,6 +470,70 @@ export const wheelsDelete = mutation({
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
     return args.id;
+  },
+});
+
+// =============================================================================
+// JUNCTION TABLE: vehicle_brand (for migration from Supabase)
+// =============================================================================
+
+export const vehicleBrandLink = mutation({
+  args: {
+    vehicle_id: v.id("oem_vehicles"),
+    brand_id: v.id("oem_brands"),
+    vehicle_title: v.optional(v.string()),
+    brand_title: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("j_vehicle_brand")
+      .withIndex("by_vehicle_brand", (q) =>
+        q.eq("vehicle_id", args.vehicle_id).eq("brand_id", args.brand_id)
+      )
+      .first();
+    if (existing) return existing._id;
+    const [vehicle, brand] = await Promise.all([
+      ctx.db.get("oem_vehicles", args.vehicle_id),
+      ctx.db.get("oem_brands", args.brand_id),
+    ]);
+    return await ctx.db.insert("j_vehicle_brand", {
+      vehicle_id: args.vehicle_id,
+      brand_id: args.brand_id,
+      vehicle_title: args.vehicle_title ?? vehicle?.vehicle_title ?? "",
+      brand_title: args.brand_title ?? brand?.brand_title ?? "",
+    });
+  },
+});
+
+// =============================================================================
+// JUNCTION TABLE: wheel_brand (for migration from Supabase)
+// =============================================================================
+
+export const wheelBrandLink = mutation({
+  args: {
+    wheel_id: v.id("oem_wheels"),
+    brand_id: v.id("oem_brands"),
+    wheel_title: v.optional(v.string()),
+    brand_title: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("j_wheel_brand")
+      .withIndex("by_wheel_brand", (q) =>
+        q.eq("wheel_id", args.wheel_id).eq("brand_id", args.brand_id)
+      )
+      .first();
+    if (existing) return existing._id;
+    const [wheel, brand] = await Promise.all([
+      ctx.db.get("oem_wheels", args.wheel_id),
+      ctx.db.get("oem_brands", args.brand_id),
+    ]);
+    return await ctx.db.insert("j_wheel_brand", {
+      wheel_id: args.wheel_id,
+      brand_id: args.brand_id,
+      wheel_title: args.wheel_title ?? wheel?.wheel_title ?? "",
+      brand_title: args.brand_title ?? brand?.brand_title ?? "",
+    });
   },
 });
 
@@ -729,6 +987,7 @@ export const vehicleCommentInsert = mutation({
   args: {
     vehicleId: v.id("oem_vehicles"),
     userId: v.string(),
+    userName: optionalString,
     comment_text: v.string(),
     tag: optionalString,
   },
@@ -737,8 +996,49 @@ export const vehicleCommentInsert = mutation({
     return await ctx.db.insert("vehicle_comments", {
       vehicle_id: args.vehicleId,
       user_id: args.userId,
+      user_name: args.userName ?? undefined,
       comment_text: args.comment_text,
       tag: args.tag ?? undefined,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const wheelCommentInsert = mutation({
+  args: {
+    wheelId: v.id("oem_wheels"),
+    userId: v.string(),
+    userName: optionalString,
+    comment_text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("wheel_comments", {
+      wheel_id: args.wheelId,
+      user_id: args.userId,
+      user_name: args.userName ?? undefined,
+      comment_text: args.comment_text,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const brandCommentInsert = mutation({
+  args: {
+    brandId: v.id("oem_brands"),
+    userId: v.string(),
+    userName: optionalString,
+    comment_text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("brand_comments", {
+      brand_id: args.brandId,
+      user_id: args.userId,
+      user_name: args.userName ?? undefined,
+      comment_text: args.comment_text,
       created_at: now,
       updated_at: now,
     });

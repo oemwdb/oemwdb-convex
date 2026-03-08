@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,27 +86,19 @@ const VehicleRegistrationForm = ({
   const brandRef = form.watch('brand_ref');
   const vehicleRef = form.watch('vehicle_ref');
 
-  // Auto-populate fields when vehicle is selected
+  const vehicleDetails = useQuery(
+    api.queries.vehiclesGetByIdFull,
+    vehicleRef ? { id: vehicleRef } : "skip"
+  );
+
   useEffect(() => {
-    if (vehicleRef) {
-      const fetchVehicleDetails = async () => {
-        const { data } = await supabase
-          .from('oem_vehicles')
-          .select('*')
-          .eq('id', vehicleRef)
-          .single();
-        
-        if (data) {
-          // Extract first year from production_years
-          const yearMatch = data.production_years?.match(/\d{4}/);
-          if (yearMatch) {
-            form.setValue('year', parseInt(yearMatch[0]));
-          }
-        }
-      };
-      fetchVehicleDetails();
+    if (vehicleDetails?.production_years) {
+      const yearMatch = vehicleDetails.production_years.match(/\d{4}/);
+      if (yearMatch) {
+        form.setValue("year", parseInt(yearMatch[0], 10));
+      }
     }
-  }, [vehicleRef, form]);
+  }, [vehicleDetails, form]);
 
   // Clear vehicle when brand changes
   useEffect(() => {

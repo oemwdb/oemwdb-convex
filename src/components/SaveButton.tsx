@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { useState } from "react";
+import { Heart, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -8,13 +8,15 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 
 interface SaveButtonProps {
   itemId: number | string;
   itemType: "wheel" | "vehicle" | "brand";
-  /** When provided, use Convex saved link/unlink; otherwise fall back to Supabase. */
+  /** When provided, use Convex saved link/unlink. */
   convexId?: string;
   className?: string;
+  iconStyle?: "bookmark" | "heart";
 }
 
 export const SaveButton = ({
@@ -22,6 +24,7 @@ export const SaveButton = ({
   itemType,
   convexId,
   className,
+  iconStyle = "bookmark",
 }: SaveButtonProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -69,55 +72,6 @@ export const SaveButton = ({
 
   const [convexMutating, setConvexMutating] = useState(false);
 
-  // Supabase fallback: state + effect (when convexId is not provided)
-  const [isSavedSupabase, setIsSavedSupabase] = useState(false);
-  const [supabaseLoading, setSupabaseLoading] = useState(false);
-
-  useEffect(() => {
-    if (!convexId && user) {
-      checkIfSaved();
-    }
-  }, [convexId, user, itemId, itemType]);
-
-  const checkIfSaved = async () => {
-    if (!user) return;
-    try {
-      let data: unknown;
-      switch (itemType) {
-        case "wheel":
-          const { data: wheelData } = await supabase
-            .from("saved_wheels")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("wheel_id", String(itemId))
-            .single();
-          data = wheelData;
-          break;
-        case "vehicle":
-          const { data: vehicleData } = await supabase
-            .from("saved_vehicles")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("vehicle_id", String(itemId))
-            .single();
-          data = vehicleData;
-          break;
-        case "brand":
-          const { data: brandData } = await supabase
-            .from("saved_brands")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("brand_id", String(itemId))
-            .single();
-          data = brandData;
-          break;
-      }
-      setIsSavedSupabase(!!data);
-    } catch {
-      setIsSavedSupabase(false);
-    }
-  };
-
   const handleSave = async () => {
     if (!user) {
       navigate("/login");
@@ -163,69 +117,12 @@ export const SaveButton = ({
       return;
     }
 
-    // Supabase path
-    setSupabaseLoading(true);
-    try {
-      if (isSaved) {
-        // Remove from saved items
-        switch (itemType) {
-          case "wheel":
-            await supabase
-              .from("saved_wheels")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("wheel_id", String(itemId));
-            break;
-          case "vehicle":
-            await supabase
-              .from("saved_vehicles")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("vehicle_id", String(itemId));
-            break;
-          case "brand":
-            await supabase
-              .from("saved_brands")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("brand_id", String(itemId));
-            break;
-        }
-        setIsSavedSupabase(false);
-        toast.success(`Removed from saved ${itemType}s`);
-      } else {
-        switch (itemType) {
-          case "wheel":
-            await supabase.from("saved_wheels").insert({
-              user_id: user.id,
-              wheel_id: String(itemId),
-            });
-            break;
-          case "vehicle":
-            await supabase.from("saved_vehicles").insert({
-              user_id: user.id,
-              vehicle_id: String(itemId),
-            });
-            break;
-          case "brand":
-            await supabase.from("saved_brands").insert({
-              user_id: user.id,
-              brand_id: String(itemId),
-            });
-            break;
-        }
-        setIsSavedSupabase(true);
-        toast.success(`Added to saved ${itemType}s`);
-      }
-    } catch {
-      toast.error(`Failed to ${isSavedSupabase ? "remove" : "save"} ${itemType}`);
-    } finally {
-      setSupabaseLoading(false);
-    }
+    // No Convex ID: save/unsave not available
+    toast.info("Save is only available for items loaded from the database.");
   };
 
-  const isSaved = convexId ? !!isSavedConvex : isSavedSupabase;
-  const isLoading = convexId ? convexQueryLoading || convexMutating : supabaseLoading;
+  const isSaved = convexId ? !!isSavedConvex : false;
+  const isLoading = convexId ? convexQueryLoading || convexMutating : false;
 
   return (
     <Button
@@ -233,9 +130,11 @@ export const SaveButton = ({
       size="icon"
       onClick={handleSave}
       disabled={isLoading}
-      className={className}
+      className={cn(iconStyle === "heart" && "rounded-full", className)}
     >
-      {isSaved ? (
+      {iconStyle === "heart" ? (
+        <Heart className={cn("h-5 w-5", isSaved && "fill-current")} />
+      ) : isSaved ? (
         <BookmarkCheck className="h-5 w-5" />
       ) : (
         <Bookmark className="h-5 w-5" />

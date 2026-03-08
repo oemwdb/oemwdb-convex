@@ -1,32 +1,52 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ParsedVehicleFilters } from "@/utils/vehicleFilterParser";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
 
 const LOAD_TIMEOUT_MS = 12_000;
+const ROWS_PER_LOAD = 3;
+const LOAD_MORE_DELAY_MS = 450;
+const LOAD_MORE_COOLDOWN_MS = 1200;
+
+const getYearStart = (years?: string | null) => {
+  const match = String(years ?? "").match(/\b(19|20)\d{2}\b/);
+  return match ? parseInt(match[0], 10) : 0;
+};
 
 const VehiclesPage = () => {
+  const columns = useVehicleGridColumns();
+  const itemsPerLoad = ROWS_PER_LOAD * columns;
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [parsedFilters, setParsedFilters] = useState<ParsedVehicleFilters>({});
-  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState("brandAsc");
+  const [visibleCount, setVisibleCount] = useState(itemsPerLoad);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
-  const itemsPerPage = 20;
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const totalCountRef = useRef(0);
+  const lastLoadMoreTimeRef = useRef(0);
+  const loadMoreTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const itemsPerLoadRef = useRef(itemsPerLoad);
+  itemsPerLoadRef.current = itemsPerLoad;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { data: supabaseVehicles, isLoading, isError, error } = { data: null as any, isLoading: false, error: null };
+  const vehiclesData = useQuery(api.queries.vehiclesGetAllWithBrands, {});
+  const filterOptions = useQuery(api.queries.vehiclesFilterOptions, {}) ?? {
+    brands: [] as string[],
+    boltPatterns: [] as string[],
+    centerBores: [] as string[],
+    productionYears: [] as string[],
+  };
+  const isLoading = vehiclesData === undefined;
+  const isError = false;
+  const error = null;
 
   useEffect(() => {
     if (!isLoading) {
@@ -37,16 +57,16 @@ const VehiclesPage = () => {
     return () => clearTimeout(t);
   }, [isLoading]);
 
-  // Map Supabase vehicles to grid format
-  const vehicles = (supabaseVehicles ?? []).map(v => ({
-    name: v.vehicle_title || v.model_name || v.chassis_code || "Unknown",
+  const vehicles = (vehiclesData ?? []).map(v => ({
+    id: String(v._id),
+    name: v.vehicle_title || v.model_name || v.generation || "Unknown",
     brand: v.brand_name || "Unknown",
     wheels: 0,
     image: v.vehicle_image || undefined,
-    bolt_pattern_ref: v.bolt_pattern_ref,
-    center_bore_ref: v.center_bore_ref,
-    wheel_diameter_ref: v.wheel_diameter_ref,
-    wheel_width_ref: v.wheel_width_ref
+    bolt_pattern_ref: v.bolt_pattern,
+    center_bore_ref: v.center_bore,
+    wheel_diameter_ref: v.text_diameters,
+    wheel_width_ref: v.text_widths
   }));
 
   // Initialize filters from URL
@@ -69,8 +89,8 @@ const VehiclesPage = () => {
 
   useEffect(() => {
     setFlippedCards({});
-    setCurrentPage(1);
-  }, [searchTags, parsedFilters]);
+    setVisibleCount(itemsPerLoad);
+  }, [searchTags, parsedFilters, itemsPerLoad]);
 
   // Handle tag click
   const handleTagClick = (tag: string, category: string) => {
@@ -134,7 +154,7 @@ const VehiclesPage = () => {
       }
 
       if (parsedFilters.boltPattern?.length) {
-        const sv = (supabaseVehicles || []).find(v =>
+        const sv = (vehiclesData || []).find(v =>
           (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
         );
         if (sv) {
@@ -146,7 +166,7 @@ const VehiclesPage = () => {
       }
 
       if (parsedFilters.centerBore?.length) {
-        const sv = (supabaseVehicles || []).find(v =>
+        const sv = (vehiclesData || []).find(v =>
           (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
         );
         if (sv) {
@@ -158,18 +178,81 @@ const VehiclesPage = () => {
         } else return false;
       }
 
+      if (parsedFilters.productionYears?.length) {
+        const sv = (vehiclesData || []).find(v =>
+          (v.vehicle_title || v.model_name || v.chassis_code) === vehicle.name
+        );
+        if (sv) {
+          const vehicleYears = (sv.production_years ?? "").toLowerCase();
+          const matches = parsedFilters.productionYears.some(py =>
+            vehicleYears.includes(py.toLowerCase().trim())
+          );
+          if (!matches) return false;
+        } else return false;
+      }
+
       return true;
     })
     .sort((a, b) => {
-      const brandCompare = (a.brand || '').localeCompare(b.brand || '');
-      if (brandCompare !== 0) return brandCompare;
-      return (a.name || '').localeCompare(b.name || '');
+      switch (sortBy) {
+        case "nameAsc":
+          return (a.name || '').localeCompare(b.name || '');
+        case "nameDesc":
+          return (b.name || '').localeCompare(a.name || '');
+        case "brandDesc": {
+          const brandCompare = (b.brand || '').localeCompare(a.brand || '');
+          if (brandCompare !== 0) return brandCompare;
+          return (a.name || '').localeCompare(b.name || '');
+        }
+        case "yearNewest":
+          return getYearStart((vehiclesData || []).find(v => (v.vehicle_title || v.model_name || v.chassis_code) === b.name)?.production_years) -
+            getYearStart((vehiclesData || []).find(v => (v.vehicle_title || v.model_name || v.chassis_code) === a.name)?.production_years) ||
+            (a.name || '').localeCompare(b.name || '');
+        case "yearOldest":
+          return getYearStart((vehiclesData || []).find(v => (v.vehicle_title || v.model_name || v.chassis_code) === a.name)?.production_years) -
+            getYearStart((vehiclesData || []).find(v => (v.vehicle_title || v.model_name || v.chassis_code) === b.name)?.production_years) ||
+            (a.name || '').localeCompare(b.name || '');
+        case "brandAsc":
+        default: {
+          const brandCompare = (a.brand || '').localeCompare(b.brand || '');
+          if (brandCompare !== 0) return brandCompare;
+          return (a.name || '').localeCompare(b.name || '');
+        }
+      }
     });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedVehicles = filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
+  totalCountRef.current = filteredVehicles.length;
+  const visibleVehicles = filteredVehicles.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredVehicles.length;
+
+  // Infinite scroll: load more when near bottom, with delay for paced feel
+  useEffect(() => {
+    if (isLoading) return;
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [e] = entries;
+        if (!e?.isIntersecting) return;
+        const now = Date.now();
+        if (now - lastLoadMoreTimeRef.current < LOAD_MORE_COOLDOWN_MS) return;
+        lastLoadMoreTimeRef.current = now;
+        const total = totalCountRef.current;
+        const load = itemsPerLoadRef.current;
+        if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
+        loadMoreTimeoutRef.current = setTimeout(() => {
+          loadMoreTimeoutRef.current = undefined;
+          setVisibleCount((prev) => Math.min(prev + load, total));
+        }, LOAD_MORE_DELAY_MS);
+      },
+      { rootMargin: "120px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => {
+      observer.disconnect();
+      if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
+    };
+  }, [isLoading]);
 
   const toggleCardFlip = (name: string) => {
     setFlippedCards((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -177,26 +260,19 @@ const VehiclesPage = () => {
 
   // Build filter fields
   const filterFields = [
-    { label: 'Brand', category: 'brand', values: [...new Set((supabaseVehicles || []).map(v => v.brand_name).filter(Boolean))] as string[] },
-    {
-      label: 'Bolt Pattern', category: 'boltPattern', values: [...new Set((supabaseVehicles || []).flatMap(v => {
-        const bp = v.bolt_pattern;
-        if (!bp) return [];
-        if (Array.isArray(bp)) return bp.filter(Boolean);
-        if (typeof bp === 'string') return [bp];
-        return [];
-      }).filter(Boolean))] as string[]
-    },
-    {
-      label: 'Center Bore', category: 'centerBore', values: [...new Set((supabaseVehicles || []).flatMap(v => {
-        const cb = v.center_bore;
-        if (!cb) return [];
-        if (Array.isArray(cb)) return cb.filter(Boolean);
-        if (typeof cb === 'string') return [cb];
-        return [];
-      }).filter(Boolean))] as string[]
-    },
-    { label: 'Production Years', category: 'productionYears', values: [...new Set((supabaseVehicles || []).map(v => v.production_years).filter(Boolean))] as string[] },
+    { label: 'Brand', category: 'brand', values: filterOptions.brands },
+    { label: 'Bolt Pattern', category: 'boltPattern', values: filterOptions.boltPatterns },
+    { label: 'Center Bore', category: 'centerBore', values: filterOptions.centerBores },
+    { label: 'Production Years', category: 'productionYears', values: filterOptions.productionYears },
+  ];
+
+  const sortOptions = [
+    { label: "Brand A-Z", value: "brandAsc" },
+    { label: "Brand Z-A", value: "brandDesc" },
+    { label: "Name A-Z", value: "nameAsc" },
+    { label: "Name Z-A", value: "nameDesc" },
+    { label: "Newest Production Start", value: "yearNewest" },
+    { label: "Oldest Production Start", value: "yearOldest" },
   ];
 
   return (
@@ -218,6 +294,16 @@ const VehiclesPage = () => {
           totalResults={filteredVehicles.length}
         />
       }
+      sortTitle="Sort Vehicles"
+      sortSidebar={
+        <CollectionSortSidebar
+          title="Sort Vehicles"
+          options={sortOptions}
+          selectedValue={sortBy}
+          onChange={setSortBy}
+          totalResults={filteredVehicles.length}
+        />
+      }
       disableContentPadding={true}
     >
       <div className="h-full p-2 overflow-y-auto">
@@ -236,72 +322,21 @@ const VehiclesPage = () => {
             {error?.message && <span className="block mt-2 text-xs text-slate-400">Error: {error.message}</span>}
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-4">
             <VehiclesGrid
-              vehicles={paginatedVehicles}
+              vehicles={visibleVehicles}
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
+              insertAdEvery={itemsPerLoad}
             />
-
-            {totalPages > 1 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                    {currentPage > 2 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">1</PaginationLink>
-                        </PaginationItem>
-                        {currentPage > 3 && <PaginationEllipsis />}
-                      </>
-                    )}
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(page => page === currentPage || page === currentPage - 1 || page === currentPage + 1)
-                      .map(page => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))
-                    }
-                    {currentPage < totalPages - 1 && (
-                      <>
-                        {currentPage < totalPages - 2 && <PaginationEllipsis />}
-                        <PaginationItem>
-                          <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
-                            {totalPages}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+            {hasMore && (
+              <div
+                ref={loadMoreSentinelRef}
+                className="h-4 w-full shrink-0"
+                aria-hidden
+              />
             )}
-
-            {filteredVehicles.length > 0 && (
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredVehicles.length)} of {filteredVehicles.length} vehicles
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
     </DashboardLayout>

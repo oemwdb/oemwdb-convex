@@ -130,54 +130,19 @@ const CardSystemPage = () => {
     ]
   });
 
-  // Load mappings from Supabase on mount and when card type changes
+  // TODO: load mappings from Convex when wired
   useEffect(() => {
-    const loadMappings = async () => {
-      const { data, error } = await supabase
-        .from('card_mappings')
-        .select('mappings')
-        .eq('card_type', cardType)
-        .maybeSingle();
-
-      if (data?.mappings) {
-        setDataMappings(prev => ({
-          ...prev,
-          [cardType]: data.mappings
-        }));
-      }
-    };
-
-    loadMappings();
+    void cardType;
   }, [cardType]);
 
-  // Save mappings to Supabase with debouncing
-  const saveMappings = useCallback(async (type: string, mappings: any[]) => {
+  const saveMappings = useCallback(async (_type: string, _mappings: unknown[]) => {
     setIsSaving(true);
-    const { error } = await supabase
-      .from('card_mappings')
-      .upsert({
-        card_type: type,
-        mappings: mappings,
-        user_id: null // For now, null means global settings
-      }, {
-        onConflict: 'card_type,user_id'
-      });
-
+    // TODO: use Convex mutation for card_mappings when wired
     setIsSaving(false);
-
-    if (error) {
-      console.error('Error saving mappings:', error);
-      toast({
-        title: "Error saving changes",
-        description: "Your changes could not be saved to the database.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Changes saved",
-        description: "Your card mapping changes have been saved.",
-      });
-    }
+    toast({
+      title: "Not persisted",
+      description: "Card mappings will be saved via Convex when wired.",
+    });
   }, [toast]);
 
   const sensors = useSensors(
@@ -207,7 +172,7 @@ const CardSystemPage = () => {
 
     setSelectedElement(null);
 
-    // Save to Supabase
+    // Save via Convex when wired
     saveMappings(cardType, updatedMappings);
   };
 
@@ -221,7 +186,7 @@ const CardSystemPage = () => {
       [cardType]: updatedMappings
     }));
 
-    // Save to Supabase
+    // Save via Convex when wired
     saveMappings(cardType, updatedMappings);
   };
 
@@ -331,7 +296,7 @@ const CardSystemPage = () => {
       [cardType]: updatedMappings
     }));
 
-    // Save to Supabase
+    // Save via Convex when wired
     saveMappings(cardType, updatedMappings);
   };
 
@@ -348,7 +313,7 @@ const CardSystemPage = () => {
       [cardType]: updatedMappings
     }));
 
-    // Save to Supabase
+    // Save via Convex when wired
     saveMappings(cardType, updatedMappings);
   };
 
@@ -456,23 +421,11 @@ const CardSystemPage = () => {
     )
   };
 
-  // Load custom templates
+  // TODO: load custom templates from Convex when wired
   useEffect(() => {
-    const loadTemplates = async () => {
-      const { data, error } = await supabase
-        .from('custom_card_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        setCustomTemplates(data);
-      }
-    };
-
-    loadTemplates();
+    setCustomTemplates([]);
   }, []);
 
-  // Save custom template
   const saveCustomTemplate = async () => {
     if (!templateName.trim()) {
       toast({
@@ -482,35 +435,13 @@ const CardSystemPage = () => {
       });
       return;
     }
-
-    const { error } = await supabase
-      .from('custom_card_templates')
-      .insert({
-        template_name: templateName,
-        card_data: customCardData,
-        is_public: false
-      });
-
-    if (error) {
-      toast({
-        title: "Error saving template",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Template saved",
-        description: "Your custom card template has been saved",
-      });
-      setShowSaveDialog(false);
-      setTemplateName("");
-      // Reload templates
-      const { data } = await supabase
-        .from('custom_card_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (data) setCustomTemplates(data);
-    }
+    toast({
+      title: "Not available",
+      description: "Custom templates use Convex when wired.",
+      variant: "destructive",
+    });
+    setShowSaveDialog(false);
+    setTemplateName("");
   };
 
   // Load selected template
@@ -522,33 +453,15 @@ const CardSystemPage = () => {
     }
   };
 
-  // Delete template
   const deleteTemplate = async (templateId: string) => {
-    const { error } = await supabase
-      .from('custom_card_templates')
-      .delete()
-      .eq('id', templateId);
-
-    if (error) {
-      toast({
-        title: "Error deleting template",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Template deleted",
-        description: "The custom card template has been deleted",
-      });
-      // Reload templates
-      const { data } = await supabase
-        .from('custom_card_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (data) setCustomTemplates(data);
-      if (selectedTemplate === templateId) {
-        setSelectedTemplate(null);
-      }
+    void templateId;
+    toast({
+      title: "Not available",
+      description: "Delete uses Convex when wired.",
+      variant: "destructive",
+    });
+    if (selectedTemplate === templateId) {
+      setSelectedTemplate(null);
     }
   };
 
@@ -1342,19 +1255,8 @@ const CardSystemPage = () => {
                 <div>
                   <h4 className="font-semibold mb-3">Database Query</h4>
                   <pre className="p-4 bg-muted rounded-lg overflow-x-auto">
-                    <code className="text-sm">{`// Supabase query with joins
-const { data, error } = await supabase
-  .from('oem_vehicles')
-  .select(\`
-    *,
-    brand:brand_refs!inner(
-      brand:oem_brands(*)
-    ),
-    wheels:wheel_refs(
-      wheel:oem_wheels(*)
-    )
-  \`)
-  .order('model_name', { ascending: true });`}</code>
+                    <code className="text-sm">{`// Convex query for vehicles with relations
+const data = useQuery(api.queries.vehiclesWithBrandAndWheels, {});`}</code>
                   </pre>
                 </div>
               </CardContent>

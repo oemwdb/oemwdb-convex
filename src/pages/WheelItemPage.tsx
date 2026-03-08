@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useWheelByName } from "@/hooks/useWheels";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, CircleSlash2, Package, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
+import { ChevronLeft, Loader2, CircleSlash2, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigation } from "@/contexts/NavigationContext";
 
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
 import FitmentSection from "@/components/wheel/FitmentSection";
-import { SaveButton } from "@/components/SaveButton";
 import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
-import CommentsSection from "@/components/vehicle/CommentsSection";
 import GallerySection from "@/components/vehicle/GallerySection";
+import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
 
 
 const WheelItemPage = () => {
@@ -23,8 +23,8 @@ const WheelItemPage = () => {
   const [activeTab, setActiveTab] = useState("fitment");
   const { updateCurrentLabel } = useNavigation();
 
-  // Fetch wheel with related vehicles from Supabase
-  const { data: wheel, isLoading, error } = { data: null as any, isLoading: false, error: null };
+  // Fetch wheel with related vehicles from Convex
+  const { data: wheel, isLoading, error } = useWheelByName(wheelId || "");
 
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {
@@ -68,7 +68,9 @@ const WheelItemPage = () => {
   const pageTitle = wheel.wheel_name || `Wheel #${wheelId}`;
 
   // Format compatible vehicles from vehicle_refs
-  const compatibleVehicles = (wheel.vehicles || []).map(v => {
+  const fitmentVehicles = wheel.vehicles ?? [];
+
+  const compatibleVehicles = fitmentVehicles.map(v => {
     // Build name in "FXX: ModelName" format
     const chassisCode = v.chassis_code || '';
     const modelName = v.model_name || v.vehicle_title || '';
@@ -95,14 +97,6 @@ const WheelItemPage = () => {
     };
   });
 
-
-  // Sample comments
-  const comments = [
-    { id: 1, user: "WheelExpert", comment: `These ${wheel.wheel_name} wheels look amazing on my car!`, date: "3 days ago" },
-    { id: 2, user: "Driver", comment: "What's the weight of these wheels?", date: "1 week ago" },
-    { id: 3, user: "ModEnthusiast", comment: "Do these clear the M Sport brakes?", date: "2 weeks ago" }
-  ];
-
   // Sample gallery images
   const galleryImages = wheel.good_pic_url ? [{
     id: 1,
@@ -113,13 +107,13 @@ const WheelItemPage = () => {
   }] : [];
 
   const wheelSpecs = {
-    diameter_refs: wheel.diameter_refs || [],
-    width_ref: wheel.width_ref || [],
+    diameter_refs: (wheel.diameter_refs && wheel.diameter_refs.length > 0) ? wheel.diameter_refs : (wheel.diameter ? [wheel.diameter] : []),
+    width_ref: (wheel.width_ref && wheel.width_ref.length > 0) ? wheel.width_ref : (wheel.width ? [wheel.width] : []),
     offset: wheel.wheel_offset || "",
-    bolt_pattern_refs: wheel.bolt_pattern_refs || [],
-    center_bore_ref: wheel.center_bore_ref || [],
-    color_refs: wheel.color_refs || [],
-    tire_size_refs: wheel.tire_size_refs || []
+    bolt_pattern_refs: (wheel.bolt_pattern_refs && wheel.bolt_pattern_refs.length > 0) ? wheel.bolt_pattern_refs : (wheel.bolt_pattern ? [wheel.bolt_pattern] : []),
+    center_bore_ref: (wheel.center_bore_ref && wheel.center_bore_ref.length > 0) ? wheel.center_bore_ref : (wheel.center_bore ? [wheel.center_bore] : []),
+    color_refs: (wheel.color_refs && wheel.color_refs.length > 0) ? wheel.color_refs : (wheel.color ? [wheel.color] : []),
+    tire_size_refs: (wheel.tire_size_refs && wheel.tire_size_refs.length > 0) ? wheel.tire_size_refs : (wheel.tire_size ? [wheel.tire_size] : [])
   };
 
   // Generate available sizes based on the wheel model
@@ -140,50 +134,29 @@ const WheelItemPage = () => {
       showFilterButton={false}
       secondaryTitle="Comments"
       secondarySidebar={
-        <div className="p-2">
-          <CommentsSection
-            vehicleName={wheel.wheel_name}
-            comments={comments}
-          />
-        </div>
+        <ItemCommentsPanel
+          itemType="wheel"
+          itemId={wheel._id}
+          itemName={wheel.wheel_name}
+        />
       }
       secondaryActionIcon={<MessageSquare className="h-4 w-4" />}
       disableContentPadding={true}
     >
       <div className="h-full p-2 overflow-y-auto space-y-2">
-        {/* Grid layout with wheel header and ad */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Wheel Header - Takes 2 columns on large screens */}
-          <div className="lg:col-span-2 flex gap-2 items-start">
-            <div className="flex-1 min-w-0">
-              <WheelHeader
-                name={wheel.wheel_name}
-                brand={wheel.brand_name || "Unknown Brand"}
+        <div className="flex gap-2 items-start">
+          <div className="flex-1 min-w-0">
+            <WheelHeader
+              name={wheel.wheel_name}
+              brand={wheel.brand_name || "Unknown Brand"}
               price="$249.99"
               description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
               goodPicUrl={wheel.good_pic_url}
               badPicUrl={wheel.bad_pic_url}
               specs={wheelSpecs}
-              />
-            </div>
-            <SaveButton
               itemId={wheel.id}
-              itemType="wheel"
               convexId={wheel._id}
             />
-          </div>
-
-          {/* Ad Box - Takes 1 column on large screens */}
-          <div className="lg:col-span-1">
-            <Card className="h-full min-h-[240px] bg-muted/30 border-dashed flex items-center justify-center">
-              <div className="text-center space-y-3 p-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
-                  <Package className="h-8 w-8 text-primary/50" />
-                </div>
-                <h3 className="text-lg font-semibold text-muted-foreground">Ad Box Here</h3>
-                <p className="text-sm text-muted-foreground/70">Advertisement Space</p>
-              </div>
-            </Card>
           </div>
         </div>
         {/* Tabbed content */}
@@ -314,7 +287,7 @@ const WheelItemPage = () => {
                       boltPattern={wheel.bolt_pattern}
                       centerBore={wheel.center_bore}
                       weight={wheel.weight}
-                      tireSize={wheel.tire_size_refs?.[0] || null}
+                      tireSize={wheel.tire_size || wheel.tire_size_refs?.[0] || null}
                       partNumbers={wheel.part_numbers}
                       vehicles={wheel.vehicles}
                     />

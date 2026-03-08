@@ -229,7 +229,7 @@ export const getWheelsByBrand = (brand: string) => {
 
 // Helper function to get wheels by compatible vehicle
 // NOTE: This now returns an empty array since this helper relied on static vehiclesData.
-// The lookup must be done at the page/component level using Supabase and then calling getWheelsByBrand.
+// The lookup must be done at the page/component level using Convex and then calling getWheelsByBrand.
 export const getWheelsByVehicle = (vehicle: { brand: string } | undefined) => {
   if (!vehicle) return [];
   return getWheelsByBrand(vehicle.brand);

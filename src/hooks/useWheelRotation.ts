@@ -1,24 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 export const useWheelRotation = () => {
-  const [rotation, setRotation] = useState(0);
-  const [rotationState, setRotationState] = useState<'idle' | 'forward' | 'reverse' | 'completing'>('idle');
+  const [rotationState, setRotationState] = useState<
+    "idle" | "forward" | "reverse" | "completing"
+  >("idle");
   const animationRef = useRef<number>();
   const lastTimestampRef = useRef<number>();
-  const rotationStateRef = useRef<'idle' | 'forward' | 'reverse' | 'completing'>('idle');
+  const rotationStateRef = useRef<
+    "idle" | "forward" | "reverse" | "completing"
+  >("idle");
   const targetRotationRef = useRef<number>(0);
   const rotationRef = useRef<number>(0);
+  const wheelImageRef = useRef<HTMLImageElement>(null);
 
-  const ROTATION_SPEED = 30; // degrees per second
+  const ROTATION_SPEED = 40; // degrees per second
 
-  // Keep refs in sync with state
   useEffect(() => {
     rotationStateRef.current = rotationState;
   }, [rotationState]);
-
-  useEffect(() => {
-    rotationRef.current = rotation;
-  }, [rotation]);
 
   const stopAnimation = useCallback(() => {
     if (animationRef.current) {
@@ -26,6 +25,13 @@ export const useWheelRotation = () => {
       animationRef.current = undefined;
     }
     lastTimestampRef.current = undefined;
+  }, []);
+
+  const applyRotation = useCallback((deg: number) => {
+    const el = wheelImageRef.current;
+    if (el) {
+      el.style.transform = `rotate(${deg}deg)`;
+    }
   }, []);
 
   const startAnimation = useCallback(() => {
@@ -39,49 +45,44 @@ export const useWheelRotation = () => {
       const deltaTime = (timestamp - lastTimestampRef.current) / 1000;
       lastTimestampRef.current = timestamp;
 
-      setRotation(currentRotation => {
-        const currentState = rotationStateRef.current;
-        let newRotation = currentRotation;
-        let shouldContinue = true;
+      const currentState = rotationStateRef.current;
+      let newRotation = rotationRef.current;
+      let shouldContinue = true;
 
-        if (currentState === 'forward') {
-          newRotation += ROTATION_SPEED * deltaTime;
-        } else if (currentState === 'reverse') {
-          newRotation -= ROTATION_SPEED * deltaTime;
-
-          if (newRotation <= targetRotationRef.current) {
-            newRotation = targetRotationRef.current;
-            setRotationState('idle');
-            shouldContinue = false;
-          }
-        } else if (currentState === 'completing') {
-          newRotation += ROTATION_SPEED * deltaTime;
-
-          if (newRotation >= targetRotationRef.current) {
-            newRotation = targetRotationRef.current; // Complete to exact target
-            setRotationState('idle');
-            shouldContinue = false;
-          }
-        } else {
+      if (currentState === "forward") {
+        newRotation += ROTATION_SPEED * deltaTime;
+      } else if (currentState === "reverse") {
+        newRotation -= ROTATION_SPEED * deltaTime;
+        if (newRotation <= targetRotationRef.current) {
+          newRotation = targetRotationRef.current;
+          setRotationState("idle");
           shouldContinue = false;
         }
-
-        // Schedule next frame if animation should continue
-        if (shouldContinue && currentState !== 'idle') {
-          animationRef.current = requestAnimationFrame(animate);
+      } else if (currentState === "completing") {
+        newRotation += ROTATION_SPEED * deltaTime;
+        if (newRotation >= targetRotationRef.current) {
+          newRotation = targetRotationRef.current;
+          setRotationState("idle");
+          shouldContinue = false;
         }
+      } else {
+        shouldContinue = false;
+      }
 
-        return newRotation;
-      });
+      rotationRef.current = newRotation;
+      applyRotation(newRotation);
+
+      if (shouldContinue && currentState !== "idle") {
+        animationRef.current = requestAnimationFrame(animate);
+      }
     };
 
     animationRef.current = requestAnimationFrame(animate);
-  }, [stopAnimation]);
+  }, [applyRotation]);
 
   const handleMouseEnter = useCallback(() => {
-    console.log('🎡 Wheel rotation: Mouse ENTER detected');
-    stopAnimation(); // Stop any existing animation
-    setRotationState('forward');
+    stopAnimation();
+    setRotationState("forward");
     startAnimation();
   }, [stopAnimation, startAnimation]);
 
@@ -89,23 +90,20 @@ export const useWheelRotation = () => {
     const currentState = rotationStateRef.current;
     const currentRotation = rotationRef.current;
 
-    if (currentState === 'forward') {
+    if (currentState === "forward") {
       stopAnimation();
 
-      // Calculate completion based on current position in the current cycle
       const currentCycle = Math.floor(currentRotation / 360);
-      const rotationInCurrentCycle = currentRotation - (currentCycle * 360);
+      const rotationInCurrentCycle = currentRotation - currentCycle * 360;
       const completionPercentage = rotationInCurrentCycle / 360;
 
       if (completionPercentage > 0.5) {
-        // More than 50% complete, continue to finish the rotation
         targetRotationRef.current = (currentCycle + 1) * 360;
-        setRotationState('completing');
+        setRotationState("completing");
         startAnimation();
       } else {
-        // Less than 50% complete, reverse back to start of cycle
         targetRotationRef.current = currentCycle * 360;
-        setRotationState('reverse');
+        setRotationState("reverse");
         startAnimation();
       }
     }
@@ -117,17 +115,10 @@ export const useWheelRotation = () => {
     };
   }, [stopAnimation]);
 
-  const getTransformStyle = useCallback(() => {
-    return {
-      transform: `rotate(${rotation}deg)`,
-      transition: 'none'
-    };
-  }, [rotation, rotationState]);
-
   return {
     handleMouseEnter,
     handleMouseLeave,
-    getTransformStyle,
-    isAnimating: rotationState !== 'idle'
+    wheelImageRef,
+    isAnimating: rotationState !== "idle",
   };
 };

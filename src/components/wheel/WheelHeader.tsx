@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { useDevMode } from "@/contexts/DevModeContext";
+import { SaveButton } from "@/components/SaveButton";
 
 interface WheelHeaderProps {
   name: string;
@@ -24,10 +25,12 @@ interface WheelHeaderProps {
     color_refs: string[];
     tire_size_refs?: string[];
   };
+  itemId?: string;
+  convexId?: string;
   compact?: boolean;
 }
 
-const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, image, specs, compact = false }: WheelHeaderProps) => {
+const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, image, specs, itemId, convexId, compact = false }: WheelHeaderProps) => {
   const { isDevMode } = useDevMode();
   const [imageError, setImageError] = useState(false);
 
@@ -60,7 +63,7 @@ const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, i
         <div className="flex gap-4 items-start">
           {/* Wheel image - larger and prominent */}
           <div className="flex-shrink-0 w-48 md:w-56">
-            <AspectRatio ratio={1} className="overflow-hidden rounded-lg bg-muted group">
+            <AspectRatio ratio={1} className="relative overflow-hidden rounded-lg bg-muted group">
               {finalImageUrl ? (
                 <img
                   src={finalImageUrl}
@@ -80,7 +83,18 @@ const WheelHeader = ({ name, brand, price, description, goodPicUrl, badPicUrl, i
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="mb-3">
-              <h1 className="text-2xl md:text-3xl font-bold leading-tight">{name}</h1>
+              <div className="flex items-start gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold leading-tight">{name}</h1>
+                {itemId && convexId ? (
+                  <SaveButton
+                    itemId={itemId}
+                    itemType="wheel"
+                    convexId={convexId}
+                    iconStyle="heart"
+                    className="mt-1 h-8 w-8 p-0 text-muted-foreground hover:!bg-transparent hover:text-foreground"
+                  />
+                ) : null}
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">{brand}</p>
             </div>
 

@@ -43,7 +43,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
     const [imageError, setImageError] = useState(false);
 
     // Wheel rotation on hover (unique to wheel cards)
-    const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, getTransformStyle } = useWheelRotation();
+    const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, wheelImageRef } = useWheelRotation();
 
     // Check if text is overflowing
     useEffect(() => {
@@ -198,10 +198,10 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
                             {imageUrl && !imageError ? (
                                 <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg pt-[5%]">
                                     <img
+                                        ref={wheelImageRef}
                                         src={imageUrl}
                                         alt={wheel.name}
-                                        className="max-w-[105%] max-h-[105%] object-contain"
-                                        style={getTransformStyle()}
+                                        className="max-w-[105%] max-h-[105%] object-contain will-change-transform"
                                         onError={() => setImageError(true)}
                                         onMouseEnter={handleWheelMouseEnter}
                                         onMouseLeave={handleWheelMouseLeave}

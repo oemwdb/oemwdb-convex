@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Package, ShieldCheck } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -27,23 +27,20 @@ const UsersPage = () => {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["users", searchValue],
-    queryFn: async () => {
-      let query = supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (searchValue) {
-        query = query.ilike("username", `%${searchValue}%`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as UserProfile[];
-    },
-  });
+  const profiles = useQuery(api.queries.profilesList, { search: searchValue || undefined });
+  const users = (profiles ?? []).map((p) => ({
+    id: p.id,
+    username: p.username,
+    display_name: p.display_name ?? null,
+    avatar_url: p.avatar_url ?? null,
+    bio: p.bio ?? null,
+    location: p.location ?? null,
+    member_since: p.member_since ?? "",
+    listing_count: p.listing_count ?? 0,
+    transaction_count: p.transaction_count ?? 0,
+    verification_status: p.verification_status ?? "",
+  })) as UserProfile[];
+  const isLoading = profiles === undefined;
 
   const getInitials = (username: string, displayName: string | null) => {
     const name = displayName || username;
@@ -138,6 +135,7 @@ const UsersPage = () => {
   return (
     <DashboardLayout
       title="Community Members"
+      showSearch={true}
       searchValue={searchValue}
       onSearchChange={setSearchValue}
       searchPlaceholder="Search users..."

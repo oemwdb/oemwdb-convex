@@ -2,13 +2,18 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
 
-// ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const SUPABASE_URL = "https://bclvqqnnyqgzoavgrkke.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjbHZxcW5ueXFnem9hdmdya2tlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMTkzNTIsImV4cCI6MjA3MTc5NTM1Mn0.NqIbfvaE7DxUhkVcBmz2fRp0etQ3rqfx2bGEasJwJ-I";
+config({ path: join(process.cwd(), '.env.local') });
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bclvqqnnyqgzoavgrkke.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+if (!SUPABASE_KEY) {
+  console.error('Missing SUPABASE_SERVICE_KEY, SUPABASE_KEY, or SUPABASE_ANON_KEY in .env.local');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 

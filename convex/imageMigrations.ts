@@ -5,12 +5,9 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 /**
- * Download a wheel image from an existing public URL (currently Supabase)
- * and re-host it in Convex storage, updating the wheel document's URL field
- * (e.g. good_pic_url) to point at the Convex URL.
- *
- * This lets the frontend keep reading good_pic_url while we progressively
- * move storage off Supabase.
+ * Download a wheel image from an existing public URL and re-host it in Convex
+ * storage, updating the wheel document's URL field (e.g. good_pic_url) to
+ * point at the Convex URL.
  */
 export const migrateWheelImageFromUrl = action({
   args: {

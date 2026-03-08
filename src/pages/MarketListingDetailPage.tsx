@@ -49,15 +49,10 @@ export default function MarketListingDetailPage() {
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["market-listing", listingId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("market_listings")
-        .select("*")
-        .eq("id", listingId)
-        .single();
-
-      if (error) throw error;
-      return data as unknown as MarketListing;
+    queryFn: async (): Promise<MarketListing | null> => {
+      // TODO: use Convex query for market_listings when wired
+      void listingId;
+      return null;
     },
     enabled: !!listingId,
   });

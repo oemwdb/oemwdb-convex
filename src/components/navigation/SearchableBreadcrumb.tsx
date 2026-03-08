@@ -98,7 +98,7 @@ const SearchableBreadcrumb: React.FC = () => {
                 <span
                   className={cn(
                     "inline-flex items-center px-3 h-8 rounded-full font-medium whitespace-nowrap",
-                    "bg-transparent text-foreground border border-white/20"
+                    "bg-sidebar text-foreground border border-white/20"
                   )}
                 >
                   <Icon className="h-4 w-4 mr-2 flex-shrink-0 opacity-70" />

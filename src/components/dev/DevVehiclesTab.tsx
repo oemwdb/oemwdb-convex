@@ -25,7 +25,7 @@ const DevVehiclesTab = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Badge variant="secondary">Supabase</Badge>
+                  <Badge variant="secondary">Convex</Badge>
                   <p className="text-xs text-muted-foreground">OEM Vehicles table</p>
                 </div>
               </CardContent>

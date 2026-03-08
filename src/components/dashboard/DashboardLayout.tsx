@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
-import { PanelLeftClose, ChevronLeft } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
@@ -28,8 +28,10 @@ interface DashboardLayoutProps {
   hideHeader?: boolean;
   // Secondary sidebar props
   secondarySidebar?: React.ReactNode;
+  sortSidebar?: React.ReactNode;
 
   secondaryTitle?: string;
+  sortTitle?: string;
   secondaryActionIcon?: React.ReactNode;
 
   // Header customization
@@ -60,25 +62,32 @@ const DashboardLayout = ({
   topSuggestion,
   hideHeader = false,
   secondarySidebar,
+  sortSidebar,
 
   secondaryTitle,
+  sortTitle,
   secondaryActionIcon,
   headerActions,
-  showSearch = true,
+  showSearch = false,
   showBreadcrumb = true,
   disableContentPadding = false
 }: DashboardLayoutProps) => {
   const location = useLocation();
-  const [showSecondary, setShowSecondary] = useState(false);
+  const [activePanel, setActivePanel] = useState<"filter" | "sort" | null>(null);
   const [sidebarHovered, setSidebarHovered] = useState(false);
 
   // Collapse secondary sidebar on route change
   useEffect(() => {
-    setShowSecondary(false);
+    setActivePanel(null);
   }, [location.pathname]);
 
   // Content margin is now always 48px (Primary Sidebar width) because Secondary Sidebar overlays
   const contentMargin = 48;
+
+  const showFilterPanel = !!secondarySidebar && activePanel === "filter";
+  const showSortPanel = !!sortSidebar && activePanel === "sort";
+  const activePanelContent = activePanel === "sort" ? sortSidebar : secondarySidebar;
+  const activePanelTitle = activePanel === "sort" ? (sortTitle || "Sort") : (secondaryTitle || "Filters");
 
   return (
     <div className="flex h-screen w-full bg-sidebar overflow-hidden p-2 gap-2">
@@ -86,8 +95,8 @@ const DashboardLayout = ({
         className="shrink-0"
         onHoverChange={setSidebarHovered}
         hasSecondary={!!secondarySidebar}
-        isSecondaryOpen={showSecondary}
-        onToggleSecondary={() => setShowSecondary((prev) => !prev)}
+        isSecondaryOpen={showFilterPanel}
+        onToggleSecondary={() => setActivePanel((prev) => prev === "filter" ? null : "filter")}
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-background rounded-2xl border shadow-sm overflow-hidden relative">
@@ -110,9 +119,11 @@ const DashboardLayout = ({
             onRemoveSearchTag={onRemoveSearchTag}
             topSuggestion={topSuggestion}
             // Show toggle button if we have secondary sidebar but it's hidden
-            sidebarCollapsed={!!secondarySidebar && !showSecondary}
-            onSidebarToggle={() => setShowSecondary(!showSecondary)}
+            sidebarCollapsed={!!secondarySidebar && !showFilterPanel}
+            onSidebarToggle={() => setActivePanel((prev) => prev === "filter" ? null : "filter")}
             actionIcon={secondaryActionIcon}
+            showSortButton={!!sortSidebar}
+            onSortClick={() => setActivePanel((prev) => prev === "sort" ? null : "sort")}
             showSearch={showSearch}
             showBreadcrumb={showBreadcrumb}
           >
@@ -126,29 +137,44 @@ const DashboardLayout = ({
           </div>
         </main>
 
-        {/* Secondary Sidebar - Overlay (Left Side) */}
-        {secondarySidebar && showSecondary && (
-          <aside className="absolute left-0 top-0 bottom-0 w-[300px] bg-background border-r border-border flex flex-col z-40 animate-in slide-in-from-left duration-200 shadow-xl">
-            {/* Secondary Header */}
-            <div className="h-12 flex items-center justify-between border-b border-border px-4 shrink-0">
-              <span className="text-sm font-medium">{secondaryTitle || 'Menu'}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full border border-border"
-                onClick={() => setShowSecondary(false)}
-                title="Collapse Menu"
-              >
-                <div>
-                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+        {/* Secondary Sidebar - Floating Filter Panel */}
+        {activePanelContent && (showFilterPanel || showSortPanel) && (
+          <>
+            {/* Backdrop behind the floating filter panel, scoped to the main page container (not the left menu) */}
+            <div
+              className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px]"
+              onClick={() => setActivePanel(null)}
+            />
+
+            {/* Floating panel expanding from header filter button (full height column on left) */}
+            <aside className="absolute top-2 bottom-1 left-2 w-[320px] bg-sidebar border border-border rounded-2xl shadow-2xl flex flex-col z-40 animate-in zoom-in-95 fade-in-0 slide-in-from-left-2 duration-200">
+              {/* Secondary Header with search pill (replaces plain 'Filters' text) */}
+              <div className="h-11 flex items-center justify-between border-b border-border px-3 gap-2 shrink-0 rounded-t-2xl">
+                <div className="flex-1 flex items-center">
+                  <div className="flex items-center h-8 w-full rounded-full border border-border/70 bg-black px-2 text-xs text-muted-foreground">
+                    <Search className="h-3.5 w-3.5 mr-2 opacity-70" />
+                    <span className="truncate">
+                      {activePanelTitle || "Search wheels, brands, specs…"}
+                    </span>
+                  </div>
                 </div>
-              </Button>
-            </div>
-            {/* Secondary Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {secondarySidebar}
-            </div>
-          </aside>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full border border-border/60 bg-black hover:bg-black/80"
+                  onClick={() => setActivePanel(null)}
+                  title="Close filters"
+                >
+                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+
+              {/* Secondary Content */}
+              <div className="flex-1 overflow-y-auto p-3 rounded-b-2xl">
+                {activePanelContent}
+              </div>
+            </aside>
+          </>
         )}
       </div>
     </div>

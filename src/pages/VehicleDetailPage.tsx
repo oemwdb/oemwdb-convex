@@ -1,30 +1,31 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Layers, ImageOff } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Import vehicle components
 import VehicleHeader from "@/components/vehicle/VehicleHeader";
 import VehicleBriefSection from "@/components/vehicle/VehicleBriefSection";
-import { SaveButton } from "@/components/SaveButton";
-import DiscussionSection from "@/components/vehicle/DiscussionSection";
 import GallerySection from "@/components/vehicle/GallerySection";
 import WheelCard from "@/components/wheel/WheelCard";
-import MaintenanceSection from "@/components/vehicle/MaintenanceSection";
-import UpgradesSection from "@/components/vehicle/UpgradesSection";
 import VariantsSection from "@/components/vehicle/VariantsSection";
-
-import CommentsSection from "@/components/vehicle/CommentsSection";
+import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
 
 const VehicleDetailPage = () => {
   const { vehicleName } = useParams<{ vehicleName: string }>();
   const [activeTab, setActiveTab] = useState("details");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
-  // Fetch vehicle with related wheels from Supabase
-  const { data: vehicleData, isLoading, error } = { data: null as any, isLoading: false, error: null };
+  const vehicleData = useQuery(
+    api.queries.vehiclesGetByIdFull,
+    vehicleName ? { id: vehicleName } : "skip"
+  );
+  const isLoading = vehicleName && vehicleData === undefined;
+  const error = null;
 
   const toggleCardFlip = (id: string) => {
     setFlippedCards((prev) => ({
@@ -51,27 +52,32 @@ const VehicleDetailPage = () => {
     );
   }
 
-  // Use formatted_name if available, otherwise fallback to model_name or chassis_code
-  const vehicleDisplayName = vehicleData.formatted_name || vehicleData.model_name || vehicleData.chassis_code;
+  const vehicleDisplayName = vehicleData.vehicle_title || vehicleData.model_name || vehicleData.generation || "Unknown";
+  const marketSearchTerm = [vehicleData.brand_name, vehicleDisplayName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
-  // Format wheels for display
-  const formattedWheels = (vehicleData.wheels || []).map((wheel: any) => {
-    const specs = [];
-    if (wheel.diameter) specs.push(`Diameter: ${wheel.diameter}`);
-    if (wheel.width) specs.push(`Width: ${wheel.width}`);
-    if (wheel.bolt_pattern) specs.push(`Bolt Pattern: ${wheel.bolt_pattern}`);
-    if (wheel.center_bore) specs.push(`Center Bore: ${wheel.center_bore}`);
+  const formattedWheels = (vehicleData.wheels || []).map((wheel: Record<string, unknown>) => {
+    const diameter = (wheel.text_diameters ?? wheel.diameter ?? "") as string;
+    const width = (wheel.text_widths ?? wheel.width ?? "") as string;
+    const boltPattern = (wheel.text_bolt_patterns ?? wheel.bolt_pattern ?? "") as string;
+    const centerBore = (wheel.text_center_bores ?? wheel.center_bore ?? "") as string;
+    const specs: string[] = [];
+    if (diameter) specs.push(`Diameter: ${diameter}`);
+    if (width) specs.push(`Width: ${width}`);
+    if (boltPattern) specs.push(`Bolt Pattern: ${boltPattern}`);
+    if (centerBore) specs.push(`Center Bore: ${centerBore}`);
     if (wheel.wheel_offset) specs.push(`Offset: ${wheel.wheel_offset}`);
     if (wheel.color) specs.push(`Color: ${wheel.color}`);
-    if (wheel.is_oem_fitment) specs.push("OEM Fitment");
 
     return {
-      id: wheel.id.toString(),
-      name: wheel.wheel_name,
-      diameter: wheel.diameter || "N/A",
-      boltPattern: wheel.bolt_pattern || "N/A",
-      specs: specs,
-      imageUrl: wheel.good_pic_url || wheel.bad_pic_url || "/placeholder.svg"
+      id: String(wheel._id ?? wheel.id ?? ""),
+      name: (wheel.wheel_title ?? wheel.wheel_name ?? "Unknown") as string,
+      diameter: diameter || "N/A",
+      boltPattern: boltPattern || "N/A",
+      specs,
+      imageUrl: (wheel.good_pic_url ?? wheel.bad_pic_url ?? "/placeholder.svg") as string,
     };
   });
 
@@ -87,71 +93,56 @@ const VehicleDetailPage = () => {
     }).filter(Boolean);
   };
 
-  // Sample comments
-  const comments = [
-    { id: 1, user: "BimmerFan", comment: "The E36 is a classic!", date: "2 days ago" },
-    { id: 2, user: "DriftKing", comment: "Best chassis for builds.", date: "5 days ago" }
-  ];
+  const splitTextValues = (value: unknown): string[] => {
+    if (typeof value !== "string") return [];
+    return [...new Set(
+      value
+        .split(/[,\n;|]/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+    )];
+  };
+
+  const pickSpecValues = (refArray: any[] | undefined, fallback: unknown): string[] => {
+    const refValues = extractRefValues(refArray ?? []);
+    return refValues.length > 0 ? refValues : splitTextValues(fallback);
+  };
 
   return (
     <DashboardLayout
       title={`${vehicleDisplayName} Details`}
       secondaryTitle="Comments"
       secondarySidebar={
-        <div className="p-2">
-          <CommentsSection
-            vehicleName={vehicleDisplayName || "Vehicle"}
-            comments={comments}
-          />
-        </div>
+        <ItemCommentsPanel
+          itemType="vehicle"
+          itemId={vehicleData._id}
+          itemName={vehicleDisplayName || "Vehicle"}
+        />
       }
+      secondaryActionIcon={<MessageSquare className="h-4 w-4" />}
       disableContentPadding={true}
     >
       <div className="h-full p-2 space-y-4 overflow-y-auto">
-        {/* Grid layout with vehicle header and ad */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Vehicle Header - Takes 2 columns on large screens */}
-          <div className="lg:col-span-2 flex gap-2 items-start">
-            <div className="flex-1 min-w-0">
-              <VehicleHeader
+        <div className="w-full">
+          <VehicleHeader
               name={vehicleDisplayName || "Unknown Vehicle"}
-              generation={vehicleData.lineage || "Current Generation"}
+              generation={vehicleData.generation || "Unknown Generation"}
               years={vehicleData.production_years || ""}
-              engines={vehicleData.engine_details ? [
-                // Extract just the engine code from parentheses, e.g., "(N74B68)" -> "N74B68"
-                vehicleData.engine_details.match(/\(([^)]+)\)/)?.[1] || vehicleData.engine_details
-              ] : []}
-              drive="AWD"
-              segment={vehicleData.market_info || "Luxury"}
+              engines={splitTextValues(vehicleData.engine_details)}
+              drive={vehicleData.drive_type || "-"}
+              segment={vehicleData.segment || "-"}
               description={vehicleData.special_notes || ""}
               msrp={vehicleData.production_stats || ""}
-              image={vehicleData.hero_image_url || undefined}
-              specs={{
-                bolt_pattern_ref: extractRefValues(vehicleData.bolt_pattern_ref),
-                center_bore_ref: extractRefValues(vehicleData.center_bore_ref),
-                wheel_diameter_ref: extractRefValues(vehicleData.diameter_ref),
-                wheel_width_ref: extractRefValues(vehicleData.width_ref)
-              }}
-              />
-            </div>
-            <SaveButton
-              itemId={vehicleData.id}
-              itemType="vehicle"
+              image={(vehicleData as any).vehicle_image || (vehicleData as any).good_pic_url || undefined}
+              itemId={String(vehicleData._id)}
               convexId={vehicleData._id}
+              specs={{
+                bolt_pattern_ref: pickSpecValues((vehicleData as any).bolt_pattern_ref, (vehicleData as any).text_bolt_patterns),
+                center_bore_ref: pickSpecValues((vehicleData as any).center_bore_ref, (vehicleData as any).text_center_bores),
+                wheel_diameter_ref: pickSpecValues((vehicleData as any).diameter_ref, (vehicleData as any).text_diameters),
+                wheel_width_ref: pickSpecValues((vehicleData as any).width_ref, (vehicleData as any).text_widths),
+              }}
             />
-          </div>
-
-          {/* Ad Panel */}
-          <div className="lg:col-span-1">
-            <Card className="h-full flex items-center justify-center bg-muted/30 border-dashed">
-              <CardContent className="text-center py-8">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                  <Layers className="h-6 w-6 text-primary/50" />
-                </div>
-                <h3 className="text-sm font-medium text-muted-foreground">Advertisement</h3>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -159,24 +150,21 @@ const VehicleDetailPage = () => {
             <TabsTrigger value="details" className="flex-1 min-w-fit">Details</TabsTrigger>
             <TabsTrigger value="variants" className="flex-1 min-w-fit">Variants</TabsTrigger>
             <TabsTrigger value="wheels" className="flex-1 min-w-fit">Wheels ({formattedWheels.length})</TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex-1 min-w-fit">Maintenance</TabsTrigger>
-            <TabsTrigger value="upgrades" className="flex-1 min-w-fit">Upgrades</TabsTrigger>
+            <TabsTrigger value="market" className="flex-1 min-w-fit">Market</TabsTrigger>
             <TabsTrigger value="gallery" className="flex-1 min-w-fit">Gallery</TabsTrigger>
-            <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
-            <TabsTrigger value="discussion" className="flex-1 min-w-fit">Discussion</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
             <VehicleBriefSection
-              chassisCode={vehicleData.chassis_code}
-              platform={vehicleData.platform || ""}
-              generation={vehicleData.lineage || "Current Generation"}
+              chassisCode={vehicleData.generation || "-"}
+              platform={vehicleData.platform || vehicleData.platform_code || ""}
+              generation={vehicleData.generation || "Unknown Generation"}
               bodyType={vehicleData.body_type || ""}
               productionYears={vehicleData.production_years || ""}
-              dimensions={vehicleData.dimensions}
-              performance={vehicleData.performance}
-              fuelEconomy={vehicleData.fuel_economy}
-              competitors={vehicleData.competitors || []}
+              dimensions={undefined}
+              performance={undefined}
+              fuelEconomy={undefined}
+              competitors={[]}
               priceRange={vehicleData.price_range || ""}
               engineDetails={vehicleData.engine_details || ""}
               productionStats={vehicleData.production_stats || ""}
@@ -186,8 +174,8 @@ const VehicleDetailPage = () => {
 
 
           <TabsContent value="variants" className="space-y-4">
-            {vehicleData.model_name?.toLowerCase().includes("rolls") || vehicleData.formatted_name?.toLowerCase().includes("rolls") ? (
-              <VariantsSection vehicleId={vehicleData.id} />
+            {(vehicleData as any).model_name?.toLowerCase().includes("rolls") || (vehicleData as any).vehicle_title?.toLowerCase().includes("rolls") ? (
+              <VariantsSection vehicleId={String((vehicleData as any)._id)} />
             ) : (
               <Card>
                 <CardContent className="pt-6">
@@ -335,12 +323,51 @@ const VehicleDetailPage = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="maintenance" className="space-y-4">
-            <MaintenanceSection vehicleId={vehicleData.id} />
-          </TabsContent>
-
-          <TabsContent value="upgrades" className="space-y-4">
-            <UpgradesSection vehicleId={vehicleData.id} />
+          <TabsContent value="market" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Market Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Search this vehicle across major marketplaces.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={`https://www.autoscout24.com/lst?query=${encodeURIComponent(marketSearchTerm)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 text-sm rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    AutoScout24
+                  </a>
+                  <a
+                    href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(marketSearchTerm)}&_sacat=6001`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 text-sm rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    eBay Motors
+                  </a>
+                  <a
+                    href={`https://www.autotrader.com/cars-for-sale/all-cars?searchRadius=0&keywordPhrases=${encodeURIComponent(marketSearchTerm)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 text-sm rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Autotrader
+                  </a>
+                  <a
+                    href={`https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(marketSearchTerm)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 text-sm rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Facebook Marketplace
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
 
@@ -357,39 +384,6 @@ const VehicleDetailPage = () => {
                 }
               ]}
             />
-          </TabsContent>
-
-          <TabsContent value="discussion" className="space-y-4">
-            <DiscussionSection vehicleId={vehicleData.id} />
-          </TabsContent>
-
-          <TabsContent value="badpic" className="space-y-4">
-            <Card>
-              <CardContent className="pt-4">
-                {vehicleData.hero_image_url ? (
-                  <div className="space-y-4">
-                    <div className="relative rounded-lg overflow-hidden bg-muted">
-                      <img
-                        src={vehicleData.hero_image_url}
-                        alt={`${vehicleDisplayName} reference`}
-                        className="w-full max-h-[600px] object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Image path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{vehicleData.hero_image_url}</code>
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ImageOff className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>No reference image available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div >

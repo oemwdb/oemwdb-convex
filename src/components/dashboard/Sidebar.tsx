@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Building2,
   Car,
@@ -8,19 +8,35 @@ import {
   Gauge,
   Terminal,
   Database,
-  ChevronLeft,
-  PanelLeftOpen
+  Eye,
+  LogIn,
+  LogOut,
+  Settings,
+  UserCircle2,
+  UserPlus
 } from "lucide-react";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useDevMode } from "@/contexts/DevModeContext";
-import { useUser } from "@clerk/react";
-import { UserButton } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Sidebar = ({
   className,
@@ -35,22 +51,59 @@ const Sidebar = ({
   isSecondaryOpen?: boolean;
   onToggleSecondary?: () => void;
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const { user: clerkUser, isSignedIn } = useUser();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const { user, actualUser, isAuthenticated, actualIsAuthenticated, isAdmin, signIn, signUp, signOut } = useAuth();
   const { startNewHistory } = useNavigation();
+  const navigate = useNavigate();
   const location = useLocation();
-  const { isDevMode, toggleDevMode } = useDevMode();
-  const isAdmin = false; // TODO: implement RBAC via Clerk metadata
+  const { isDevMode, perspective, setPerspective, canUsePerspectiveSwitcher } = useDevMode();
+  const showAdminUi = isAdmin && isDevMode;
+  const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    onHoverChange?.(true);
+  const perspectiveLabel = perspective === "dev"
+    ? "Development Mode"
+    : perspective === "user"
+      ? "User Perspective"
+      : "Basic Perspective";
+
+  const toggleSidebar = () => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      onHoverChange?.(next);
+      return next;
+    });
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    onHoverChange?.(false);
-  };
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (
+        accountMenuRef.current?.contains(target) ||
+        accountTriggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsAccountMenuOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isAccountMenuOpen]);
 
   const navigationItems = [
     { icon: Building2, label: "Brands", path: "/brands", adminOnly: false },
@@ -65,102 +118,222 @@ const Sidebar = ({
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const accountUser = actualUser ?? user;
+  const accountName = accountUser?.fullName
+    || accountUser?.username
+    || accountUser?.emailAddresses?.[0]?.emailAddress?.split("@")[0]
+    || "Guest";
+  const accountEmail = accountUser?.emailAddresses?.[0]?.emailAddress || "Browse in guest mode";
+  const accountImage = accountUser?.imageUrl || "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png";
+  const accountInitials = accountName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part: string) => part[0]?.toUpperCase() ?? "")
+    .join("") || "G";
+
+  const accountTrigger = (
+    <div
+      className={cn(
+        "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
+        !isExpanded && "justify-center"
+      )}
+    >
+      <div className="relative shrink-0">
+        <Avatar className="h-8 w-8 ring-2 ring-border/50">
+          <AvatarImage src={accountImage} alt={accountName} />
+          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-semibold">
+            {accountInitials}
+          </AvatarFallback>
+        </Avatar>
+        <div
+          className={cn(
+            "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-sidebar",
+            actualIsAuthenticated ? "bg-emerald-500" : "bg-red-500"
+          )}
+        />
+      </div>
+      {isExpanded && (
+        <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+          <span className="text-sm font-semibold truncate leading-none">
+            {actualIsAuthenticated ? accountName : "Account"}
+          </span>
+          <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">
+            {actualIsAuthenticated ? (showAdminUi ? "Administrator" : "Member") : "Sign in or create account"}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex flex-col z-50 h-full transition-all duration-300 ease-in-out",
-          isHovered ? "w-[200px]" : "w-[60px]",
+          "relative flex flex-col z-50 h-full transition-all duration-300 ease-in-out",
+          isExpanded ? "w-[200px]" : "w-[60px]",
           className
         )}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onClick={toggleSidebar}
       >
         {/* Logo / Profile */}
         <div className="h-12 flex items-center px-2 mb-2 shrink-0">
-          {isSignedIn ? (
-            // Signed in: show Clerk UserButton + name when expanded
-            <div className={cn(
-              "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
-              !isHovered && "justify-center"
-            )}>
-              <UserButton afterSignOutUrl="/" />
-              {isHovered && (
-                <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
-                  <span className="text-sm font-semibold truncate leading-none">
-                    {clerkUser?.fullName || clerkUser?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User'}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">
-                    {isAdmin ? 'Administrator' : 'Member'}
-                  </span>
+          <button
+            ref={accountTriggerRef}
+            type="button"
+            className="w-full rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsAccountMenuOpen((prev) => !prev);
+            }}
+          >
+            {accountTrigger}
+          </button>
+          {isAccountMenuOpen ? (
+            <div
+              ref={accountMenuRef}
+              className="absolute top-2 left-[calc(100%+16px)] z-[60] w-[272px] rounded-2xl border border-border bg-sidebar p-0 text-foreground shadow-2xl animate-in zoom-in-95 fade-in-0 slide-in-from-left-2 duration-200"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 ring-2 ring-border/60">
+                    <AvatarImage src={accountImage} alt={accountName} />
+                    <AvatarFallback className="bg-secondary text-secondary-foreground font-semibold">
+                      {accountInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-base font-semibold">
+                      {actualIsAuthenticated ? accountName : "Welcome"}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{accountEmail}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <div className={cn(
+                    "rounded-full border px-3 py-1 text-[11px] font-medium",
+                    actualIsAuthenticated
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                  )}>
+                    {actualIsAuthenticated ? "Signed in" : "Guest"}
+                  </div>
+                  {actualIsAuthenticated ? (
+                    <div className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] font-medium",
+                      showAdminUi
+                        ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                        : "border-sky-500/20 bg-sky-500/10 text-sky-300"
+                    )}>
+                      {showAdminUi ? "Admin" : "Member"}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <Separator />
+
+              {actualIsAuthenticated ? (
+                <div className="p-2 space-y-1">
+                  <Link
+                    to="/account"
+                    state={{ resetNavigation: true }}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setIsAccountMenuOpen(false);
+                      startNewHistory("/account");
+                    }}
+                  >
+                    <Settings size={18} className="text-muted-foreground" />
+                    <span>Manage account</span>
+                  </Link>
+                  <button
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10"
+                    onClick={() => {
+                      setIsAccountMenuOpen(false);
+                      void signOut();
+                    }}
+                  >
+                    <LogOut size={18} className="text-muted-foreground" />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Sign in to save items, comment, and use your account features.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      className="rounded-2xl"
+                      onClick={() => {
+                        setIsAccountMenuOpen(false);
+                        void signIn("", "");
+                      }}
+                    >
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Sign In
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-2xl border-white/10 bg-transparent text-zinc-100 hover:bg-white/5 hover:text-zinc-100"
+                      onClick={() => {
+                        setIsAccountMenuOpen(false);
+                        void signUp("", "", "");
+                      }}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Create Account
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-          ) : (
-            // Not signed in: show guest link to login
-            <Link
-              to="/login"
-              state={{ resetNavigation: true }}
-              className={cn(
-                "flex items-center gap-3 w-full p-2 rounded-full hover:bg-white/10 transition-colors",
-                !isHovered && "justify-center"
-              )}
-              onClick={() => startNewHistory('/login')}
-            >
-              <div className="relative shrink-0">
-                <img
-                  src="/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png"
-                  alt="Guest"
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-border/50"
-                />
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />
-              </div>
-              {isHovered && (
-                <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
-                  <span className="text-sm font-semibold truncate leading-none">Sign In</span>
-                  <span className="text-[10px] text-muted-foreground truncate leading-none mt-1">Guest Access</span>
-                </div>
-              )}
-            </Link>
-          )}
+          ) : null}
         </div>
 
         <div className="flex-1 flex flex-col px-2 gap-1 overflow-hidden">
           {navigationItems.map((item) => {
-            if (item.adminOnly && !isAdmin && !isDevMode) return null;
+            if (item.adminOnly && !showAdminUi) return null;
             const active = isActive(item.path);
 
             const LinkContent = (
               <Link
                 to={item.path}
                 state={{ resetNavigation: true }}
-                onClick={() => startNewHistory(item.path)}
                 className={cn(
                   "flex items-center gap-3 h-10 px-4 rounded-full text-sm transition-all duration-200 relative group",
                   active
                     ? "bg-white text-black shadow-sm font-medium"
                     : "text-muted-foreground hover:bg-white/10 hover:text-foreground",
                   item.adminOnly && !active && "text-amber-500/80 hover:text-amber-500",
-                  !isHovered && "justify-center",
+                  !isExpanded && "justify-center",
                   className
                 )}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  startNewHistory(item.path);
+                }}
               >
                 <item.icon size={20} className={cn("shrink-0 transition-transform duration-200", active && "scale-105")} />
 
-                {isHovered && (
+                {isExpanded && (
                   <span className="truncate animate-in fade-in slide-in-from-left-1 duration-200">
                     {item.label}
                   </span>
                 )}
 
                 {/* Active Indicator Dot for Compact Mode */}
-                {!isHovered && active && (
+                {!isExpanded && active && (
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-black/80 dark:bg-white/80" />
                 )}
               </Link>
             );
 
-            if (!isHovered) {
+            if (!isExpanded) {
               return (
                 <Tooltip key={item.label}>
                   <TooltipTrigger asChild>
@@ -179,38 +352,69 @@ const Sidebar = ({
 
         {/* Footer */}
         <div className="p-2 shrink-0">
-          {isHovered ? (
-            <button
-              onClick={toggleDevMode}
-              className={cn(
-                "flex items-center w-full h-9 px-3 rounded-full text-xs font-medium transition-colors border",
-                isDevMode
-                  ? "bg-amber-950/30 border-amber-900/50 text-amber-500"
-                  : "bg-transparent border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              )}
-            >
-              <Terminal size={14} className="mr-2" />
-              Development Mode
-              <div className={cn("ml-auto w-1.5 h-1.5 rounded-full", isDevMode ? "bg-amber-500" : "bg-zinc-700")} />
-            </button>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleDevMode}
-                  className={cn(
-                    "flex items-center justify-center w-full h-10 rounded-full transition-colors",
-                    isDevMode ? "text-amber-500" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Terminal size={18} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                Dev Mode: {isDevMode ? 'ON' : 'OFF'}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          {canUsePerspectiveSwitcher ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                {isExpanded ? (
+                  <button
+                    className={cn(
+                      "flex items-center w-full h-9 px-3 rounded-full text-xs font-medium transition-colors border",
+                      perspective === "dev"
+                        ? "bg-amber-950/30 border-amber-900/50 text-amber-500"
+                        : "bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                    )}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Terminal size={14} className="mr-2" />
+                    {perspectiveLabel}
+                    <div className={cn(
+                      "ml-auto w-1.5 h-1.5 rounded-full",
+                      perspective === "dev" ? "bg-amber-500" : perspective === "user" ? "bg-sky-500" : "bg-zinc-500"
+                    )} />
+                  </button>
+                ) : (
+                  <button
+                    className={cn(
+                      "flex items-center justify-center w-full h-10 rounded-full transition-colors",
+                      perspective === "dev"
+                        ? "text-amber-500"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Terminal size={18} />
+                  </button>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-56">
+                <DropdownMenuLabel>Perspective</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={perspective} onValueChange={(value) => setPerspective(value as "dev" | "basic" | "user")}>
+                  <DropdownMenuRadioItem value="dev">
+                    <Terminal className="mr-2 h-4 w-4" />
+                    Dev
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="basic">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Basic
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="user">
+                    <UserCircle2 className="mr-2 h-4 w-4" />
+                    User
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Current: {perspectiveLabel}
+                </DropdownMenuItem>
+                {actualIsAuthenticated && actualUser ? (
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    {actualUser.emailAddresses?.[0]?.emailAddress || actualUser.fullName || "Admin account"}
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </aside>
     </TooltipProvider>

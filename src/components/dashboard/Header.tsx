@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, X, Filter, Copy, PanelLeftOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, X, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,9 @@ interface HeaderProps {
   showBreadcrumb?: boolean;
   children?: React.ReactNode;
   actionIcon?: React.ReactNode;
+  showSortButton?: boolean;
+  onSortClick?: () => void;
+  sortActionIcon?: React.ReactNode;
 }
 
 const Header = ({
@@ -53,7 +56,10 @@ const Header = ({
   actionIcon,
   showSearch = true,
   showBreadcrumb = true,
-  children
+  children,
+  showSortButton = false,
+  onSortClick,
+  sortActionIcon,
 }: HeaderProps) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [tempSearchValue, setTempSearchValue] = useState("");
@@ -131,15 +137,26 @@ const Header = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full border border-border hover:bg-accent -ml-2"
+          className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10 -ml-2"
           onClick={onSidebarToggle || onFilterClick}
         >
-          {actionIcon ? actionIcon : (sidebarCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />)}
+          {actionIcon ? actionIcon : <Search className="h-4 w-4 text-white" />}
         </Button>
       )}
 
-      {/* Search */}
-      {showSearch && (
+      {showSortButton && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10 -ml-2"
+          onClick={onSortClick}
+        >
+          {sortActionIcon ? sortActionIcon : <ArrowUpDown className="h-4 w-4 text-white" />}
+        </Button>
+      )}
+
+      {/* Search (hidden on collection pages; search lives inside filter panel there) */}
+      {showSearch && !isCollectionPage && (
         <div className="flex items-center">
           {isSearchExpanded ? (
             <div className="flex items-center h-8 border border-border rounded-full bg-card hover:border-muted-foreground/30 focus-within:border-muted-foreground/50 transition-colors w-[300px]">

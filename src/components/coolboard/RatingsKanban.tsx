@@ -39,58 +39,11 @@ const RatingsKanban: React.FC<RatingsKanbanProps> = ({ userId }) => {
 
   const fetchUserRatings = async () => {
     setIsLoading(true);
-    
+
     try {
-      const { data: ratingsData, error } = await supabase
-        .from('cool_ratings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(30);
-
-      if (error) throw error;
-
-      // Fetch item details for each rating
-      const enrichedRatings = await Promise.all(
-        (ratingsData || []).map(async (rating) => {
-          let itemData;
-          
-          if (rating.item_type === 'brand') {
-            const { data } = await supabase
-              .from('oem_brands')
-              .select('brand_title, brand_image_url')
-              .eq('id', rating.item_id.toString())
-              .single();
-            itemData = { name: data?.brand_title, image: data?.brand_image_url };
-          } else if (rating.item_type === 'vehicle') {
-            const { data } = await supabase
-              .from('oem_vehicles')
-              .select('model_name, vehicle_image')
-              .eq('id', rating.item_id.toString())
-              .single();
-            itemData = { name: data?.model_name, image: data?.vehicle_image };
-          } else {
-            const { data } = await supabase
-              .from('oem_wheels')
-              .select('wheel_title, good_pic_url')
-              .eq('id', rating.item_id.toString())
-              .single();
-            itemData = { name: data?.wheel_title, image: data?.good_pic_url };
-          }
-
-          return {
-            id: rating.id,
-            itemType: rating.item_type as 'brand' | 'vehicle' | 'wheel',
-            itemId: rating.item_id,
-            rating: rating.rating,
-            itemName: itemData?.name,
-            itemImage: itemData?.image,
-            createdAt: rating.created_at
-          };
-        })
-      );
-
-      setRatings(enrichedRatings);
+      // TODO: use Convex query for cool_ratings + item details when wired
+      void userId;
+      setRatings([]);
     } catch (error) {
       console.error('Error fetching ratings:', error);
     } finally {

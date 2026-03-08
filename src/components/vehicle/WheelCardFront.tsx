@@ -26,7 +26,7 @@ interface WheelCardFrontProps {
   onToggleSource: () => void;
   handleWheelMouseEnter: () => void;
   handleWheelMouseLeave: () => void;
-  getTransformStyle: () => React.CSSProperties;
+  wheelImageRef: React.RefObject<HTMLImageElement | null>;
   linkToDetail?: boolean;
   showBadPicToggle?: boolean;
   isBadPicActive?: boolean;
@@ -48,7 +48,7 @@ const WheelCardFront = ({
   onToggleSource,
   handleWheelMouseEnter,
   handleWheelMouseLeave,
-  getTransformStyle,
+  wheelImageRef,
   linkToDetail = false,
   showBadPicToggle = false,
   isBadPicActive = false,
@@ -112,10 +112,10 @@ const WheelCardFront = ({
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg pt-[5%]">
                 <img
+                  ref={wheelImageRef}
                   src={imageUrl}
                   alt={wheel.name}
-                  className="max-w-[105%] max-h-[105%] object-contain"
-                  style={getTransformStyle()}
+                  className="max-w-[105%] max-h-[105%] object-contain will-change-transform"
                   onError={onImageError}
                   onMouseEnter={handleWheelMouseEnter}
                   onMouseLeave={handleWheelMouseLeave}

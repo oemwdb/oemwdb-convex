@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@clerk/react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDevMode } from '@/contexts/DevModeContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,9 +9,10 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoading, isAuthenticated, isAdmin } = useAuth();
+  const { isDevMode } = useDevMode();
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -18,12 +20,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     );
   }
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Admin check can be added using Clerk's session claims or metadata
-  // requireAdmin && ...
+  if (requireAdmin && (!isAdmin || !isDevMode)) {
+    return <Navigate to="/" replace />;
+  }
 
   return <>{children}</>;
 };

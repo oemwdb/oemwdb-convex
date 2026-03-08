@@ -1,17 +1,23 @@
-
 import React from "react";
 import VehicleCard from "@/components/vehicle/VehicleCard";
+import { AdBar } from "@/components/AdBar";
+
+const GRID_CLASSES =
+  "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2";
 
 interface VehiclesGridProps {
   vehicles: Vehicle[];
   flippedCards: Record<string, boolean>;
   onFlip: (name: string) => void;
+  /** Insert a full-width ad after every N items (e.g. 3 * columns). Ensures full rows. */
+  insertAdEvery?: number;
 }
 
 const VehiclesGrid: React.FC<VehiclesGridProps> = ({
   vehicles,
   flippedCards,
   onFlip,
+  insertAdEvery,
 }) => {
   if (!vehicles.length) {
     return (
@@ -20,21 +26,53 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-4 mx-auto max-w-xl">
           <span>
             <b>Debugging tips</b>:<br />
-            - Ensure you have data in the Supabase <i>OEM Vehicles</i> table.<br />
+            - Ensure you have data in the Convex <i>OEM Vehicles</i> table.<br />
             - Check the browser dev console for details.<br />
-            - If your database is empty, you'll need to add rows manually via Supabase dashboard.<br />
+            - If your database is empty, add rows via Convex dashboard or migrations.<br />
           </span>
         </div>
       </div>
     );
   }
 
+  if (insertAdEvery != null && insertAdEvery > 0) {
+    const children: React.ReactNode[] = [];
+    for (let i = 0; i < vehicles.length; i += insertAdEvery) {
+      const chunk = vehicles.slice(i, i + insertAdEvery);
+      chunk.forEach((vehicle) => {
+        children.push(
+          <VehicleCard
+            key={vehicle.id ?? vehicle.name}
+            vehicle={{
+              id: (vehicle as { id?: string }).id,
+              name: vehicle.name,
+              brand: vehicle.brand,
+              wheels: vehicle.wheels,
+              image: vehicle.image,
+              bolt_pattern_ref: (vehicle as any).bolt_pattern_ref,
+              center_bore_ref: (vehicle as any).center_bore_ref,
+              wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
+              wheel_width_ref: (vehicle as any).wheel_width_ref,
+            }}
+            isFlipped={flippedCards[vehicle.name] || false}
+            onFlip={onFlip}
+          />
+        );
+      });
+      if (chunk.length === insertAdEvery) {
+        children.push(<div key={`ad-${i}`} className="col-span-full"><AdBar /></div>);
+      }
+    }
+    return <div className={GRID_CLASSES}>{children}</div>;
+  }
+
   return (
-    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-      {vehicles.map(vehicle => (
+    <div className={GRID_CLASSES}>
+      {vehicles.map((vehicle) => (
         <VehicleCard
-          key={vehicle.name}
+          key={vehicle.id ?? vehicle.name}
           vehicle={{
+            id: (vehicle as { id?: string }).id,
             name: vehicle.name,
             brand: vehicle.brand,
             wheels: vehicle.wheels,
@@ -42,7 +80,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             bolt_pattern_ref: (vehicle as any).bolt_pattern_ref,
             center_bore_ref: (vehicle as any).center_bore_ref,
             wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
-            wheel_width_ref: (vehicle as any).wheel_width_ref
+            wheel_width_ref: (vehicle as any).wheel_width_ref,
           }}
           isFlipped={flippedCards[vehicle.name] || false}
           onFlip={onFlip}

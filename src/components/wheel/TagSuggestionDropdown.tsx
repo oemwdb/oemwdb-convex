@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ParsedFilters } from "@/utils/filterParser";
 import { cn } from "@/lib/utils";
+import type { OemWheel } from "@/types/oem";
 
 interface TagSuggestion {
   tag: string;
@@ -18,7 +19,7 @@ interface TagSuggestion {
 
 interface TagSuggestionDropdownProps {
   searchText: string;
-  allWheels: SupabaseWheel[];
+  allWheels: OemWheel[];
   onTagClick: (tag: string, category: string) => void;
   isOpen: boolean;
   selectedTags: ParsedFilters;

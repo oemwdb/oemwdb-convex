@@ -163,6 +163,13 @@ export default defineSchema({
     vehicle_title: v.optional(v.string()),
     model_name: v.optional(v.string()),
     generation: v.optional(v.string()),
+    body_type: v.optional(v.string()),
+    platform: v.optional(v.string()),
+    drive_type: v.optional(v.string()),
+    segment: v.optional(v.string()),
+    engine_details: v.optional(v.string()),
+    price_range: v.optional(v.string()),
+    special_notes: v.optional(v.string()),
     production_years: v.optional(v.string()),
     year_from: v.optional(v.number()),
     year_to: v.optional(v.number()),
@@ -333,12 +340,35 @@ export default defineSchema({
   vehicle_comments: defineTable({
     user_id: v.string(),
     vehicle_id: v.id("oem_vehicles"),
+    user_name: v.optional(v.string()),
     comment_text: v.string(),
     tag: v.optional(v.string()),
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
   })
     .index("by_vehicle", ["vehicle_id"])
+    .index("by_user", ["user_id"]),
+
+  wheel_comments: defineTable({
+    user_id: v.string(),
+    wheel_id: v.id("oem_wheels"),
+    user_name: v.optional(v.string()),
+    comment_text: v.string(),
+    created_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  })
+    .index("by_wheel", ["wheel_id"])
+    .index("by_user", ["user_id"]),
+
+  brand_comments: defineTable({
+    user_id: v.string(),
+    brand_id: v.id("oem_brands"),
+    user_name: v.optional(v.string()),
+    comment_text: v.string(),
+    created_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  })
+    .index("by_brand", ["brand_id"])
     .index("by_user", ["user_id"]),
 
   user_registered_vehicles: defineTable({

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
+import { SaveButton } from "@/components/SaveButton";
 
 interface VehicleHeaderProps {
   name: string;
@@ -15,6 +16,8 @@ interface VehicleHeaderProps {
   description: string;
   msrp?: string;
   image?: string;
+  itemId?: string;
+  convexId?: string;
   // Chassis spec refs
   specs?: {
     bolt_pattern_ref?: string[];
@@ -34,6 +37,8 @@ const VehicleHeader = ({
   description,
   msrp,
   image,
+  itemId,
+  convexId,
   specs
 }: VehicleHeaderProps) => {
   return (
@@ -64,7 +69,18 @@ const VehicleHeader = ({
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="mb-3">
-              <h1 className="text-2xl md:text-3xl font-bold leading-tight">{name}</h1>
+              <div className="flex items-start gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold leading-tight">{name}</h1>
+                {itemId && convexId ? (
+                  <SaveButton
+                    itemId={itemId}
+                    itemType="vehicle"
+                    convexId={convexId}
+                    iconStyle="heart"
+                    className="mt-1 h-8 w-8 p-0 text-muted-foreground hover:!bg-transparent hover:text-foreground"
+                  />
+                ) : null}
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">{generation} • {years}</p>
             </div>
 
@@ -114,7 +130,7 @@ const VehicleHeader = ({
                     specs.wheel_diameter_ref.map((diameter, idx) => (
                       <Link key={idx} to={`/wheels?diameter=${encodeURIComponent(diameter)}`}>
                         <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors text-xs py-0 h-5">
-                          {diameter}"
+                          {diameter}
                         </Badge>
                       </Link>
                     ))

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ParsedVehicleFilters } from "@/utils/vehicleFilterParser";
 import { cn } from "@/lib/utils";
+import type { OemVehicle } from "@/types/oem";
 
 interface TagSuggestion {
   tag: string;
@@ -17,7 +18,7 @@ interface TagSuggestion {
 }
 
 interface VehicleTagSuggestionDropdownProps {
-  allVehicles: SupabaseVehicle[];
+  allVehicles: OemVehicle[];
   onTagClick: (tag: string, category: string) => void;
   isOpen: boolean;
   selectedTags: ParsedVehicleFilters;

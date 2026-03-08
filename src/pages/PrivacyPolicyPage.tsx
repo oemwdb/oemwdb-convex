@@ -40,9 +40,8 @@ const PrivacyPolicyPage = () => {
                         <section>
                             <h2 className="text-xl font-semibold mb-3">3. Data Storage & Security</h2>
                             <p className="text-muted-foreground">
-                                Your data is stored securely using Supabase, which provides enterprise-grade
-                                security including encryption at rest and in transit. Our infrastructure is
-                                hosted on AWS with data centers that comply with industry security standards.
+                                Your data is stored securely using Convex, which provides enterprise-grade
+                                security including encryption at rest and in transit.
                             </p>
                         </section>
 
@@ -73,7 +72,7 @@ const PrivacyPolicyPage = () => {
                             <h2 className="text-xl font-semibold mb-3">6. Third-Party Services</h2>
                             <p className="text-muted-foreground">We use the following third-party services:</p>
                             <ul className="list-disc pl-6 text-muted-foreground space-y-1">
-                                <li><strong>Supabase</strong> - Database and authentication (Data Processor)</li>
+                                <li><strong>Convex</strong> - Database and backend (Data Processor)</li>
                                 <li><strong>Cloudflare</strong> - Content delivery and security</li>
                             </ul>
                             <p className="text-muted-foreground mt-2">

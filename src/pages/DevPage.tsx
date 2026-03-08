@@ -102,10 +102,10 @@ const DevPage = () => {
               description="Database management & data"
             />
             <AppIcon
-              to="https://supabase.com/dashboard/project/bclvqqnnyqgzoavgrkke"
+              to="https://dashboard.convex.dev"
               icon={Server}
-              label="Supabase"
-              description="Supabase platform dashboard"
+              label="Convex"
+              description="Convex dashboard"
               external
             />
             <AppIcon
