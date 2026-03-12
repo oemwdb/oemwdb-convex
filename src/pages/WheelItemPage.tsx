@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useWheelByName } from "@/hooks/useWheels";
+import { useDevMode } from "@/hooks/useDevMode";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Loader2, CircleSlash2, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers } from "lucide-react";
+import { ChevronLeft, Loader2, CircleSlash2, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers, Package2, DollarSign, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigation } from "@/contexts/NavigationContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
 import FitmentSection from "@/components/wheel/FitmentSection";
 import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
+import WheelAssetsPanel from "@/components/wheel/WheelAssetsPanel";
 import GallerySection from "@/components/vehicle/GallerySection";
 import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
 
@@ -22,9 +28,16 @@ const WheelItemPage = () => {
   const { wheelId } = useParams<{ wheelId: string }>();
   const [activeTab, setActiveTab] = useState("fitment");
   const { updateCurrentLabel } = useNavigation();
+  const { isDevMode } = useDevMode();
+  const { isAdmin } = useAuth();
+  const showAdminAssets = isAdmin && isDevMode;
 
   // Fetch wheel with related vehicles from Convex
   const { data: wheel, isLoading, error } = useWheelByName(wheelId || "");
+  const marketListings = useQuery(
+    api.queries.marketListingsGetByWheel,
+    isDevMode && wheel?._id ? { wheelId: wheel._id } : "skip"
+  );
 
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {
@@ -128,6 +141,16 @@ const WheelItemPage = () => {
     }
   ];
 
+  const formatPrice = (price: number | null | undefined) => {
+    if (!price) return "Contact for price";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
   return (
     <DashboardLayout
       title={pageTitle}
@@ -170,8 +193,12 @@ const WheelItemPage = () => {
             <TabsTrigger value="fitment" className="flex-1 min-w-fit">Vehicles ({compatibleVehicles.length})</TabsTrigger>
             <TabsTrigger value="variants" className="flex-1 min-w-fit">Variants</TabsTrigger>
             <TabsTrigger value="gallery" className="flex-1 min-w-fit">Gallery</TabsTrigger>
-            <TabsTrigger value="badpic" className="flex-1 min-w-fit">Bad Pic</TabsTrigger>
-
+            {isDevMode && (
+              <TabsTrigger value="market" className="flex-1 min-w-fit">Market</TabsTrigger>
+            )}
+            {showAdminAssets && (
+              <TabsTrigger value="assets" className="flex-1 min-w-fit">Assets</TabsTrigger>
+            )}
           </TabsList>
 
 
@@ -307,36 +334,119 @@ const WheelItemPage = () => {
             />
           </TabsContent>
 
-          {/* Bad Pic content */}
-          <TabsContent value="badpic" className="space-y-4">
-            <Card>
-              <CardContent className="pt-4">
-
-                {wheel.bad_pic_url ? (
-                  <div className="space-y-4">
-                    <div className="relative rounded-lg overflow-hidden bg-muted">
-                      <img
-                        src={wheel.bad_pic_url}
-                        alt={`${wheel.wheel_name} reference`}
-                        className="w-full max-h-[600px] object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
+          {isDevMode && (
+            <TabsContent value="market" className="space-y-4">
+              {marketListings === undefined ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-3">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary/60" />
+                      <p className="text-muted-foreground">Loading wheel listings...</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      This is the unprocessed reference image from Notion. Path: <code className="text-xs bg-muted px-1 py-0.5 rounded">{wheel.bad_pic_url}</code>
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                    <p>No reference image available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </CardContent>
+                </Card>
+              ) : marketListings.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
+                        <Package2 className="h-10 w-10 text-primary/50" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">No linked listings yet</h3>
+                        <p className="text-muted-foreground max-w-md mx-auto">
+                          No marketplace listings are currently tagged to {wheel.wheel_name}.
+                        </p>
+                      </div>
+                      <Button asChild variant="outline">
+                        <Link to="/market">Browse Marketplace</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {marketListings.map((listing) => (
+                    <Card key={listing._id} className="overflow-hidden border-border/50 hover:border-border transition-all hover:shadow-sm">
+                      <div className="relative aspect-[4/3] bg-muted">
+                        {listing.images && listing.images[0] ? (
+                          <img
+                            src={listing.images[0]}
+                            alt={listing.title}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <Package2 className="h-10 w-10 text-muted-foreground/50" />
+                          </div>
+                        )}
+                        <Badge className="absolute top-2 left-2 text-xs capitalize">
+                          {listing.listing_type}
+                        </Badge>
+                      </div>
+                      <CardContent className="pt-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="font-medium line-clamp-2">{listing.title}</h3>
+                            {listing.condition ? (
+                              <p className="text-xs text-muted-foreground mt-1 capitalize">{listing.condition}</p>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center gap-1 text-primary font-semibold whitespace-nowrap">
+                            <DollarSign className="h-4 w-4" />
+                            <span>{formatPrice(listing.price)}</span>
+                          </div>
+                        </div>
+
+                        {(listing.location || listing.shipping_available) && (
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {listing.location ? (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                <span>{listing.location}</span>
+                              </div>
+                            ) : null}
+                            {listing.shipping_available ? (
+                              <Badge variant="outline" className="text-xs h-5">Ships</Badge>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {listing.seller_profile ? (
+                          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={listing.seller_profile.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {listing.seller_profile.username?.[0]?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {listing.seller_profile.display_name || listing.seller_profile.username}
+                            </span>
+                          </div>
+                        ) : null}
+
+                        <Button asChild variant="outline" className="w-full">
+                          <Link to={`/market/${listing._id}`}>View Listing</Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          )}
+
+          {showAdminAssets && (
+            <TabsContent value="assets" className="space-y-4">
+              <WheelAssetsPanel
+                wheelId={wheel._id}
+                wheelName={wheel.wheel_name}
+                goodPicUrl={wheel.good_pic_url}
+                badPicUrl={wheel.bad_pic_url}
+              />
+            </TabsContent>
+          )}
 
 
         </Tabs>

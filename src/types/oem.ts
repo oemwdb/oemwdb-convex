@@ -23,8 +23,11 @@ export interface OemVehicle {
 
 export interface OemWheel {
   id: string;
+  convexId?: string;
   wheel_name: string;
   brand_name?: string | null;
+  /** Comma-separated wheel brands mirrored from j_wheel_brand. */
+  jnc_brands?: string | null;
   diameter?: string | null;
   width?: string | null;
   bolt_pattern?: string | null;

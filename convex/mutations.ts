@@ -454,6 +454,7 @@ export const wheelsUpdate = mutation({
     text_center_bores: optionalString,
     text_colors: optionalString,
     text_offsets: optionalString,
+    jnc_brands: optionalString,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -462,6 +463,122 @@ export const wheelsUpdate = mutation({
       updated_at: new Date().toISOString(),
     });
     return id;
+  },
+});
+
+export const backfillWheelBrandSources = mutation({
+  args: {
+    maxBatch: v.optional(v.number()),
+    prioritizeMissingBrandId: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const maxBatch = Math.max(1, Math.min(args.maxBatch ?? 500, 5000));
+    const prioritizeMissingBrandId = args.prioritizeMissingBrandId ?? false;
+    const now = new Date().toISOString();
+    const wheels = await ctx.db.query("oem_wheels").collect();
+    const links = await ctx.db.query("j_wheel_brand").collect();
+    const brands = await ctx.db.query("oem_brands").collect();
+
+    const brandById = new Map(brands.map((brand) => [brand._id, brand]));
+    const linksByWheel = new Map<typeof wheels[number]["_id"], typeof links>();
+    for (const link of links) {
+      const existing = linksByWheel.get(link.wheel_id) ?? [];
+      existing.push(link);
+      linksByWheel.set(link.wheel_id, existing);
+    }
+
+    const orderedWheels = prioritizeMissingBrandId
+      ? [...wheels].sort((a, b) => {
+          const aMissingBrandId = a.brand_id == null ? 1 : 0;
+          const bMissingBrandId = b.brand_id == null ? 1 : 0;
+          return bMissingBrandId - aMissingBrandId;
+        })
+      : wheels;
+
+    let updated = 0;
+    let skippedMultiLink = 0;
+    for (const wheel of orderedWheels) {
+      if (updated >= maxBatch) break;
+      const hasBrandId = wheel.brand_id != null;
+      const hasJunctionBrands = Boolean(String(wheel.jnc_brands ?? "").trim());
+      if (hasBrandId && hasJunctionBrands) continue;
+
+      const wheelLinks = linksByWheel.get(wheel._id) ?? [];
+      if (wheelLinks.length !== 1) {
+        if (!hasBrandId || !hasJunctionBrands) skippedMultiLink += 1;
+        continue;
+      }
+
+      const link = wheelLinks[0];
+      const brand = brandById.get(link.brand_id);
+      const patch: {
+        brand_id?: typeof link.brand_id;
+        jnc_brands?: string;
+        updated_at: string;
+      } = { updated_at: now };
+
+      if (!hasBrandId) patch.brand_id = link.brand_id;
+      if (!hasJunctionBrands) {
+        patch.jnc_brands = String(brand?.brand_title ?? link.brand_title ?? "").trim();
+      }
+
+      if (patch.brand_id == null && patch.jnc_brands == null) continue;
+      await ctx.db.patch(wheel._id, patch);
+      updated += 1;
+    }
+
+    return { updated, skippedMultiLink };
+  },
+});
+
+export const syncWheelJunctionBrands = mutation({
+  args: {
+    maxBatch: v.optional(v.number()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+  },
+  handler: async (ctx, args) => {
+    const maxBatch = Math.max(1, Math.min(args.maxBatch ?? 500, 1000));
+    const now = new Date().toISOString();
+    const wheelPage = await ctx.db
+      .query("oem_wheels")
+      .order("asc")
+      .paginate({ numItems: maxBatch, cursor: args.cursor ?? null });
+
+    let updated = 0;
+    for (const wheel of wheelPage.page) {
+      const wheelLinks = await ctx.db
+        .query("j_wheel_brand")
+        .withIndex("by_wheel", (q) => q.eq("wheel_id", wheel._id))
+        .collect();
+      if (wheelLinks.length === 0) continue;
+      const brands = await Promise.all(
+        wheelLinks.map((link) => ctx.db.get(link.brand_id))
+      );
+      const joinedBrands = Array.from(
+        new Set(
+          wheelLinks
+            .map((link, index) =>
+              String(brands[index]?.brand_title ?? link.brand_title ?? "").trim()
+            )
+            .filter(Boolean)
+        )
+      ).join(", ");
+      if (!joinedBrands) continue;
+      const nextBrandId = wheel.brand_id ?? wheelLinks[0].brand_id;
+      if ((wheel.jnc_brands ?? "") === joinedBrands && wheel.brand_id === nextBrandId) continue;
+      await ctx.db.patch(wheel._id, {
+        jnc_brands: joinedBrands,
+        brand_id: nextBrandId,
+        updated_at: now,
+      });
+      updated += 1;
+    }
+
+    return {
+      updated,
+      nextCursor: wheelPage.continueCursor ?? null,
+      isDone: wheelPage.isDone,
+    };
   },
 });
 
@@ -528,12 +645,29 @@ export const wheelBrandLink = mutation({
       ctx.db.get("oem_wheels", args.wheel_id),
       ctx.db.get("oem_brands", args.brand_id),
     ]);
-    return await ctx.db.insert("j_wheel_brand", {
+    const insertedId = await ctx.db.insert("j_wheel_brand", {
       wheel_id: args.wheel_id,
       brand_id: args.brand_id,
       wheel_title: args.wheel_title ?? wheel?.wheel_title ?? "",
       brand_title: args.brand_title ?? brand?.brand_title ?? "",
     });
+    const brandLinks = await ctx.db
+      .query("j_wheel_brand")
+      .withIndex("by_wheel", (q) => q.eq("wheel_id", args.wheel_id))
+      .collect();
+    const joinedBrands = Array.from(
+      new Set(
+        brandLinks
+          .map((link) => String(link.brand_title ?? "").trim())
+          .filter(Boolean)
+      )
+    ).join(", ");
+    await ctx.db.patch(args.wheel_id, {
+      jnc_brands: joinedBrands || String(brand?.brand_title ?? "").trim(),
+      brand_id: wheel?.brand_id ?? args.brand_id,
+      updated_at: new Date().toISOString(),
+    });
+    return insertedId;
   },
 });
 

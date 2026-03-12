@@ -249,14 +249,14 @@ export const promoteWheelVariant = mutation({
   },
   handler: async (ctx, args) => {
     const variantTitle = args.variant_title ?? args.slug;
-    const variantId = await ctx.db.insert("wheel_variants", {
+    const variantId = await ctx.db.insert("oem_wheel_variants", {
       wheel_id: args.wheel_id,
       slug: args.slug,
       variant_title: args.variant_title,
     });
 
     if (args.diameter_id) {
-      await ctx.db.insert("j_wheel_variant_diameter", {
+      await ctx.db.insert("j_oem_wheel_variant_diameter", {
         variant_id: variantId,
         diameter_id: args.diameter_id,
         variant_title: variantTitle,
@@ -278,7 +278,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.width_id) {
-      await ctx.db.insert("j_wheel_variant_width", {
+      await ctx.db.insert("j_oem_wheel_variant_width", {
         variant_id: variantId,
         width_id: args.width_id,
         variant_title: variantTitle,
@@ -300,7 +300,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.offset_id) {
-      await ctx.db.insert("j_wheel_variant_offset", {
+      await ctx.db.insert("j_oem_wheel_variant_offset", {
         variant_id: variantId,
         offset_id: args.offset_id,
         variant_title: variantTitle,
@@ -322,7 +322,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.bolt_pattern_id) {
-      await ctx.db.insert("j_wheel_variant_bolt_pattern", {
+      await ctx.db.insert("j_oem_wheel_variant_bolt_pattern", {
         variant_id: variantId,
         bolt_pattern_id: args.bolt_pattern_id,
         variant_title: variantTitle,
@@ -344,7 +344,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.center_bore_id) {
-      await ctx.db.insert("j_wheel_variant_center_bore", {
+      await ctx.db.insert("j_oem_wheel_variant_center_bore", {
         variant_id: variantId,
         center_bore_id: args.center_bore_id,
         variant_title: variantTitle,
@@ -366,7 +366,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.color_id) {
-      await ctx.db.insert("j_wheel_variant_color", {
+      await ctx.db.insert("j_oem_wheel_variant_color", {
         variant_id: variantId,
         color_id: args.color_id,
         variant_title: variantTitle,
@@ -388,7 +388,7 @@ export const promoteWheelVariant = mutation({
       }
     }
     if (args.part_number_id) {
-      await ctx.db.insert("j_wheel_variant_part_number", {
+      await ctx.db.insert("j_oem_wheel_variant_part_number", {
         variant_id: variantId,
         part_number_id: args.part_number_id,
         variant_title: variantTitle,
@@ -408,6 +408,138 @@ export const promoteWheelVariant = mutation({
           part_number: args.part_number ?? "",
         });
       }
+    }
+
+    return variantId;
+  },
+});
+
+export const promoteVehicle = mutation({
+  args: {
+    id: v.string(),
+    model_name: v.string(),
+    vehicle_title: v.optional(v.string()),
+    brand_id: v.optional(v.id("oem_brands")),
+    production_years: v.optional(v.string()),
+    body_type: v.optional(v.string()),
+    drive_type: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Check if vehicle already exists by id
+    const existing = await ctx.db
+      .query("oem_vehicles")
+      .withIndex("by_id_str", (q) => q.eq("id", args.id))
+      .first();
+
+    let vehicleId;
+    if (existing) {
+      vehicleId = existing._id;
+      await ctx.db.patch(vehicleId, {
+        model_name: args.model_name,
+        vehicle_title: args.vehicle_title,
+        brand_id: args.brand_id,
+        production_years: args.production_years,
+        body_type: args.body_type,
+        drive_type: args.drive_type,
+      });
+    } else {
+      vehicleId = await ctx.db.insert("oem_vehicles", {
+        id: args.id,
+        slug: args.id,
+        model_name: args.model_name,
+        vehicle_title: args.vehicle_title,
+        brand_id: args.brand_id,
+        production_years: args.production_years,
+        body_type: args.body_type,
+        drive_type: args.drive_type,
+      });
+    }
+
+    if (args.brand_id) {
+      const brand = await ctx.db.get(args.brand_id);
+      const existingLink = await ctx.db
+        .query("j_vehicle_brand")
+        .withIndex("by_vehicle_brand", (q) =>
+          q.eq("vehicle_id", vehicleId).eq("brand_id", args.brand_id!)
+        )
+        .first();
+
+      if (!existingLink) {
+        await ctx.db.insert("j_vehicle_brand", {
+          vehicle_id: vehicleId,
+          brand_id: args.brand_id,
+          vehicle_title: args.vehicle_title || args.model_name,
+          brand_title: brand?.brand_title || "",
+        });
+      }
+    }
+
+    return vehicleId;
+  },
+});
+
+export const promoteVehicleVariant = mutation({
+  args: {
+    vehicle_id: v.id("oem_vehicles"),
+    slug: v.optional(v.string()),
+    variant_title: v.optional(v.string()),
+    trim_level: v.optional(v.string()),
+    year_from: v.optional(v.number()),
+    year_to: v.optional(v.number()),
+    engine_id: v.optional(v.id("oem_engines")),
+    body_style_id: v.optional(v.id("oem_body_styles")),
+    drive_type_id: v.optional(v.id("oem_drive_types")),
+    market_id: v.optional(v.id("oem_markets")),
+  },
+  handler: async (ctx, args) => {
+    const variantId = await ctx.db.insert("oem_vehicle_variants", {
+      vehicle_id: args.vehicle_id,
+      slug: args.slug,
+      variant_title: args.variant_title,
+      trim_level: args.trim_level,
+      year_from: args.year_from,
+      year_to: args.year_to,
+      engine_id: args.engine_id,
+    });
+
+    if (args.engine_id) {
+      const engine = await ctx.db.get(args.engine_id);
+      await ctx.db.insert("j_oem_vehicle_variant_engine", {
+        variant_id: variantId,
+        engine_id: args.engine_id,
+        variant_title: args.variant_title ?? "",
+        engine_code: engine?.engine_code ?? "",
+      });
+    }
+
+    if (args.body_style_id) {
+      const bodyStyle = await ctx.db.get(args.body_style_id);
+      await ctx.db.insert("j_oem_vehicle_variant_body_style", {
+        variant_id: variantId,
+        body_style_id: args.body_style_id,
+        variant_title: args.variant_title ?? "",
+        body_style: bodyStyle?.body_style ?? "",
+      });
+    }
+
+    if (args.drive_type_id) {
+      const driveType = await ctx.db.get(args.drive_type_id);
+      await ctx.db.insert("j_oem_vehicle_variant_drive_type", {
+        variant_id: variantId,
+        drive_type_id: args.drive_type_id,
+        variant_title: args.variant_title ?? "",
+        drive_type: driveType?.drive_type ?? "",
+      });
+    }
+
+    if (args.market_id) {
+      const market = await ctx.db.get(args.market_id);
+      await ctx.db.insert("j_oem_vehicle_variant_market", {
+        variant_id: variantId,
+        market_id: args.market_id,
+        variant_title: args.variant_title ?? "",
+        market: market?.market ?? "",
+      });
     }
 
     return variantId;

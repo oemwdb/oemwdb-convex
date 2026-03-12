@@ -174,152 +174,35 @@ const VehicleDetailPage = () => {
 
 
           <TabsContent value="variants" className="space-y-4">
-            {(vehicleData as any).model_name?.toLowerCase().includes("rolls") || (vehicleData as any).vehicle_title?.toLowerCase().includes("rolls") ? (
-              <VariantsSection vehicleId={String((vehicleData as any)._id)} />
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {/* E36 3 Series Variants */}
-                    {[
-                      {
-                        chassis: 'E36',
-                        model: '318i',
-                        years: '1991-1998',
-                        engine: '1.8L M42/M43 I4',
-                        power: '113-140 hp',
-                        body: 'Sedan',
-                        searchTerm: 'BMW E36 318i'
-                      },
-                      {
-                        chassis: 'E36',
-                        model: '320i',
-                        years: '1991-1998',
-                        engine: '2.0L M50/M52 I6',
-                        power: '150 hp',
-                        body: 'Sedan',
-                        searchTerm: 'BMW E36 320i'
-                      },
-                      {
-                        chassis: 'E36',
-                        model: '325i',
-                        years: '1991-1995',
-                        engine: '2.5L M50 I6',
-                        power: '192 hp',
-                        body: 'Sedan',
-                        searchTerm: 'BMW E36 325i'
-                      },
-                      {
-                        chassis: 'E36',
-                        model: '328i',
-                        years: '1995-1998',
-                        engine: '2.8L M52 I6',
-                        power: '193 hp',
-                        body: 'Sedan',
-                        searchTerm: 'BMW E36 328i'
-                      },
-                      {
-                        chassis: 'E36',
-                        model: 'M3',
-                        years: '1992-1999',
-                        engine: '3.0L S50/3.2L S52 I6',
-                        power: '240-321 hp',
-                        body: 'Coupe',
-                        searchTerm: 'BMW E36 M3'
-                      },
-                      {
-                        chassis: 'E36',
-                        model: '323i',
-                        years: '1995-1998',
-                        engine: '2.5L M52 I6',
-                        power: '170 hp',
-                        body: 'Sedan',
-                        searchTerm: 'BMW E36 323i'
-                      }
-                    ].map((variant, idx) => (
-                      <Card key={idx} className="flex flex-col hover:shadow-md transition-shadow">
-                        <CardContent className="p-4 flex flex-col gap-2">
-                          {/* Header */}
-                          <h4 className="font-semibold text-foreground text-base">
-                            BMW {variant.chassis} {variant.model}
-                          </h4>
-
-                          {/* Content */}
-                          <div className="space-y-1 text-sm">
-                            <p className="text-foreground">
-                              <span className="text-muted-foreground">Years:</span> {variant.years}
-                            </p>
-                            <p className="text-foreground">
-                              <span className="text-muted-foreground">Engine:</span> {variant.engine}
-                            </p>
-                            <p className="text-foreground">
-                              <span className="text-muted-foreground">Power:</span> {variant.power}
-                            </p>
-                            <p className="text-foreground">
-                              <span className="text-muted-foreground">Body:</span> {variant.body}
-                            </p>
-                          </div>
-
-                          {/* Find at section */}
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs text-muted-foreground mb-2">Find at</p>
-                            <div className="flex gap-2 flex-wrap">
-                              <a
-                                href={`https://www.autoscout24.com/lst?query=${encodeURIComponent(variant.searchTerm)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on AutoScout24"
-                              >
-                                AutoScout
-                              </a>
-                              <a
-                                href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(variant.searchTerm)}&_sacat=6001`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on eBay Motors"
-                              >
-                                eBay
-                              </a>
-                              <a
-                                href={`https://www.autotrader.com/cars-for-sale/all-cars?searchRadius=0&makeCodeList=BMW&keywordPhrases=${encodeURIComponent(variant.model)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 text-xs rounded bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors"
-                                title="Search on Autotrader"
-                              >
-                                Autotrader
-                              </a>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <VariantsSection
+              vehicleId={(vehicleData as any)._id}
+              vehicleName={vehicleDisplayName}
+            />
           </TabsContent>
 
           <TabsContent value="wheels" className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {(vehicleData.wheels || []).map((wheel: any) => (
+              {(vehicleData.wheels || []).map((wheel: any) => {
+                const wheelId = String(wheel.id ?? wheel._id ?? "");
+                const wheelName = (wheel.wheel_name ?? wheel.wheel_title ?? wheel.name ?? "Unknown Wheel") as string;
+
+                return (
                 <WheelCard
-                  key={wheel.id}
+                  key={wheelId}
                   wheel={{
-                    id: wheel.id,
-                    name: wheel.wheel_name,
+                    id: wheelId,
+                    name: wheelName,
                     imageUrl: wheel.good_pic_url || wheel.bad_pic_url,
                     diameter_ref: wheel.diameter ? [{ value: wheel.diameter }] : [],
                     width_ref: wheel.width ? [{ value: wheel.width }] : [],
                     bolt_pattern_ref: wheel.bolt_pattern ? [{ value: wheel.bolt_pattern }] : [],
                     center_bore_ref: wheel.center_bore ? [{ value: wheel.center_bore }] : [],
                   }}
-                  isFlipped={flippedCards[wheel.id] || false}
-                  onFlip={() => toggleCardFlip(wheel.id)}
+                  isFlipped={flippedCards[wheelId] || false}
+                  onFlip={() => toggleCardFlip(wheelId)}
                 />
-              ))}
+                );
+              })}
             </div>
           </TabsContent>
 

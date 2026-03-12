@@ -29,10 +29,14 @@ interface DashboardLayoutProps {
   // Secondary sidebar props
   secondarySidebar?: React.ReactNode;
   sortSidebar?: React.ReactNode;
+  customSidebar?: React.ReactNode;
 
   secondaryTitle?: string;
   sortTitle?: string;
+  customTitle?: string;
   secondaryActionIcon?: React.ReactNode;
+  customActionIcon?: React.ReactNode;
+  customSidebarInteractive?: boolean;
 
   // Header customization
   headerActions?: React.ReactNode;
@@ -63,17 +67,21 @@ const DashboardLayout = ({
   hideHeader = false,
   secondarySidebar,
   sortSidebar,
+  customSidebar,
 
   secondaryTitle,
   sortTitle,
+  customTitle,
   secondaryActionIcon,
+  customActionIcon,
+  customSidebarInteractive = false,
   headerActions,
   showSearch = false,
   showBreadcrumb = true,
   disableContentPadding = false
 }: DashboardLayoutProps) => {
   const location = useLocation();
-  const [activePanel, setActivePanel] = useState<"filter" | "sort" | null>(null);
+  const [activePanel, setActivePanel] = useState<"filter" | "sort" | "custom" | null>(null);
   const [sidebarHovered, setSidebarHovered] = useState(false);
 
   // Collapse secondary sidebar on route change
@@ -86,8 +94,23 @@ const DashboardLayout = ({
 
   const showFilterPanel = !!secondarySidebar && activePanel === "filter";
   const showSortPanel = !!sortSidebar && activePanel === "sort";
-  const activePanelContent = activePanel === "sort" ? sortSidebar : secondarySidebar;
-  const activePanelTitle = activePanel === "sort" ? (sortTitle || "Sort") : (secondaryTitle || "Filters");
+  const showCustomPanel = !!customSidebar && activePanel === "custom";
+  const activePanelContent =
+    activePanel === "sort"
+      ? sortSidebar
+      : activePanel === "custom"
+        ? customSidebar
+        : secondarySidebar;
+  const showBackdrop =
+    !!activePanelContent &&
+    (showFilterPanel || showSortPanel || showCustomPanel) &&
+    !(showCustomPanel && customSidebarInteractive);
+  const activePanelTitle =
+    activePanel === "sort"
+      ? (sortTitle || "Sort")
+      : activePanel === "custom"
+        ? (customTitle || "Panel")
+        : (secondaryTitle || "Filters");
 
   return (
     <div className="flex h-screen w-full bg-sidebar overflow-hidden p-2 gap-2">
@@ -126,6 +149,19 @@ const DashboardLayout = ({
             onSortClick={() => setActivePanel((prev) => prev === "sort" ? null : "sort")}
             showSearch={showSearch}
             showBreadcrumb={showBreadcrumb}
+            leftActions={
+              customSidebar ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10"
+                  onClick={() => setActivePanel((prev) => prev === "custom" ? null : "custom")}
+                  title={customTitle || "Open panel"}
+                >
+                  {customActionIcon || <Search className="h-4 w-4 text-white" />}
+                </Button>
+              ) : null
+            }
           >
             {headerActions}
           </Header>
@@ -138,13 +174,15 @@ const DashboardLayout = ({
         </main>
 
         {/* Secondary Sidebar - Floating Filter Panel */}
-        {activePanelContent && (showFilterPanel || showSortPanel) && (
+        {activePanelContent && (showFilterPanel || showSortPanel || showCustomPanel) && (
           <>
             {/* Backdrop behind the floating filter panel, scoped to the main page container (not the left menu) */}
-            <div
-              className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px]"
-              onClick={() => setActivePanel(null)}
-            />
+            {showBackdrop && (
+              <div
+                className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px]"
+                onClick={() => setActivePanel(null)}
+              />
+            )}
 
             {/* Floating panel expanding from header filter button (full height column on left) */}
             <aside className="absolute top-2 bottom-1 left-2 w-[320px] bg-sidebar border border-border rounded-2xl shadow-2xl flex flex-col z-40 animate-in zoom-in-95 fade-in-0 slide-in-from-left-2 duration-200">

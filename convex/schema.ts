@@ -192,9 +192,10 @@ export default defineSchema({
     text_center_bores: v.optional(v.string()),
   })
     .index("by_slug", ["slug"])
-    .index("by_vehicle_title", ["vehicle_title"]),
+    .index("by_vehicle_title", ["vehicle_title"])
+    .index("by_id_str", ["id"]),
 
-  vehicle_variants: defineTable({
+  oem_vehicle_variants: defineTable({
     vehicle_id: v.id("oem_vehicles"),
     slug: v.optional(v.string()),
     variant_title: v.optional(v.string()),
@@ -241,6 +242,7 @@ export default defineSchema({
     wheel_offset: v.optional(v.string()),
     design_style_tags: v.optional(v.array(v.string())),
     text_brands: v.optional(v.string()),
+    jnc_brands: v.optional(v.string()),
     text_widths: v.optional(v.string()),
     text_diameters: v.optional(v.string()),
     text_bolt_patterns: v.optional(v.string()),
@@ -254,7 +256,7 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_wheel_title", ["wheel_title"]),
 
-  wheel_variants: defineTable({
+  oem_wheel_variants: defineTable({
     wheel_id: v.id("oem_wheels"),
     slug: v.optional(v.string()),
     variant_title: v.optional(v.string()),
@@ -294,7 +296,9 @@ export default defineSchema({
     verification_status: v.optional(v.string()),
     created_at: v.optional(v.string()),
     updated_at: v.optional(v.string()),
-  }).index("by_username", ["username"]),
+  })
+    .index("by_username", ["username"])
+    .index("by_profile_id", ["id"]),
 
   user_roles: defineTable({
     user_id: v.string(),
@@ -454,15 +458,15 @@ export default defineSchema({
     .index("by_brand", ["brand_id"])
     .index("by_engine_brand", ["engine_id", "brand_id"]),
 
-  j_vehicle_variant_brand: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_brand: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     brand_id: v.id("oem_brands"),
     variant_title: v.string(),
     brand_title: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_brand", ["brand_id"])
-    .index("by_vehicle_variant_brand", ["variant_id", "brand_id"]),
+    .index("by_oem_vehicle_variant_brand", ["variant_id", "brand_id"]),
 
   j_vehicle_engine: defineTable({
     vehicle_id: v.id("oem_vehicles"),
@@ -474,15 +478,15 @@ export default defineSchema({
     .index("by_engine", ["engine_id"])
     .index("by_vehicle_engine", ["vehicle_id", "engine_id"]),
 
-  j_vehicle_variant_engine: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_engine: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     engine_id: v.id("oem_engines"),
     variant_title: v.string(),
     engine_code: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_engine", ["engine_id"])
-    .index("by_vehicle_variant_engine", ["variant_id", "engine_id"]),
+    .index("by_oem_vehicle_variant_engine", ["variant_id", "engine_id"]),
 
   j_vehicle_body_style: defineTable({
     vehicle_id: v.id("oem_vehicles"),
@@ -494,15 +498,15 @@ export default defineSchema({
     .index("by_body_style", ["body_style_id"])
     .index("by_vehicle_body_style", ["vehicle_id", "body_style_id"]),
 
-  j_vehicle_variant_body_style: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_body_style: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     body_style_id: v.id("oem_body_styles"),
     variant_title: v.string(),
     body_style: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_body_style", ["body_style_id"])
-    .index("by_vehicle_variant_body_style", ["variant_id", "body_style_id"]),
+    .index("by_oem_vehicle_variant_body_style", ["variant_id", "body_style_id"]),
 
   j_vehicle_drive_type: defineTable({
     vehicle_id: v.id("oem_vehicles"),
@@ -514,15 +518,15 @@ export default defineSchema({
     .index("by_drive_type", ["drive_type_id"])
     .index("by_vehicle_drive_type", ["vehicle_id", "drive_type_id"]),
 
-  j_vehicle_variant_drive_type: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_drive_type: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     drive_type_id: v.id("oem_drive_types"),
     variant_title: v.string(),
     drive_type: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_drive_type", ["drive_type_id"])
-    .index("by_vehicle_variant_drive_type", ["variant_id", "drive_type_id"]),
+    .index("by_oem_vehicle_variant_drive_type", ["variant_id", "drive_type_id"]),
 
   j_vehicle_market: defineTable({
     vehicle_id: v.id("oem_vehicles"),
@@ -534,15 +538,15 @@ export default defineSchema({
     .index("by_market", ["market_id"])
     .index("by_vehicle_market", ["vehicle_id", "market_id"]),
 
-  j_vehicle_variant_market: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_market: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     market_id: v.id("oem_markets"),
     variant_title: v.string(),
     market: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_market", ["market_id"])
-    .index("by_vehicle_variant_market", ["variant_id", "market_id"]),
+    .index("by_oem_vehicle_variant_market", ["variant_id", "market_id"]),
 
   j_wheel_market: defineTable({
     wheel_id: v.id("oem_wheels"),
@@ -554,15 +558,15 @@ export default defineSchema({
     .index("by_market", ["market_id"])
     .index("by_wheel_market", ["wheel_id", "market_id"]),
 
-  j_wheel_variant_market: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_market: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     market_id: v.id("oem_markets"),
     variant_title: v.string(),
     market: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_market", ["market_id"])
-    .index("by_wheel_variant_market", ["variant_id", "market_id"]),
+    .index("by_oem_wheel_variant_market", ["variant_id", "market_id"]),
 
   j_part_number_market: defineTable({
     part_number_id: v.id("oem_part_numbers"),
@@ -584,15 +588,15 @@ export default defineSchema({
     .index("by_vehicle", ["vehicle_id"])
     .index("by_wheel_vehicle", ["wheel_id", "vehicle_id"]),
 
-  j_vehicle_variant_wheel_variant: defineTable({
-    vehicle_variant_id: v.id("vehicle_variants"),
-    wheel_variant_id: v.id("wheel_variants"),
+  j_oem_vehicle_variant_wheel_variant: defineTable({
+    vehicle_variant_id: v.id("oem_vehicle_variants"),
+    wheel_variant_id: v.id("oem_wheel_variants"),
     variant_title: v.string(),
     wheel_variant_title: v.string(),
   })
-    .index("by_vehicle_variant", ["vehicle_variant_id"])
-    .index("by_wheel_variant", ["wheel_variant_id"])
-    .index("by_vehicle_variant_wheel_variant", ["vehicle_variant_id", "wheel_variant_id"]),
+    .index("by_oem_vehicle_variant", ["vehicle_variant_id"])
+    .index("by_oem_wheel_variant", ["wheel_variant_id"])
+    .index("by_oem_vehicle_variant_wheel_variant", ["vehicle_variant_id", "wheel_variant_id"]),
 
   // =============================================================================
   // JUNCTION TABLES (Pass 4 of 4) — Measurement junctions
@@ -778,185 +782,185 @@ export default defineSchema({
     .index("by_part_number", ["part_number_id"])
     .index("by_vehicle_part_number", ["vehicle_id", "part_number_id"]),
 
-  j_vehicle_variant_bolt_pattern: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_bolt_pattern: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     bolt_pattern_id: v.id("oem_bolt_patterns"),
     variant_title: v.string(),
     bolt_pattern: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_bolt_pattern", ["bolt_pattern_id"])
-    .index("by_vehicle_variant_bolt_pattern", ["variant_id", "bolt_pattern_id"]),
+    .index("by_oem_vehicle_variant_bolt_pattern", ["variant_id", "bolt_pattern_id"]),
 
-  j_vehicle_variant_center_bore: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_center_bore: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     center_bore_id: v.id("oem_center_bores"),
     variant_title: v.string(),
     center_bore: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_center_bore", ["center_bore_id"])
-    .index("by_vehicle_variant_center_bore", ["variant_id", "center_bore_id"]),
+    .index("by_oem_vehicle_variant_center_bore", ["variant_id", "center_bore_id"]),
 
-  j_vehicle_variant_diameter: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_diameter: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     diameter_id: v.id("oem_diameters"),
     variant_title: v.string(),
     diameter: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_diameter", ["diameter_id"])
-    .index("by_vehicle_variant_diameter", ["variant_id", "diameter_id"]),
+    .index("by_oem_vehicle_variant_diameter", ["variant_id", "diameter_id"]),
 
-  j_vehicle_variant_width: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_width: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     width_id: v.id("oem_widths"),
     variant_title: v.string(),
     width: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_width", ["width_id"])
-    .index("by_vehicle_variant_width", ["variant_id", "width_id"]),
+    .index("by_oem_vehicle_variant_width", ["variant_id", "width_id"]),
 
-  j_vehicle_variant_offset: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_offset: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     offset_id: v.id("oem_offsets"),
     variant_title: v.string(),
     offset: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_offset", ["offset_id"])
-    .index("by_vehicle_variant_offset", ["variant_id", "offset_id"]),
+    .index("by_oem_vehicle_variant_offset", ["variant_id", "offset_id"]),
 
-  j_vehicle_variant_tire_size: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_tire_size: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     tire_size_id: v.id("tire_sizes"),
     variant_title: v.string(),
     tire_size: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_tire_size", ["tire_size_id"])
-    .index("by_vehicle_variant_tire_size", ["variant_id", "tire_size_id"]),
+    .index("by_oem_vehicle_variant_tire_size", ["variant_id", "tire_size_id"]),
 
-  j_vehicle_variant_part_number: defineTable({
-    variant_id: v.id("vehicle_variants"),
+  j_oem_vehicle_variant_part_number: defineTable({
+    variant_id: v.id("oem_vehicle_variants"),
     part_number_id: v.id("oem_part_numbers"),
     variant_title: v.string(),
     part_number: v.string(),
   })
-    .index("by_vehicle_variant", ["variant_id"])
+    .index("by_oem_vehicle_variant", ["variant_id"])
     .index("by_part_number", ["part_number_id"])
-    .index("by_vehicle_variant_part_number", ["variant_id", "part_number_id"]),
+    .index("by_oem_vehicle_variant_part_number", ["variant_id", "part_number_id"]),
 
-  j_wheel_variant_bolt_pattern: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_bolt_pattern: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     bolt_pattern_id: v.id("oem_bolt_patterns"),
     variant_title: v.string(),
     bolt_pattern: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_bolt_pattern", ["bolt_pattern_id"])
-    .index("by_wheel_variant_bolt_pattern", ["variant_id", "bolt_pattern_id"]),
+    .index("by_oem_wheel_variant_bolt_pattern", ["variant_id", "bolt_pattern_id"]),
 
-  j_wheel_variant_center_bore: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_center_bore: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     center_bore_id: v.id("oem_center_bores"),
     variant_title: v.string(),
     center_bore: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_center_bore", ["center_bore_id"])
-    .index("by_wheel_variant_center_bore", ["variant_id", "center_bore_id"]),
+    .index("by_oem_wheel_variant_center_bore", ["variant_id", "center_bore_id"]),
 
-  j_wheel_variant_diameter: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_diameter: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     diameter_id: v.id("oem_diameters"),
     variant_title: v.string(),
     diameter: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_diameter", ["diameter_id"])
-    .index("by_wheel_variant_diameter", ["variant_id", "diameter_id"]),
+    .index("by_oem_wheel_variant_diameter", ["variant_id", "diameter_id"]),
 
-  j_wheel_variant_width: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_width: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     width_id: v.id("oem_widths"),
     variant_title: v.string(),
     width: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_width", ["width_id"])
-    .index("by_wheel_variant_width", ["variant_id", "width_id"]),
+    .index("by_oem_wheel_variant_width", ["variant_id", "width_id"]),
 
-  j_wheel_variant_offset: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_offset: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     offset_id: v.id("oem_offsets"),
     variant_title: v.string(),
     offset: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_offset", ["offset_id"])
-    .index("by_wheel_variant_offset", ["variant_id", "offset_id"]),
+    .index("by_oem_wheel_variant_offset", ["variant_id", "offset_id"]),
 
-  j_wheel_variant_color: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_color: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     color_id: v.id("oem_colors"),
     variant_title: v.string(),
     color: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_color", ["color_id"])
-    .index("by_wheel_variant_color", ["variant_id", "color_id"]),
+    .index("by_oem_wheel_variant_color", ["variant_id", "color_id"]),
 
-  j_wheel_variant_tire_size: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_tire_size: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     tire_size_id: v.id("tire_sizes"),
     variant_title: v.string(),
     tire_size: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_tire_size", ["tire_size_id"])
-    .index("by_wheel_variant_tire_size", ["variant_id", "tire_size_id"]),
+    .index("by_oem_wheel_variant_tire_size", ["variant_id", "tire_size_id"]),
 
-  j_wheel_variant_part_number: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_part_number: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     part_number_id: v.id("oem_part_numbers"),
     variant_title: v.string(),
     part_number: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_part_number", ["part_number_id"])
-    .index("by_wheel_variant_part_number", ["variant_id", "part_number_id"]),
+    .index("by_oem_wheel_variant_part_number", ["variant_id", "part_number_id"]),
 
-  j_wheel_variant_material: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_material: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     material_id: v.id("oem_materials"),
     variant_title: v.string(),
     material: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_material", ["material_id"])
-    .index("by_wheel_variant_material", ["variant_id", "material_id"]),
+    .index("by_oem_wheel_variant_material", ["variant_id", "material_id"]),
 
-  j_wheel_variant_finish_type: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_finish_type: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     finish_type_id: v.id("oem_finish_types"),
     variant_title: v.string(),
     finish_type: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_finish_type", ["finish_type_id"])
-    .index("by_wheel_variant_finish_type", ["variant_id", "finish_type_id"]),
+    .index("by_oem_wheel_variant_finish_type", ["variant_id", "finish_type_id"]),
 
-  j_wheel_variant_design_style: defineTable({
-    variant_id: v.id("wheel_variants"),
+  j_oem_wheel_variant_design_style: defineTable({
+    variant_id: v.id("oem_wheel_variants"),
     design_style_id: v.id("oem_design_styles"),
     variant_title: v.string(),
     design_style: v.string(),
   })
-    .index("by_wheel_variant", ["variant_id"])
+    .index("by_oem_wheel_variant", ["variant_id"])
     .index("by_design_style", ["design_style_id"])
-    .index("by_wheel_variant_design_style", ["variant_id", "design_style_id"]),
+    .index("by_oem_wheel_variant_design_style", ["variant_id", "design_style_id"]),
 
   j_engine_fuel_type: defineTable({
     engine_id: v.id("oem_engines"),
@@ -1000,12 +1004,12 @@ export default defineSchema({
 
   j_registered_vehicle_wheel_variant: defineTable({
     registered_vehicle_id: v.id("user_registered_vehicles"),
-    wheel_variant_id: v.id("wheel_variants"),
+    wheel_variant_id: v.id("oem_wheel_variants"),
     vehicle_title: v.string(),
     variant_title: v.string(),
   })
     .index("by_registered_vehicle", ["registered_vehicle_id"])
-    .index("by_wheel_variant", ["wheel_variant_id"])
+    .index("by_oem_wheel_variant", ["wheel_variant_id"])
     .index("by_registered_vehicle_wheel_variant", ["registered_vehicle_id", "wheel_variant_id"]),
 
   // =============================================================================
@@ -1659,4 +1663,82 @@ export default defineSchema({
     imported_at: v.optional(v.string()),
     data: v.string(),
   }).index("by_status", ["status"]),
+
+  market_listings: defineTable({
+    user_id: v.string(),
+    listing_type: v.string(),
+    wheel_id: v.optional(v.id("oem_wheels")),
+    vehicle_id: v.optional(v.id("oem_vehicles")),
+    brand_id: v.optional(v.id("oem_brands")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    price: v.optional(v.number()),
+    condition: v.optional(v.string()),
+    location: v.optional(v.string()),
+    shipping_available: v.optional(v.boolean()),
+    images: v.optional(v.array(v.string())),
+    documents: v.optional(v.array(v.string())),
+    status: v.optional(v.string()),
+    created_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  })
+    .index("by_user", ["user_id"])
+    .index("by_wheel", ["wheel_id"])
+    .index("by_vehicle", ["vehicle_id"])
+    .index("by_brand", ["brand_id"])
+    .index("by_status", ["status"])
+    .index("by_listing_type", ["listing_type"]),
+
+  // =============================================================================
+  // IMAGE TABLES
+  // =============================================================================
+
+  oem_brand_images: defineTable({
+    brand_id: v.id("oem_brands"),
+    storage_id: v.optional(v.string()),
+    url: v.string(),
+    image_type: v.string(), // e.g. brand, good, bad, hero, gallery
+    sort_order: v.optional(v.number()),
+    is_primary: v.optional(v.boolean()),
+    created_at: v.optional(v.string()),
+  })
+    .index("by_brand", ["brand_id"])
+    .index("by_brand_type", ["brand_id", "image_type"]),
+
+  oem_vehicle_images: defineTable({
+    vehicle_id: v.id("oem_vehicles"),
+    storage_id: v.optional(v.string()),
+    url: v.string(),
+    image_type: v.string(), // e.g. good, bad, hero, gallery
+    sort_order: v.optional(v.number()),
+    is_primary: v.optional(v.boolean()),
+    created_at: v.optional(v.string()),
+  })
+    .index("by_vehicle", ["vehicle_id"])
+    .index("by_vehicle_type", ["vehicle_id", "image_type"]),
+
+  oem_wheel_images: defineTable({
+    wheel_id: v.id("oem_wheels"),
+    storage_id: v.optional(v.string()),
+    url: v.string(),
+    image_type: v.string(), // e.g. good, bad, gallery, reference
+    sort_order: v.optional(v.number()),
+    is_primary: v.optional(v.boolean()),
+    created_at: v.optional(v.string()),
+  })
+    .index("by_wheel", ["wheel_id"])
+    .index("by_wheel_type", ["wheel_id", "image_type"]),
+
+  // =============================================================================
+  // VIRTUAL FILE SYSTEM
+  // =============================================================================
+
+  oem_file_storage: defineTable({
+    path: v.string(), // e.g. "bmw/m3/goodpics/icon.jpg"
+    storageId: v.string(),
+    contentType: v.optional(v.string()),
+    brand_id: v.optional(v.id("oem_brands")),
+    wheel_id: v.optional(v.id("oem_wheels")),
+    vehicle_id: v.optional(v.id("oem_vehicles")),
+  }).index("by_path", ["path"]),
 });

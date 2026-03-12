@@ -38,7 +38,7 @@ export const CollectionSecondarySidebar = ({
     totalResults
 }: CollectionSecondarySidebarProps) => {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
-        Object.fromEntries(filterFields.map(f => [f.category, true]))
+        Object.fromEntries(filterFields.map((f) => [f.category, f.category === "brand"]))
     );
 
     const hasActiveFilters = Object.values(parsedFilters).some(arr => arr && arr.length > 0) || searchTags.length > 0;

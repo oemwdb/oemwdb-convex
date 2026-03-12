@@ -55,3 +55,46 @@ export const migrateWheelImageFromUrl = action({
   },
 });
 
+/**
+ * Download a vehicle image from an existing public URL and re-host it in Convex
+ * storage, updating the vehicle document's URL field.
+ */
+export const migrateVehicleImageFromUrl = action({
+  args: {
+    vehicleId: v.id("oem_vehicles"),
+    sourceUrl: v.string(),
+    field: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { vehicleId, sourceUrl } = args;
+    const field = args.field ?? "good_pic_url";
+
+    if (!/^https?:\/\//i.test(sourceUrl)) {
+      throw new Error(`migrateVehicleImageFromUrl: sourceUrl must be http(s): ${sourceUrl}`);
+    }
+
+    const res = await fetch(sourceUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; OEMWDB-Migration/1.0)",
+        Accept: "image/*,*/*",
+      },
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Failed to fetch image (${res.status} ${res.statusText}) from ${sourceUrl}`
+      );
+    }
+
+    const blob = await res.blob();
+    const storageId = await ctx.storage.store(blob);
+    const convexUrl = await ctx.storage.getUrl(storageId);
+
+    await ctx.runMutation(internal.storageInternal.updateVehicleImageUrl, {
+      vehicleId,
+      field: field as "good_pic_url" | "bad_pic_url",
+      mediaUrl: convexUrl ?? "",
+    });
+
+    return { storageId, convexUrl };
+  },
+});

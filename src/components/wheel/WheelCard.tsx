@@ -178,6 +178,10 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
 
     const imageUrl = effectiveImageUrl && effectiveImageUrl.length > 5 ? effectiveImageUrl : null;
 
+    useEffect(() => {
+        setImageError(false);
+    }, [imageUrl]);
+
     const cardContent = (
         <div
             className={cn(

@@ -3,6 +3,11 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import AppIcon from "@/components/dev/AppIcon";
 import { StatsCard } from "@/components/admin/StatsCard";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Link2,
   FileCode,
   Database,
@@ -17,17 +22,22 @@ import {
   Zap,
   FileEdit,
   Terminal,
-  ScanLine
+  ScanLine,
+  ChevronDown,
 } from "lucide-react";
 
 const DevPage = () => {
-  const { data: brands = [] } = { data: null as any, isLoading: false, error: null };
-  const { data: vehicles = [] } = { data: null as any, isLoading: false, error: null };
-  const { data: wheels = [] } = { data: null as any, isLoading: false, error: null };
+  const { data: brandsData } = { data: null as any, isLoading: false, error: null };
+  const { data: vehiclesData } = { data: null as any, isLoading: false, error: null };
+  const { data: wheelsData } = { data: null as any, isLoading: false, error: null };
+
+  const brands = brandsData ?? [];
+  const vehicles = vehiclesData ?? [];
+  const wheels = wheelsData ?? [];
 
   // Calculate stats
-  const readyWheels = wheels.filter(w => w.status === "Ready for website").length;
-  const needsImageWheels = wheels.filter(w => w.status === "Needs Good Pic").length;
+  const readyWheels = wheels.filter((w: { status?: string }) => w.status === "Ready for website").length;
+  const needsImageWheels = wheels.filter((w: { status?: string }) => w.status === "Needs Good Pic").length;
   const totalBrands = brands.length;
   const totalVehicles = vehicles.length;
 
@@ -42,41 +52,55 @@ const DevPage = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Brands"
-            value={totalBrands}
-            description="Active automotive brands"
-            icon={Package}
-            trend={{ value: 12, isPositive: true }}
-          />
-          <StatsCard
-            title="Total Vehicles"
-            value={totalVehicles}
-            description="Vehicle models in database"
-            icon={Car}
-            trend={{ value: 8, isPositive: true }}
-          />
-          <StatsCard
-            title="Ready Wheels"
-            value={readyWheels}
-            description="Wheels with images"
-            icon={Disc3}
-            trend={{ value: 15, isPositive: true }}
-          />
-          <StatsCard
-            title="Needs Images"
-            value={needsImageWheels}
-            description="Wheels pending photos"
-            icon={Activity}
-            trend={{ value: 5, isPositive: false }}
-          />
-        </div>
+        <Collapsible defaultOpen className="rounded-lg border border-border/50 bg-card/30">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-0 [&[data-state=open]_svg]:rotate-180">
+            <span>Stats Overview</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:ring-2 hover:ring-primary/40">
+              <ChevronDown className="h-5 w-5 transition-transform duration-200" />
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 p-4 pt-0">
+              <StatsCard
+                title="Total Brands"
+                value={totalBrands}
+                description="Active automotive brands"
+                icon={Package}
+                trend={{ value: 12, isPositive: true }}
+              />
+              <StatsCard
+                title="Total Vehicles"
+                value={totalVehicles}
+                description="Vehicle models in database"
+                icon={Car}
+                trend={{ value: 8, isPositive: true }}
+              />
+              <StatsCard
+                title="Ready Wheels"
+                value={readyWheels}
+                description="Wheels with images"
+                icon={Disc3}
+                trend={{ value: 15, isPositive: true }}
+              />
+              <StatsCard
+                title="Needs Images"
+                value={needsImageWheels}
+                description="Wheels pending photos"
+                icon={Activity}
+                trend={{ value: 5, isPositive: false }}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Admin Tools Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Admin Tools</h2>
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <Collapsible defaultOpen className="rounded-lg border border-border/50 bg-card/30">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-semibold text-foreground hover:bg-white/5 transition-colors [&[data-state=open]>svg]:rotate-180">
+            <span>Admin Tools</span>
+            <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 pt-0">
             <AppIcon
               to="/users"
               icon={Users}
@@ -114,13 +138,20 @@ const DevPage = () => {
               label="Registered Vehicles"
               description="User vehicle registry"
             />
-          </div>
-        </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Data Management Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Data Management</h2>
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <Collapsible defaultOpen className="rounded-lg border border-border/50 bg-card/30">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-0 [&[data-state=open]_svg]:rotate-180">
+            <span>Data Management</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:ring-2 hover:ring-primary/40">
+              <ChevronDown className="h-5 w-5 transition-transform duration-200" />
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 pt-0">
             <AppIcon
               to="/dev/garage"
               icon={Package}
@@ -133,13 +164,20 @@ const DevPage = () => {
               label="Relation Maker"
               description="Build data relationships"
             />
-          </div>
-        </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Experimental Content Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Experimental Content</h2>
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <Collapsible defaultOpen className="rounded-lg border border-border/50 bg-card/30">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-0 [&[data-state=open]_svg]:rotate-180">
+            <span>Experimental Content</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:ring-2 hover:ring-primary/40">
+              <ChevronDown className="h-5 w-5 transition-transform duration-200" />
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 pt-0">
             <AppIcon
               to="/dev/vin-decoder"
               icon={ScanLine}
@@ -170,8 +208,9 @@ const DevPage = () => {
               label="Site Map"
               description="Interactive navigation map"
             />
-          </div>
-        </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </DashboardLayout>
   );

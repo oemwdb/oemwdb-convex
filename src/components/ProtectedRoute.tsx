@@ -6,9 +6,14 @@ import { useDevMode } from '@/contexts/DevModeContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  fallbackPath?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requireAdmin = false,
+  fallbackPath = "/",
+}) => {
   const { isLoading, isAuthenticated, isAdmin } = useAuth();
   const { isDevMode } = useDevMode();
 
@@ -25,7 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   }
 
   if (requireAdmin && (!isAdmin || !isDevMode)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <>{children}</>;

@@ -33,6 +33,7 @@ interface HeaderProps {
   showSortButton?: boolean;
   onSortClick?: () => void;
   sortActionIcon?: React.ReactNode;
+  leftActions?: React.ReactNode;
 }
 
 const Header = ({
@@ -60,6 +61,7 @@ const Header = ({
   showSortButton = false,
   onSortClick,
   sortActionIcon,
+  leftActions,
 }: HeaderProps) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [tempSearchValue, setTempSearchValue] = useState("");
@@ -154,6 +156,8 @@ const Header = ({
           {sortActionIcon ? sortActionIcon : <ArrowUpDown className="h-4 w-4 text-white" />}
         </Button>
       )}
+
+      {leftActions}
 
       {/* Search (hidden on collection pages; search lives inside filter panel there) */}
       {showSearch && !isCollectionPage && (

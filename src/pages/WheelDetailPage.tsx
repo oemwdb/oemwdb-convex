@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useWheelByName } from "@/hooks/useWheels";
 import { useParams, Link } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, CircleSlash2, ChevronLeft, Gauge, Palette, MessageSquare } from "lucide-react";
+import { Loader2, CircleSlash2, ChevronLeft, Gauge, Palette, MessageSquare, Package2, DollarSign, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Import our components
 import WheelHeader from "@/components/wheel/WheelHeader";
@@ -23,6 +26,10 @@ const WheelDetailPage = () => {
 
   // Fetch wheel with related vehicles from Convex
   const { data: wheel, isLoading, error } = useWheelByName(wheelName || "");
+  const marketListings = useQuery(
+    api.queries.marketListingsGetByWheel,
+    isDevMode && wheel?._id ? { wheelId: wheel._id } : "skip"
+  );
 
   if (isLoading) {
     return (
@@ -93,6 +100,16 @@ const WheelDetailPage = () => {
       inStock: wheel.status === "Ready for website"
     }
   ];
+
+  const formatPrice = (price: number | null | undefined) => {
+    if (!price) return "Contact for price";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   return (
     <DashboardLayout
@@ -187,9 +204,11 @@ const WheelDetailPage = () => {
             <TabsTrigger value="gallery" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Gallery
             </TabsTrigger>
-            <TabsTrigger value="market" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              Market
-            </TabsTrigger>
+            {isDevMode && (
+              <TabsTrigger value="market" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Market
+              </TabsTrigger>
+            )}
             <TabsTrigger value="coolboard" className="text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Cool Board
             </TabsTrigger>
@@ -224,25 +243,104 @@ const WheelDetailPage = () => {
             </TabsContent>
 
             {/* Market content */}
-            <TabsContent value="market" className="mt-0">
-              <Card className="p-8 bg-muted/30 border-dashed">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
-                    <Package2 className="h-10 w-10 text-primary/50" />
+            {isDevMode && (
+              <TabsContent value="market" className="mt-0">
+                {marketListings === undefined ? (
+                  <Card className="p-8 bg-muted/30">
+                    <div className="text-center space-y-3">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary/60" />
+                      <p className="text-muted-foreground">Loading wheel listings...</p>
+                    </div>
+                  </Card>
+                ) : marketListings.length === 0 ? (
+                  <Card className="p-8 bg-muted/30 border-dashed">
+                    <div className="text-center space-y-4">
+                      <div className="w-20 h-20 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
+                        <Package2 className="h-10 w-10 text-primary/50" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold mb-2">No linked listings yet</h3>
+                        <p className="text-muted-foreground max-w-md mx-auto">
+                          No marketplace listings are currently tagged to {wheel.wheel_name}.
+                        </p>
+                      </div>
+                      <Button asChild variant="outline" className="mt-4">
+                        <Link to="/market">Browse Marketplace</Link>
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {marketListings.map((listing) => (
+                      <Card key={listing._id} className="overflow-hidden border-border/50 hover:border-border transition-all hover:shadow-sm">
+                        <div className="relative aspect-[4/3] bg-muted">
+                          {listing.images && listing.images[0] ? (
+                            <img
+                              src={listing.images[0]}
+                              alt={listing.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Package2 className="h-10 w-10 text-muted-foreground/50" />
+                            </div>
+                          )}
+                          <Badge className="absolute top-2 left-2 text-xs capitalize">
+                            {listing.listing_type}
+                          </Badge>
+                        </div>
+                        <div className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="font-medium line-clamp-2">{listing.title}</h3>
+                              {listing.condition ? (
+                                <p className="text-xs text-muted-foreground mt-1 capitalize">{listing.condition}</p>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-1 text-primary font-semibold whitespace-nowrap">
+                              <DollarSign className="h-4 w-4" />
+                              <span>{formatPrice(listing.price)}</span>
+                            </div>
+                          </div>
+
+                          {(listing.location || listing.shipping_available) && (
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {listing.location ? (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{listing.location}</span>
+                                </div>
+                              ) : null}
+                              {listing.shipping_available ? (
+                                <Badge variant="outline" className="text-xs h-5">Ships</Badge>
+                              ) : null}
+                            </div>
+                          )}
+
+                          {listing.seller_profile ? (
+                            <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={listing.seller_profile.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {listing.seller_profile.username?.[0]?.toUpperCase() || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs text-muted-foreground truncate">
+                                {listing.seller_profile.display_name || listing.seller_profile.username}
+                              </span>
+                            </div>
+                          ) : null}
+
+                          <Button asChild variant="outline" className="w-full">
+                            <Link to={`/market/${listing._id}`}>View Listing</Link>
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">Market Listings</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Browse current market listings for {wheel.wheel_name} wheels.
-                      Find deals from verified sellers and compare prices.
-                    </p>
-                  </div>
-                  <Button variant="outline" className="mt-4">
-                    View All Listings
-                  </Button>
-                </div>
-              </Card>
-            </TabsContent>
+                )}
+              </TabsContent>
+            )}
 
             {/* Cool Board content */}
             <TabsContent value="coolboard" className="mt-0">

@@ -14,6 +14,7 @@ function parseSpecifications(specifications_json: string | undefined | null) {
 function mapToOemWheel(raw: Record<string, unknown>): OemWheel {
   const brand_name =
     (raw.brand_name as string | undefined) ??
+    (raw.jnc_brands as string | undefined) ??
     (raw.text_brands as string | undefined) ??
     null;
   const diameter =
@@ -39,8 +40,13 @@ function mapToOemWheel(raw: Record<string, unknown>): OemWheel {
 
   return {
     id: (raw.id as string | undefined) ?? (raw._id as string),
+    convexId: raw._id as string | undefined,
     wheel_name: (raw.wheel_title as string | undefined) ?? "",
     brand_name,
+    jnc_brands:
+      (raw.jnc_brands as string | undefined) ??
+      (raw.text_brands as string | undefined) ??
+      null,
     diameter,
     width,
     bolt_pattern,
@@ -71,14 +77,26 @@ function mapToOemWheel(raw: Record<string, unknown>): OemWheel {
   };
 }
 
-export function useWheels() {
-  const data = useQuery(api.queries.wheelsGetAllWithBrands, {});
+const FILTER_PARAM_KEYS = ["brand", "diameter", "width", "boltPattern", "centerBore", "tireSize", "color", "search"] as const;
+
+/** True if the URL has any wheel filter/search params (so we need the full list for client-side filtering). */
+export function hasWheelFilterParams(searchParams: URLSearchParams): boolean {
+  if (searchParams.getAll("search").length > 0) return true;
+  return FILTER_PARAM_KEYS.some((key) => key !== "search" && searchParams.getAll(key).length > 0);
+}
+
+export function useWheels(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  const data = useQuery(
+    api.queries.wheelsGetAllWithBrands,
+    enabled ? {} : "skip"
+  );
 
   const wheels: OemWheel[] = (data ?? []).map((raw) => mapToOemWheel(raw as Record<string, unknown>));
 
   return {
     data: wheels,
-    isLoading: data === undefined,
+    isLoading: enabled && data === undefined,
     error: null as unknown,
     isError: false,
   };
@@ -98,6 +116,7 @@ export function useWheelByName(wheelName: string) {
         id: (data.id ?? data._id) as string,
         brand_name:
           (data.brand_name as string | undefined) ??
+          (data.jnc_brands as string | undefined) ??
           (data.text_brands as string | undefined) ??
           null,
         diameter:
@@ -129,6 +148,57 @@ export function useWheelByName(wheelName: string) {
 
   return {
     data: wheel,
+    isLoading: data === undefined,
+    error: null as unknown,
+    isError: false,
+  };
+}
+
+/** Build filter args for wheelsListOnePageFiltered from URL search params. */
+export function wheelsFilterArgsFromSearchParams(searchParams: URLSearchParams) {
+  const brand = searchParams.getAll("brand").filter(Boolean);
+  const diameter = searchParams.getAll("diameter").filter(Boolean);
+  const width = searchParams.getAll("width").filter(Boolean);
+  const boltPattern = searchParams.getAll("boltPattern").filter(Boolean);
+  const centerBore = searchParams.getAll("centerBore").filter(Boolean);
+  const tireSize = searchParams.getAll("tireSize").filter(Boolean);
+  const color = searchParams.getAll("color").filter(Boolean);
+  const search = searchParams.getAll("search").filter(Boolean);
+  const hasGoodPic = searchParams.getAll("hasGoodPic").filter(Boolean);
+  const hasBadPic = searchParams.getAll("hasBadPic").filter(Boolean);
+  const sortBy = searchParams.get("sortBy")?.trim();
+  return {
+    ...(brand.length ? { brand } : {}),
+    ...(diameter.length ? { diameter } : {}),
+    ...(width.length ? { width } : {}),
+    ...(boltPattern.length ? { boltPattern } : {}),
+    ...(centerBore.length ? { centerBore } : {}),
+    ...(tireSize.length ? { tireSize } : {}),
+    ...(color.length ? { color } : {}),
+    ...(search.length ? { search } : {}),
+    ...(hasGoodPic.length ? { hasGoodPic } : {}),
+    ...(hasBadPic.length ? { hasBadPic } : {}),
+    ...(sortBy ? { sortBy } : {}),
+  };
+}
+
+/** Single page of wheels. Uses filtered query when URL has filters, otherwise simple pagination. */
+export function useWheelsPage(
+  pageNumber: number,
+  pageSize: number,
+  filterArgs: ReturnType<typeof wheelsFilterArgsFromSearchParams>
+) {
+  const data = useQuery(
+    api.queries.wheelsListOnePageFiltered,
+    pageSize > 0 ? { page: pageNumber, pageSize, ...filterArgs } : "skip"
+  );
+  const wheels: OemWheel[] = (data?.page ?? []).map((raw) => mapToOemWheel(raw as Record<string, unknown>));
+  return {
+    data: wheels,
+    pageNumber: (data as { pageNumber?: number } | undefined)?.pageNumber ?? pageNumber,
+    pageSize: (data as { pageSize?: number } | undefined)?.pageSize ?? pageSize,
+    totalCount: (data as { totalCount?: number | null } | undefined)?.totalCount ?? 0,
+    totalPages: (data as { totalPages?: number } | undefined)?.totalPages ?? 1,
     isLoading: data === undefined,
     error: null as unknown,
     isError: false,

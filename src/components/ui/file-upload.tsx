@@ -13,6 +13,7 @@ interface FileUploadProps {
   onRemove: (index: number) => void;
   label?: string;
   className?: string;
+  showRemove?: boolean;
 }
 
 export function FileUpload({
@@ -23,7 +24,8 @@ export function FileUpload({
   uploadedFiles,
   onRemove,
   label = "Upload files",
-  className
+  className,
+  showRemove = true,
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -215,15 +217,17 @@ export function FileUpload({
                   </div>
                 )}
 
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="destructive"
-                  className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onRemove(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {showRemove ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => onRemove(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
             );
           })}

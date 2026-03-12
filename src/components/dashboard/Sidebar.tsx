@@ -6,12 +6,12 @@ import {
   Car,
   CircleDot,
   Gauge,
-  Terminal,
+  LayoutDashboard,
   Database,
-  Eye,
   LogIn,
   LogOut,
   Settings,
+  Terminal,
   UserCircle2,
   UserPlus
 } from "lucide-react";
@@ -27,17 +27,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
 const Sidebar = ({
   className,
   onHoverChange,
@@ -61,12 +50,6 @@ const Sidebar = ({
   const showAdminUi = isAdmin && isDevMode;
   const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const perspectiveLabel = perspective === "dev"
-    ? "Development Mode"
-    : perspective === "user"
-      ? "User Perspective"
-      : "Basic Perspective";
 
   const toggleSidebar = () => {
     setIsExpanded((prev) => {
@@ -110,6 +93,7 @@ const Sidebar = ({
     { icon: Car, label: "Vehicles", path: "/vehicles", adminOnly: false },
     { icon: CircleDot, label: "Wheels", path: "/wheels", adminOnly: false },
     { icon: Gauge, label: "Engines", path: "/engines", adminOnly: false },
+    { icon: LayoutDashboard, label: "Dev", path: "/dev", adminOnly: true },
     { icon: Database, label: "Buckets", path: "/dev/buckets", adminOnly: true },
     { icon: Terminal, label: "Tables", path: "/dev/tables", adminOnly: true }
   ];
@@ -124,7 +108,9 @@ const Sidebar = ({
     || accountUser?.emailAddresses?.[0]?.emailAddress?.split("@")[0]
     || "Guest";
   const accountEmail = accountUser?.emailAddresses?.[0]?.emailAddress || "Browse in guest mode";
-  const accountImage = accountUser?.imageUrl || "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png";
+  const accountImage = actualIsAuthenticated
+    ? accountUser?.imageUrl
+    : "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png";
   const accountInitials = accountName
     .split(/\s+/)
     .filter(Boolean)
@@ -212,23 +198,64 @@ const Sidebar = ({
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <div className={cn(
-                    "rounded-full border px-3 py-1 text-[11px] font-medium",
-                    actualIsAuthenticated
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-400"
-                  )}>
-                    {actualIsAuthenticated ? "Signed in" : "Guest"}
-                  </div>
-                  {actualIsAuthenticated ? (
-                    <div className={cn(
-                      "rounded-full border px-3 py-1 text-[11px] font-medium",
-                      showAdminUi
-                        ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
-                        : "border-sky-500/20 bg-sky-500/10 text-sky-300"
-                    )}>
-                      {showAdminUi ? "Admin" : "Member"}
+                  {actualIsAuthenticated && canUsePerspectiveSwitcher ? (
+                    <div className="flex items-center gap-1 rounded-full p-0.5 bg-white/5 border border-white/10 w-full">
+                      {(["basic", "user", "dev"] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPerspective(p);
+                          }}
+                          className={cn(
+                            "flex-1 rounded-full px-2 py-1 text-[11px] font-medium transition-all duration-200",
+                            p === "basic" && [
+                              "text-zinc-400",
+                              perspective === "basic"
+                                ? "bg-zinc-500/80 text-white shadow-[0_0_8px_rgba(113,113,122,0.4)]"
+                                : "hover:bg-zinc-500/30 hover:text-zinc-200",
+                            ],
+                            p === "user" && [
+                              "text-sky-400",
+                              perspective === "user"
+                                ? "bg-sky-500/90 text-white shadow-[0_0_8px_rgba(14,165,233,0.4)]"
+                                : "hover:bg-sky-500/30 hover:text-sky-200",
+                            ],
+                            p === "dev" && [
+                              "text-amber-400",
+                              perspective === "dev"
+                                ? "bg-amber-500/90 text-white shadow-[0_0_8px_rgba(245,158,11,0.4)]"
+                                : "hover:bg-amber-500/30 hover:text-amber-200",
+                            ]
+                          )}
+                        >
+                          {p === "basic" ? "Basic" : p === "user" ? "User" : "Dev"}
+                        </button>
+                      ))}
                     </div>
+                  ) : null}
+                {!canUsePerspectiveSwitcher ? (
+                    <>
+                      <div className={cn(
+                        "rounded-full border px-3 py-1 text-[11px] font-medium",
+                        actualIsAuthenticated
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                      )}>
+                        {actualIsAuthenticated ? "Signed in" : "Guest"}
+                      </div>
+                      {actualIsAuthenticated ? (
+                        <div className={cn(
+                          "rounded-full border px-3 py-1 text-[11px] font-medium",
+                          showAdminUi
+                            ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                            : "border-sky-500/20 bg-sky-500/10 text-sky-300"
+                        )}>
+                          {showAdminUi ? "Admin" : "Member"}
+                        </div>
+                      ) : null}
+                    </>
                   ) : null}
                 </div>
               </div>
@@ -237,6 +264,21 @@ const Sidebar = ({
 
               {actualIsAuthenticated ? (
                 <div className="p-2 space-y-1">
+                  {showAdminUi ? (
+                    <Link
+                      to="/dev"
+                      state={{ resetNavigation: true }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/10 text-amber-500/90 hover:text-amber-400"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setIsAccountMenuOpen(false);
+                        startNewHistory("/dev");
+                      }}
+                    >
+                      <LayoutDashboard size={18} className="shrink-0" />
+                      <span>Admin dashboard</span>
+                    </Link>
+                  ) : null}
                   <Link
                     to="/account"
                     state={{ resetNavigation: true }}
@@ -350,72 +392,6 @@ const Sidebar = ({
           })}
         </div>
 
-        {/* Footer */}
-        <div className="p-2 shrink-0">
-          {canUsePerspectiveSwitcher ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                {isExpanded ? (
-                  <button
-                    className={cn(
-                      "flex items-center w-full h-9 px-3 rounded-full text-xs font-medium transition-colors border",
-                      perspective === "dev"
-                        ? "bg-amber-950/30 border-amber-900/50 text-amber-500"
-                        : "bg-transparent border-white/10 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    )}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <Terminal size={14} className="mr-2" />
-                    {perspectiveLabel}
-                    <div className={cn(
-                      "ml-auto w-1.5 h-1.5 rounded-full",
-                      perspective === "dev" ? "bg-amber-500" : perspective === "user" ? "bg-sky-500" : "bg-zinc-500"
-                    )} />
-                  </button>
-                ) : (
-                  <button
-                    className={cn(
-                      "flex items-center justify-center w-full h-10 rounded-full transition-colors",
-                      perspective === "dev"
-                        ? "text-amber-500"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <Terminal size={18} />
-                  </button>
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="end" className="w-56">
-                <DropdownMenuLabel>Perspective</DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={perspective} onValueChange={(value) => setPerspective(value as "dev" | "basic" | "user")}>
-                  <DropdownMenuRadioItem value="dev">
-                    <Terminal className="mr-2 h-4 w-4" />
-                    Dev
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="basic">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Basic
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="user">
-                    <UserCircle2 className="mr-2 h-4 w-4" />
-                    User
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Current: {perspectiveLabel}
-                </DropdownMenuItem>
-                {actualIsAuthenticated && actualUser ? (
-                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    {actualUser.emailAddresses?.[0]?.emailAddress || actualUser.fullName || "Admin account"}
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-        </div>
       </aside>
     </TooltipProvider>
   );

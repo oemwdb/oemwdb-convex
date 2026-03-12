@@ -6,7 +6,14 @@
 import { query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator as basePaginationOptsValidator } from "convex/server";
+
+// Relaxed validator to handle "id": "initial" or "cursor": null from frontend
+export const paginationOptsValidator = v.object({
+  numItems: v.number(),
+  cursor: v.union(v.string(), v.null()),
+  id: v.optional(v.union(v.number(), v.string())),
+});
 
 // =============================================================================
 // OEM BRANDS
@@ -224,10 +231,28 @@ export const vehicleVariantsGetByVehicle = query({
   handler: async (ctx, args) => {
     try {
       const variants = await ctx.db
-        .query("vehicle_variants")
+        .query("oem_vehicle_variants")
         .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", args.vehicleId))
         .collect();
-      return variants.sort(
+      const variantsWithEngines = await Promise.all(
+        variants.map(async (variant) => {
+          const engine = variant.engine_id
+            ? await ctx.db.get(variant.engine_id)
+            : null;
+
+          return {
+            ...variant,
+            engine_title: engine?.engine_title ?? null,
+            engine_code: engine?.engine_code ?? null,
+            power_hp: engine?.power_hp ?? null,
+            displacement_l: engine?.displacement_l ?? null,
+            fuel_type: engine?.fuel_type ?? null,
+            aspiration: engine?.aspiration ?? null,
+          };
+        })
+      );
+
+      return variantsWithEngines.sort(
         (a, b) => (a.year_from ?? 0) - (b.year_from ?? 0)
       );
     } catch {
@@ -274,7 +299,7 @@ export const vehiclesGetByIdFull = query({
       const vehicleId = vehicle._id;
       const [variants, wheelLinks] = await Promise.all([
         ctx.db
-          .query("vehicle_variants")
+          .query("oem_vehicle_variants")
           .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", vehicleId))
           .collect(),
         ctx.db
@@ -620,176 +645,36 @@ function distinctFromVehicleText(
   return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
-/** Filter options for wheels; from junction tables when present, else from wheel text_* fields. */
+/** Filter options for wheels. Returns global facet values, optionally narrowed by selected brands. */
 export const wheelsFilterOptions = query({
-  args: {},
-  handler: async (ctx) => {
-    const wheels = await ctx.db.query("oem_wheels").collect();
-
-    // Brands: via j_wheel_brand -> oem_brands
-    const wheelBrandLinks = await ctx.db.query("j_wheel_brand").collect();
-    const brandIds = [
-      ...new Set(wheelBrandLinks.map((link) => link.brand_id as Id<"oem_brands">)),
-    ];
-    const brandDocs = await Promise.all(
-      brandIds.map((id) => ctx.db.get("oem_brands", id))
-    );
-    let brands = Array.from(
+  args: { brand: v.optional(v.array(v.string())) },
+  handler: async (ctx, args) => {
+    const allWheels = await ctx.db.query("oem_wheels").collect();
+    const brands = Array.from(
       new Set(
-        brandDocs
-          .filter((b): b is NonNullable<typeof b> => b !== null)
-          .map((b) => (b.brand_title as string | undefined) ?? "")
-          .filter((name) => name && name.trim().length > 0)
+        allWheels.flatMap((wheel) => splitSpecValues(wheel.jnc_brands ?? "").map((value) => value.trim()).filter(Boolean))
       )
     ).sort((a, b) => a.localeCompare(b));
-    // Diameters: use all reference values in Convex, then supplement from wheel text/json
-    const diameterDocs = await ctx.db.query("oem_diameters").collect();
-    const diameterSetFromJunction = new Set<string>();
-    for (const d of diameterDocs) {
-      if (!d) continue;
-      const raw = (d.diameter as string | undefined) ?? "";
-      for (const part of splitSpecValuesWithSpaces(raw)) {
-        const n = normalizeDiameterOption(part);
-        if (n) diameterSetFromJunction.add(n);
-      }
-    }
-    let diameters = diameterSetFromJunction.size > 0
-      ? Array.from(diameterSetFromJunction).sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b))
-      : distinctDiametersNormalized(wheels);
 
-    // Widths: use all reference values in Convex, then supplement from wheel text/json
-    const widthDocs = await ctx.db.query("oem_widths").collect();
-    const widthSetFromJunction = new Set<string>();
-    for (const w of widthDocs) {
-      if (!w) continue;
-      const raw = (w.width as string | undefined) ?? "";
-      for (const part of splitSpecValuesWithSpaces(raw)) {
-        const n = normalizeWidthOption(part);
-        if (n) widthSetFromJunction.add(n);
-      }
-    }
-    let widths = widthSetFromJunction.size > 0
-      ? Array.from(widthSetFromJunction).sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b))
-      : distinctWidthsNormalized(wheels);
+    const selectedBrands = (args.brand ?? []).map((brand) => normalizeForMatch(brand)).filter(Boolean);
+    const wheels = allWheels.filter((wheel) => {
+      if (selectedBrands.length === 0) return true;
+      const brandText = normalizeForMatch(wheel.jnc_brands ?? "");
+      return selectedBrands.some((brand) => brandText.includes(brand) || brand.includes(brandText));
+    });
 
-    // Bolt patterns: use all reference values in Convex, then supplement from wheel text/json
-    const boltPatternDocs = await ctx.db.query("oem_bolt_patterns").collect();
-    let boltPatterns = Array.from(
+    const diameters = distinctDiametersNormalized(wheels);
+    const widths = distinctWidthsNormalized(wheels);
+    const boltPatterns = distinctFromWheelText(wheels, "text_bolt_patterns");
+    const centerBores = distinctFromWheelText(wheels, "text_center_bores");
+    const tireSizes = distinctTireSizesNormalized(wheels);
+    const colors = Array.from(
       new Set(
-        boltPatternDocs
-          .filter((bp): bp is NonNullable<typeof bp> => bp !== null)
-          .map((bp) => normalizeBoltPatternOption((bp.bolt_pattern as string | undefined) ?? ""))
-          .filter((val) => val && val.trim().length > 0)
+        distinctFromWheelText(wheels, "text_colors")
+          .map((value) => normalizeColorOption(value))
+          .filter((value): value is string => Boolean(value))
       )
     ).sort((a, b) => a.localeCompare(b));
-    if (boltPatterns.length === 0) boltPatterns = distinctFromWheelText(wheels, "text_bolt_patterns");
-
-    // Center bores: use all reference values in Convex, then supplement from wheel text/json
-    const centerBoreDocs = await ctx.db.query("oem_center_bores").collect();
-    let centerBores = Array.from(
-      new Set(
-        centerBoreDocs
-          .filter((cb): cb is NonNullable<typeof cb> => cb !== null)
-          .map((cb) => normalizeCenterBoreOption((cb.center_bore as string | undefined) ?? ""))
-          .filter((val) => val && val.trim().length > 0)
-      )
-    ).sort((a, b) => parseFloat(a) - parseFloat(b));
-    if (centerBores.length === 0) centerBores = distinctFromWheelText(wheels, "text_center_bores");
-
-    const tireSizeDocs = await ctx.db.query("tire_sizes").collect();
-    let tireSizes = Array.from(
-      new Set(
-        tireSizeDocs
-          .map((t) => normalizeTireSizeOption((t.tire_size as string | undefined) ?? ""))
-          .filter((t) => isValidTireSizeOption(t))
-      )
-    ).sort((a, b) => a.localeCompare(b));
-    if (tireSizes.length === 0) tireSizes = distinctTireSizesNormalized(wheels);
-
-    let colors = [
-      ...new Set(
-        [
-          ...distinctFromWheelText(wheels, "text_colors"),
-          ...(await ctx.db.query("oem_colors").collect())
-            .map((c) => (c.color as string | undefined) ?? "")
-            .filter((c) => c.trim().length > 0 && c.trim().toLowerCase() !== "unknown"),
-        ]
-          .map((c) => normalizeColorOption(c))
-          .filter((c): c is string => Boolean(c))
-      ),
-    ].sort((a, b) => a.localeCompare(b));
-
-    // Fallback: derive options from specifications_json when text_* or junctions are empty
-    const diameterSet = new Set(diameters);
-    const widthSet = new Set(widths);
-    const boltSet = new Set(boltPatterns);
-    const centerBoreSet = new Set(centerBores);
-    const tireSizeSet = new Set(tireSizes);
-    const colorSet = new Set(colors);
-    for (const w of wheels) {
-      let obj: Record<string, unknown> | null = null;
-      const raw = (w.specifications_json as string | undefined) ?? "";
-      if (raw) {
-        try {
-          obj = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          // ignore
-        }
-      }
-      for (const v of specFromJson(obj, "diameter")) {
-        for (const part of splitSpecValuesWithSpaces(v)) {
-          const n = normalizeDiameterOption(part);
-          if (n) diameterSet.add(n);
-        }
-      }
-      for (const v of specFromJson(obj, "width")) {
-        for (const part of splitSpecValuesWithSpaces(v)) {
-          const n = normalizeWidthOption(part);
-          if (n) widthSet.add(n);
-        }
-      }
-      for (const v of specFromJson(obj, "bolt")) boltSet.add(normalizeBoltPatternOption(v));
-      for (const v of specFromJson(obj, "centerBore")) centerBoreSet.add(normalizeCenterBoreOption(v));
-      const rawTireSizes = (w.text_tire_sizes as string | undefined) ?? "";
-      for (const v of splitSpecValues(rawTireSizes)) {
-        const normalized = normalizeTireSizeOption(v);
-        if (isValidTireSizeOption(normalized)) tireSizeSet.add(normalized);
-      }
-      for (const v of specFromJson(obj, "color")) {
-        const normalized = normalizeColorOption(v);
-        if (normalized) colorSet.add(normalized);
-      }
-    }
-    if (diameterSet.size > 0) diameters = Array.from(diameterSet).map((d) => normalizeDiameterOption(d)).filter(isValidDiameterOption);
-    diameters = [...new Set(diameters)].sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b));
-
-    if (widthSet.size > 0) widths = Array.from(widthSet).map((w) => normalizeWidthOption(w)).filter(isValidWidthOption);
-    widths = [...new Set(widths)].sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b));
-
-    if (boltSet.size > 0) boltPatterns = Array.from(boltSet).map((b) => normalizeBoltPatternOption(b)).filter(isValidBoltPatternOption);
-    boltPatterns = [...new Set(boltPatterns)].sort((a, b) => a.localeCompare(b));
-
-    if (centerBoreSet.size > 0) centerBores = Array.from(centerBoreSet).map((c) => normalizeCenterBoreOption(c)).filter(isValidCenterBoreOption);
-    centerBores = [...new Set(centerBores)].sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b));
-
-    if (tireSizeSet.size > 0) tireSizes = Array.from(tireSizeSet).map((t) => normalizeTireSizeOption(t)).filter(isValidTireSizeOption);
-    tireSizes = [...new Set(tireSizes)].sort((a, b) => a.localeCompare(b));
-
-    if (colorSet.size > 0) colors = Array.from(colorSet).sort((a, b) => a.localeCompare(b));
-
-    // Ensure filter is always filled: use common OEM options when no data
-    const COMMON_DIAMETERS = ["17", "18", "19", "20", "21", "22"];
-    const COMMON_WIDTHS = ["7", "7.5", "8", "8.5", "9", "9.5", "10"];
-    const COMMON_BOLT = ["5x100", "5x108", "5x112", "5x114.3", "5x120"];
-    const COMMON_CB = ["64.1", "66.1", "66.6", "72.6"];
-    const COMMON_TIRE_SIZES = ["225/45R17", "235/40R18", "245/40R18", "255/35R19"];
-    const COMMON_COLORS = ["Silver", "Black", "Gunmetal", "Chrome"];
-    if (diameters.length === 0) diameters = COMMON_DIAMETERS;
-    if (widths.length === 0) widths = COMMON_WIDTHS;
-    if (boltPatterns.length === 0) boltPatterns = COMMON_BOLT;
-    if (centerBores.length === 0) centerBores = COMMON_CB;
-    if (tireSizes.length === 0) tireSizes = COMMON_TIRE_SIZES;
-    if (colors.length === 0) colors = COMMON_COLORS;
 
     return {
       brands,
@@ -883,67 +768,71 @@ export const vehiclesFilterOptions = query({
   },
 });
 
+/** Build a map wheel_id -> joined string from junction rows with a string field. */
+function wheelJunctionMap<T extends { wheel_id: Id<"oem_wheels"> }>(
+  rows: T[],
+  getValue: (r: T) => string
+): Record<string, string> {
+  const byWheel: Record<string, Set<string>> = {};
+  for (const r of rows) {
+    const id = r.wheel_id as string;
+    if (!byWheel[id]) byWheel[id] = new Set();
+    const v = (getValue(r) ?? "").trim();
+    if (v) byWheel[id].add(v);
+  }
+  const out: Record<string, string> = {};
+  for (const [id, set] of Object.entries(byWheel)) {
+    out[id] = Array.from(set).join(", ");
+  }
+  return out;
+}
+
 export const wheelsGetAllWithBrands = query({
   args: {},
   handler: async (ctx) => {
     try {
-      const wheels = await ctx.db
-        .query("oem_wheels")
-        .order("asc")
-        .collect();
-      const result = await Promise.all(
-        wheels.map(async (w) => {
-          const [link, diameterLinks, widthLinks, boltLinks, centerBoreLinks, tireSizeLinks, colorLinks] = await Promise.all([
-            ctx.db
-              .query("j_wheel_brand")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .first(),
-            ctx.db
-              .query("j_wheel_diameter")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-            ctx.db
-              .query("j_wheel_width")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-            ctx.db
-              .query("j_wheel_bolt_pattern")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-            ctx.db
-              .query("j_wheel_center_bore")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-            ctx.db
-              .query("j_wheel_tire_size")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-            ctx.db
-              .query("j_wheel_color")
-              .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-              .collect(),
-          ]);
-          const brand = link ? await ctx.db.get("oem_brands", link.brand_id) : null;
-          const diameter = Array.from(new Set(diameterLinks.map((entry) => (entry.diameter ?? "").trim()).filter(Boolean))).join(", ");
-          const width = Array.from(new Set(widthLinks.map((entry) => (entry.width ?? "").trim()).filter(Boolean))).join(", ");
-          const boltPattern = Array.from(new Set(boltLinks.map((entry) => (entry.bolt_pattern ?? "").trim()).filter(Boolean))).join(", ");
-          const centerBore = Array.from(new Set(centerBoreLinks.map((entry) => (entry.center_bore ?? "").trim()).filter(Boolean))).join(", ");
-          const tireSize = Array.from(new Set(tireSizeLinks.map((entry) => (entry.tire_size ?? "").trim()).filter(Boolean))).join(", ");
-          const color = Array.from(new Set(colorLinks.map((entry) => (entry.color ?? "").trim()).filter(Boolean))).join(", ");
-          return {
-            ...w,
-            brand_name: (brand?.brand_title ?? w.text_brands ?? null) as string | null,
-            brand_id: link?.brand_id ?? null,
-            diameter: ((diameter || w.text_diameters) ?? null) as string | null,
-            width: ((width || w.text_widths) ?? null) as string | null,
-            bolt_pattern: ((boltPattern || w.text_bolt_patterns) ?? null) as string | null,
-            center_bore: ((centerBore || w.text_center_bores) ?? null) as string | null,
-            tire_size: ((tireSize || w.text_tire_sizes) ?? null) as string | null,
-            color: ((color || w.text_colors) ?? null) as string | null,
-          };
-        })
-      );
-      return result;
+      const [wheels, brandLinks, diameterRows, widthRows, boltRows, centerBoreRows, tireSizeRows, colorRows] =
+        await Promise.all([
+          ctx.db.query("oem_wheels").order("asc").collect(),
+          ctx.db.query("j_wheel_brand").collect(),
+          ctx.db.query("j_wheel_diameter").collect(),
+          ctx.db.query("j_wheel_width").collect(),
+          ctx.db.query("j_wheel_bolt_pattern").collect(),
+          ctx.db.query("j_wheel_center_bore").collect(),
+          ctx.db.query("j_wheel_tire_size").collect(),
+          ctx.db.query("j_wheel_color").collect(),
+        ]);
+
+      const brandByWheel: Record<string, { brand_id: Id<"oem_brands">; brand_title: string }> = {};
+      for (const link of brandLinks) {
+        const id = link.wheel_id as string;
+        if (!brandByWheel[id] && link.brand_title != null) {
+          brandByWheel[id] = { brand_id: link.brand_id, brand_title: String(link.brand_title).trim() };
+        }
+      }
+
+      const diameterByWheel = wheelJunctionMap(diameterRows, (r) => r.diameter ?? "");
+      const widthByWheel = wheelJunctionMap(widthRows, (r) => r.width ?? "");
+      const boltByWheel = wheelJunctionMap(boltRows, (r) => r.bolt_pattern ?? "");
+      const centerBoreByWheel = wheelJunctionMap(centerBoreRows, (r) => r.center_bore ?? "");
+      const tireSizeByWheel = wheelJunctionMap(tireSizeRows, (r) => r.tire_size ?? "");
+      const colorByWheel = wheelJunctionMap(colorRows, (r) => r.color ?? "");
+
+      return wheels.map((w) => {
+        const wid = w._id as string;
+        const brand = brandByWheel[wid];
+        return {
+          ...w,
+          brand_name: (brand?.brand_title ?? w.jnc_brands ?? null) as string | null,
+          brand_id: brand?.brand_id ?? null,
+          diameter: ((diameterByWheel[wid] || w.text_diameters) ?? null) as string | null,
+          width: ((widthByWheel[wid] || w.text_widths) ?? null) as string | null,
+          bolt_pattern: ((boltByWheel[wid] || w.text_bolt_patterns) ?? null) as string | null,
+          center_bore: ((centerBoreByWheel[wid] || w.text_center_bores) ?? null) as string | null,
+          tire_size: ((tireSizeByWheel[wid] || w.text_tire_sizes) ?? null) as string | null,
+          color: ((colorByWheel[wid] || w.text_colors) ?? null) as string | null,
+        };
+      });
     } catch {
       return [];
     }
@@ -1128,7 +1017,227 @@ export const wheelsGetIdsWithMissingSpecs = query({
   },
 });
 
-/** Paginated wheels list to avoid pulling the full table (saves database bandwidth). */
+/** Single page of wheels for simple pagination (cursor + numItems). Returns raw wheel docs; client uses text_* for display. */
+export const wheelsListOnePage = query({
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+    numItems: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const paginationOpts = { numItems: args.numItems, cursor: args.cursor ?? null };
+    const result = await ctx.db
+      .query("oem_wheels")
+      .order("asc")
+      .paginate(paginationOpts);
+    return {
+      page: result.page,
+      nextCursor: result.continueCursor ?? null,
+      isDone: result.isDone,
+    };
+  },
+});
+
+const filterArgsValidator = {
+  page: v.optional(v.number()),
+  pageSize: v.optional(v.number()),
+  brand: v.optional(v.array(v.string())),
+  diameter: v.optional(v.array(v.string())),
+  width: v.optional(v.array(v.string())),
+  boltPattern: v.optional(v.array(v.string())),
+  centerBore: v.optional(v.array(v.string())),
+  tireSize: v.optional(v.array(v.string())),
+  color: v.optional(v.array(v.string())),
+  search: v.optional(v.array(v.string())),
+  hasGoodPic: v.optional(v.array(v.string())),
+  hasBadPic: v.optional(v.array(v.string())),
+  sortBy: v.optional(v.string()),
+};
+
+function normalizeForMatch(s: string): string {
+  return String(s ?? "")
+    .replace(/×/g, "x")
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .trim();
+}
+
+function normalizeWheelSearchBlob(wheel: {
+  wheel_title?: string | null;
+  jnc_brands?: string | null;
+  text_colors?: string | null;
+  text_diameters?: string | null;
+  text_widths?: string | null;
+  notes?: string | null;
+  specifications_json?: string | null;
+}): string {
+  return normalizeForMatch(
+    [
+      wheel.wheel_title,
+      wheel.jnc_brands,
+      wheel.text_colors,
+      wheel.text_diameters,
+      wheel.text_widths,
+      wheel.notes,
+      wheel.specifications_json,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
+
+function wheelMatchesMultiValueFilter(raw: string | null | undefined, filters: string[], transform?: (s: string) => string): boolean {
+  if (!filters.length) return true;
+  const parts = splitSpecValuesWithSpaces(raw ?? "").map((value) =>
+    transform ? transform(value) : normalizeForMatch(value)
+  );
+  return filters.some((filter) => parts.some((part) => part.includes(filter) || filter.includes(part)));
+}
+
+function getWheelSortValue(
+  wheel: {
+    wheel_title?: string | null;
+    jnc_brands?: string | null;
+    text_diameters?: string | null;
+  },
+  sortBy: string
+): string | number {
+  switch (sortBy) {
+    case "nameAsc":
+    case "nameDesc":
+      return (wheel.wheel_title ?? "").toLowerCase();
+    case "brandDesc":
+    case "brandAsc":
+      return (wheel.jnc_brands ?? "").toLowerCase();
+    case "diameterAsc":
+    case "diameterDesc": {
+      const first = splitSpecValuesWithSpaces(wheel.text_diameters ?? "")[0] ?? "";
+      const normalized = normalizeDiameterOption(first);
+      return normalized ? parseFloat(normalized) : 0;
+    }
+    default:
+      return (wheel.jnc_brands ?? "").toLowerCase();
+  }
+}
+
+/** Single page of wheels with optional filters; queries full dataset server-side. 40 per page, cursor-based. */
+export const wheelsListOnePageFiltered = query({
+  args: filterArgsValidator,
+  handler: async (ctx, args) => {
+    const page = Math.max(1, Math.floor(args.page ?? 1));
+    const pageSize = Math.min(Math.max(1, Math.floor(args.pageSize ?? 24)), 100);
+    const hasBrand = (args.brand?.length ?? 0) > 0;
+    const hasDiameter = (args.diameter?.length ?? 0) > 0;
+    const hasWidth = (args.width?.length ?? 0) > 0;
+    const hasBolt = (args.boltPattern?.length ?? 0) > 0;
+    const hasCenterBore = (args.centerBore?.length ?? 0) > 0;
+    const hasTireSize = (args.tireSize?.length ?? 0) > 0;
+    const hasColor = (args.color?.length ?? 0) > 0;
+    const hasSearch = (args.search?.length ?? 0) > 0;
+    const hasGoodPicFilter = (args.hasGoodPic?.length ?? 0) > 0;
+    const hasBadPicFilter = (args.hasBadPic?.length ?? 0) > 0;
+    const sortBy = args.sortBy ?? "brandAsc";
+    const needsServerProcessing =
+      hasBrand ||
+      hasDiameter ||
+      hasWidth ||
+      hasBolt ||
+      hasCenterBore ||
+      hasTireSize ||
+      hasColor ||
+      hasSearch ||
+      hasGoodPicFilter ||
+      hasBadPicFilter ||
+      sortBy !== "brandAsc";
+
+    const brandFilters = (args.brand ?? []).map((value) => normalizeForMatch(value)).filter(Boolean);
+    const diameterFilters = (args.diameter ?? [])
+      .map((value) => normalizeDiameterOption(value))
+      .filter((value): value is string => Boolean(value))
+      .map((value) => normalizeForMatch(value));
+    const widthFilters = (args.width ?? [])
+      .map((value) => normalizeWidthOption(value))
+      .filter((value): value is string => Boolean(value))
+      .map((value) => normalizeForMatch(value));
+    const boltFilters = (args.boltPattern ?? []).map((value) => normalizeForMatch(value)).filter(Boolean);
+    const centerBoreFilters = (args.centerBore ?? [])
+      .map((value) => normalizeCenterBoreOption(value))
+      .filter((value): value is string => Boolean(value))
+      .map((value) => normalizeForMatch(value));
+    const tireFilters = (args.tireSize ?? [])
+      .map((value) => normalizeTireSizeOption(value))
+      .filter((value) => isValidTireSizeOption(value))
+      .map((value) => normalizeForMatch(value));
+    const colorFilters = (args.color ?? [])
+      .map((value) => normalizeColorOption(value))
+      .filter((value): value is string => Boolean(value))
+      .map((value) => normalizeForMatch(value));
+    const searchFilters = (args.search ?? []).map((value) => normalizeForMatch(value)).filter(Boolean);
+
+    const allWheels = await ctx.db.query("oem_wheels").collect();
+    const filteredWheels = allWheels.filter((wheel) => {
+      if (brandFilters.length > 0) {
+        const brandText = normalizeForMatch(wheel.jnc_brands ?? "");
+        if (!brandFilters.some((filter) => brandText.includes(filter) || filter.includes(brandText))) return false;
+      }
+      if (!wheelMatchesMultiValueFilter(wheel.text_diameters, diameterFilters, (value) => normalizeForMatch(normalizeDiameterOption(value)))) return false;
+      if (!wheelMatchesMultiValueFilter(wheel.text_widths, widthFilters, (value) => normalizeForMatch(normalizeWidthOption(value)))) return false;
+      if (!wheelMatchesMultiValueFilter(wheel.text_bolt_patterns, boltFilters, (value) => normalizeForMatch(value))) return false;
+      if (!wheelMatchesMultiValueFilter(wheel.text_center_bores, centerBoreFilters, (value) => normalizeForMatch(normalizeCenterBoreOption(value)))) return false;
+      if (!wheelMatchesMultiValueFilter(wheel.text_tire_sizes, tireFilters, (value) => normalizeForMatch(normalizeTireSizeOption(value)))) return false;
+      if (!wheelMatchesMultiValueFilter(wheel.text_colors, colorFilters, (value) => normalizeForMatch(normalizeColorOption(value) ?? ""))) return false;
+      if (searchFilters.length > 0) {
+        const blob = normalizeWheelSearchBlob(wheel);
+        if (!searchFilters.some((filter) => blob.includes(filter))) return false;
+      }
+      if ((args.hasGoodPic ?? []).includes("Yes") && !(wheel.good_pic_url ?? "").trim()) return false;
+      if ((args.hasGoodPic ?? []).includes("No") && (wheel.good_pic_url ?? "").trim()) return false;
+      if ((args.hasBadPic ?? []).includes("Yes") && !(wheel.bad_pic_url ?? "").trim()) return false;
+      if ((args.hasBadPic ?? []).includes("No") && (wheel.bad_pic_url ?? "").trim()) return false;
+      return true;
+    });
+
+    const sortedWheels = [...filteredWheels].sort((a, b) => {
+      const aVal = getWheelSortValue(a, sortBy);
+      const bVal = getWheelSortValue(b, sortBy);
+      const aTitle = (a.wheel_title ?? "").toLowerCase();
+      const bTitle = (b.wheel_title ?? "").toLowerCase();
+      switch (sortBy) {
+        case "nameDesc":
+          return String(bVal).localeCompare(String(aVal)) || aTitle.localeCompare(bTitle);
+        case "brandDesc":
+          return String(bVal).localeCompare(String(aVal)) || aTitle.localeCompare(bTitle);
+        case "diameterDesc":
+          return Number(bVal) - Number(aVal) || aTitle.localeCompare(bTitle);
+        case "nameAsc":
+        case "brandAsc":
+          return String(aVal).localeCompare(String(bVal)) || aTitle.localeCompare(bTitle);
+        case "diameterAsc":
+          return Number(aVal) - Number(bVal) || aTitle.localeCompare(bTitle);
+        default:
+          return String(aVal).localeCompare(String(bVal)) || aTitle.localeCompare(bTitle);
+      }
+    });
+
+    const totalCount = sortedWheels.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageDocs = sortedWheels.slice(startIndex, endIndex);
+    return {
+      page: pageDocs,
+      pageNumber: safePage,
+      pageSize,
+      totalCount,
+      totalPages,
+    };
+  },
+});
+
+/** Paginated wheels list — fast version.
+ *  Specs come from text_* fields embedded on the document (no junction lookups needed).
+ *  Brand name is resolved via a single indexed j_wheel_brand lookup per wheel (all in parallel).
+ */
 export const wheelsListPaginated = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
@@ -1136,64 +1245,41 @@ export const wheelsListPaginated = query({
       .query("oem_wheels")
       .order("asc")
       .paginate(args.paginationOpts);
-    const page = await Promise.all(
-      result.page.map(async (w) => {
-        const [link, diameterLinks, widthLinks, boltLinks, centerBoreLinks, tireSizeLinks, colorLinks] = await Promise.all([
-          ctx.db
-            .query("j_wheel_brand")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .first(),
-          ctx.db
-            .query("j_wheel_diameter")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-          ctx.db
-            .query("j_wheel_width")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-          ctx.db
-            .query("j_wheel_bolt_pattern")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-          ctx.db
-            .query("j_wheel_center_bore")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-          ctx.db
-            .query("j_wheel_tire_size")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-          ctx.db
-            .query("j_wheel_color")
-            .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
-            .collect(),
-        ]);
-        const brand = link ? await ctx.db.get("oem_brands", link.brand_id) : null;
-        const diameter = Array.from(new Set(diameterLinks.map((entry) => (entry.diameter ?? "").trim()).filter(Boolean))).join(", ");
-        const width = Array.from(new Set(widthLinks.map((entry) => (entry.width ?? "").trim()).filter(Boolean))).join(", ");
-        const boltPattern = Array.from(new Set(boltLinks.map((entry) => (entry.bolt_pattern ?? "").trim()).filter(Boolean))).join(", ");
-        const centerBore = Array.from(new Set(centerBoreLinks.map((entry) => (entry.center_bore ?? "").trim()).filter(Boolean))).join(", ");
-        const tireSize = Array.from(new Set(tireSizeLinks.map((entry) => (entry.tire_size ?? "").trim()).filter(Boolean))).join(", ");
-        const color = Array.from(new Set(colorLinks.map((entry) => (entry.color ?? "").trim()).filter(Boolean))).join(", ");
-        return {
-          ...w,
-          brand_name: (brand?.brand_title ?? w.text_brands ?? null) as string | null,
-          brand_id: link?.brand_id ?? null,
-          diameter: ((diameter || w.text_diameters) ?? null) as string | null,
-          width: ((width || w.text_widths) ?? null) as string | null,
-          bolt_pattern: ((boltPattern || w.text_bolt_patterns) ?? null) as string | null,
-          center_bore: ((centerBore || w.text_center_bores) ?? null) as string | null,
-          tire_size: ((tireSize || w.text_tire_sizes) ?? null) as string | null,
-          color: ((color || w.text_colors) ?? null) as string | null,
-        };
-      })
+
+    const wheels = result.page;
+    if (wheels.length === 0) return { ...result, page: [] };
+
+    // One brand link per wheel (indexed — reads only 1 row per wheel)
+    const brandLinks = await Promise.all(
+      wheels.map((w) =>
+        ctx.db
+          .query("j_wheel_brand")
+          .withIndex("by_wheel", (q) => q.eq("wheel_id", w._id))
+          .first()
+      )
     );
-    return {
-      ...result,
-      page,
-    };
+
+    const page = wheels.map((w, i) => {
+      const link = brandLinks[i];
+      return {
+        ...w,
+        brand_name: ((link?.brand_title as string | undefined) ?? w.jnc_brands ?? null) as string | null,
+        brand_id: link?.brand_id ?? null,
+        // Specs come straight from the document text_* fields
+        diameter: (w.text_diameters ?? null) as string | null,
+        width: (w.text_widths ?? null) as string | null,
+        bolt_pattern: (w.text_bolt_patterns ?? null) as string | null,
+        center_bore: (w.text_center_bores ?? null) as string | null,
+        tire_size: (w.text_tire_sizes ?? null) as string | null,
+        color: (w.text_colors ?? null) as string | null,
+      };
+    });
+
+    return { ...result, page };
   },
 });
+
+
 
 export const wheelsGetById = query({
   args: { id: v.string() },
@@ -1303,10 +1389,10 @@ export const wheelsGetByIdFull = query({
             .withIndex("by_slug", (q) => q.eq("slug", args.id))
             .first();
         }
-        // 5. Try wheel_variants.by_slug (slug may live on variant)
+        // 5. Try oem_wheel_variants.by_slug (slug may live on variant)
         if (!wheel) {
           const variant = await ctx.db
-            .query("wheel_variants")
+            .query("oem_wheel_variants")
             .withIndex("by_slug", (q) => q.eq("slug", args.id))
             .first();
           if (variant) {
@@ -1361,7 +1447,7 @@ export const wheelsGetByIdFull = query({
         ...wheel,
         id: wheel.id ?? String(wheel._id),
         wheel_name: wheel.wheel_title ?? "",
-        brand_name: brand?.brand_title ?? wheel.text_brands ?? null,
+        brand_name: brand?.brand_title ?? wheel.jnc_brands ?? null,
         diameter: (wheel.text_diameters ?? null) as string | null,
         width: (wheel.text_widths ?? null) as string | null,
         bolt_pattern: (wheel.text_bolt_patterns ?? null) as string | null,
@@ -1860,6 +1946,49 @@ export const userListingsGetByUser = query({
   },
 });
 
+export const marketListingsGetByWheel = query({
+  args: { wheelId: v.id("oem_wheels") },
+  handler: async (ctx, args) => {
+    try {
+      const listings = await ctx.db
+        .query("market_listings")
+        .withIndex("by_wheel", (q) => q.eq("wheel_id", args.wheelId))
+        .collect();
+
+      const activeListings = listings
+        .filter((listing) => (listing.status ?? "active") === "active")
+        .sort((a, b) => {
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bTime - aTime;
+        });
+
+      return await Promise.all(
+        activeListings.map(async (listing) => {
+          const sellerProfile = await ctx.db
+            .query("profiles")
+            .withIndex("by_profile_id", (q) => q.eq("id", listing.user_id))
+            .first();
+
+          return {
+            ...listing,
+            seller_profile: sellerProfile
+              ? {
+                  username: sellerProfile.username,
+                  display_name: sellerProfile.display_name ?? null,
+                  avatar_url: sellerProfile.avatar_url ?? null,
+                  verification_status: sellerProfile.verification_status ?? "unverified",
+                }
+              : null,
+          };
+        })
+      );
+    } catch {
+      return [];
+    }
+  },
+});
+
 // =============================================================================
 // PUBLIC PROFILE
 // =============================================================================
@@ -2147,6 +2276,72 @@ export const getWsRows = query({
         case "ws_fiat_wheel_variants":
           rows = (await ctx.db.query("ws_fiat_wheel_variants").collect()) as WsRow[];
           break;
+        case "ws_mercedes_vehicle_variants":
+          rows = (await ctx.db.query("ws_mercedes_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_porsche_vehicle_variants":
+          rows = (await ctx.db.query("ws_porsche_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_audi_vehicle_variants":
+          rows = (await ctx.db.query("ws_audi_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_vw_vehicle_variants":
+          rows = (await ctx.db.query("ws_vw_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_lamborghini_vehicle_variants":
+          rows = (await ctx.db.query("ws_lamborghini_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_ferrari_vehicle_variants":
+          rows = (await ctx.db.query("ws_ferrari_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_jaguar_vehicle_variants":
+          rows = (await ctx.db.query("ws_jaguar_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_land_rover_vehicle_variants":
+          rows = (await ctx.db.query("ws_land_rover_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_944racing_vehicle_variants":
+          rows = (await ctx.db.query("ws_944racing_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_alfa_romeo_vehicle_variants":
+          rows = (await ctx.db.query("ws_alfa_romeo_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_fiat_vehicle_variants":
+          rows = (await ctx.db.query("ws_fiat_vehicle_variants").collect()) as WsRow[];
+          break;
+        case "ws_mercedes_vehicles":
+          rows = (await ctx.db.query("ws_mercedes_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_porsche_vehicles":
+          rows = (await ctx.db.query("ws_porsche_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_audi_vehicles":
+          rows = (await ctx.db.query("ws_audi_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_vw_vehicles":
+          rows = (await ctx.db.query("ws_vw_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_lamborghini_vehicles":
+          rows = (await ctx.db.query("ws_lamborghini_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_ferrari_vehicles":
+          rows = (await ctx.db.query("ws_ferrari_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_jaguar_vehicles":
+          rows = (await ctx.db.query("ws_jaguar_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_land_rover_vehicles":
+          rows = (await ctx.db.query("ws_land_rover_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_944racing_vehicles":
+          rows = (await ctx.db.query("ws_944racing_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_alfa_romeo_vehicles":
+          rows = (await ctx.db.query("ws_alfa_romeo_vehicles").collect()) as WsRow[];
+          break;
+        case "ws_fiat_vehicles":
+          rows = (await ctx.db.query("ws_fiat_vehicles").collect()) as WsRow[];
+          break;
         case "ws_944racing_junction_vehicles_wheels":
           rows = (await ctx.db.query("ws_944racing_junction_vehicles_wheels").collect()) as WsRow[];
           break;
@@ -2408,7 +2603,7 @@ export const migrationAudit = query({
           _id: w._id,
           id: w.id,
           wheel_title: w.wheel_title,
-          text_brands: w.text_brands,
+          jnc_brands: w.jnc_brands,
         })),
         wheelsMissingTitle: wheelsMissingTitle.slice(0, 5).map((w) => ({
           _id: w._id,
@@ -2508,7 +2703,7 @@ const WHEEL_FIELDS = [
   { key: "metal_type", label: "Metal type", required: false },
   { key: "color", label: "Color", required: false },
   { key: "wheel_offset", label: "Offset", required: false },
-  { key: "text_brands", label: "Text brands (or j_wheel_brand)", required: false },
+  { key: "jnc_brands", label: "Junction brands (from j_wheel_brand)", required: false },
   { key: "text_diameters", label: "Text diameters", required: false },
   { key: "text_widths", label: "Text widths", required: false },
   { key: "text_bolt_patterns", label: "Text bolt patterns", required: false },
@@ -2578,8 +2773,8 @@ export const fullDataAudit = query({
 
     const wheelRows: { field: string; label: string; required: boolean; total: number; missing: number; sampleIds: string[] }[] = [];
     for (const f of WHEEL_FIELDS) {
-      if (f.key === "text_brands") {
-        const missing = wheels.filter((w) => !wheelHasBrand.has(w._id) && isEmpty((w as Record<string, unknown>).text_brands));
+      if (f.key === "jnc_brands") {
+        const missing = wheels.filter((w) => !wheelHasBrand.has(w._id) && isEmpty((w as Record<string, unknown>).jnc_brands));
         wheelRows.push({
           field: f.key,
           label: f.label,
@@ -2628,9 +2823,9 @@ export const fullDataAudit = query({
 
     const wheelTodo = wheels
       .map((w) => {
-        const hasBrand = wheelHasBrand.has(w._id) || !isEmpty((w as Record<string, unknown>).text_brands);
+        const hasBrand = wheelHasBrand.has(w._id) || !isEmpty((w as Record<string, unknown>).jnc_brands);
         const missing = WHEEL_FIELDS.filter((f) => {
-          if (f.key === "text_brands") return !hasBrand;
+          if (f.key === "jnc_brands") return !hasBrand;
           return isEmpty((w as Record<string, unknown>)[f.key]);
         }).map((f) => f.key);
         return {
@@ -2663,9 +2858,9 @@ export const fullDataAudit = query({
           });
         }).length,
         wheels: wheels.filter((w) => {
-          const hasBrand = wheelHasBrand.has(w._id) || !isEmpty((w as Record<string, unknown>).text_brands);
+          const hasBrand = wheelHasBrand.has(w._id) || !isEmpty((w as Record<string, unknown>).jnc_brands);
           return WHEEL_FIELDS.some((f) => {
-            if (f.key === "text_brands") return !hasBrand;
+            if (f.key === "jnc_brands") return !hasBrand;
             return isEmpty((w as Record<string, unknown>)[f.key]);
           });
         }).length,

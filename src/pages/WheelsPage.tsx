@@ -1,29 +1,46 @@
 import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import WheelsGrid from "@/components/wheel/WheelsGrid";
+import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
-import { AdBar } from "@/components/AdBar";
-import { CircleSlash2, Loader2 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { CircleSlash2, Loader2, Shield } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { parseFilterString, ParsedFilters } from "@/utils/filterParser";
-import { usePaginatedWheels, useWheels } from "@/hooks/useWheels";
+import { ParsedFilters } from "@/utils/filterParser";
+import { useWheelsPage, wheelsFilterArgsFromSearchParams } from "@/hooks/useWheels";
 import { useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
+import { useDevMode } from "@/hooks/useDevMode";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
 
 const LOAD_TIMEOUT_MS = 12_000;
 const ROWS_PER_LOAD = 3;
-/** Delay before loading next batch so it doesn't feel instant. */
-const LOAD_MORE_DELAY_MS = 450;
-/** Cooldown between load-more triggers so rapid scroll doesn't blast through. */
-const LOAD_MORE_COOLDOWN_MS = 1200;
 
-const getNumberFromText = (value?: string | null) => {
-  const match = String(value ?? "").match(/\d+(?:\.\d+)?/);
-  return match ? parseFloat(match[0]) : 0;
-};
+function findScrollParent(element: HTMLElement | null): HTMLElement | null {
+  let current = element?.parentElement ?? null;
+  while (current) {
+    const { overflowY } = window.getComputedStyle(current);
+    if ((overflowY === "auto" || overflowY === "scroll") && current.scrollHeight > current.clientHeight) {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : null;
+}
 
 const WheelsPage = () => {
   const columns = useWheelsGridColumns();
@@ -32,23 +49,43 @@ const WheelsPage = () => {
   const [parsedFilters, setParsedFilters] = useState<ParsedFilters>({});
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("brandAsc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageInputValue, setPageInputValue] = useState("1");
+  const [isEditingPageNumber, setIsEditingPageNumber] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
-  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
-  const lastLoadMoreTimeRef = useRef(0);
-  const loadMoreTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const itemsPerLoadRef = useRef(itemsPerLoad);
-  itemsPerLoadRef.current = itemsPerLoad;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const pageInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isDevMode } = useDevMode();
+  const { isAdmin } = useAuth();
+  const showAdminTools = isAdmin && isDevMode;
+  const mergeWheels = useMutation(api.collectionMerges.mergeWheels);
+  const duplicateControl = useCollectionDuplicateControl({
+    itemLabel: "wheels",
+    onMerge: ({ canonicalId, duplicateIds }) =>
+      mergeWheels({
+        canonicalId: canonicalId as Id<"oem_wheels">,
+        duplicateIds: duplicateIds as Id<"oem_wheels">[],
+      }),
+  });
+  const filterArgs = {
+    ...wheelsFilterArgsFromSearchParams(searchParams),
+    sortBy,
+  };
 
-  const { data: wheels, isLoading, error, status, loadMore } = usePaginatedWheels(itemsPerLoad);
-  const { data: allWheels, isLoading: isAllWheelsLoading } = useWheels();
-  const isInitialLoading = status === "LoadingFirstPage";
-  const loadMoreRef = useRef(loadMore);
-  loadMoreRef.current = loadMore;
+  const { data: wheels, isLoading, error, totalCount, totalPages, pageNumber } = useWheelsPage(
+    currentPage,
+    itemsPerLoad,
+    filterArgs
+  );
+  const isInitialLoading = isLoading && wheels.length === 0;
 
   // Filter facet options derived from Convex junction tables
-  const filterOptions = useQuery(api.queries.wheelsFilterOptions, {}) ?? {
+  const selectedBrands = searchParams.getAll("brand").filter(Boolean);
+  const filterOptions = useQuery(api.queries.wheelsFilterOptions, {
+    ...(selectedBrands.length > 0 ? { brand: selectedBrands } : {}),
+  }) ?? {
     brands: [] as string[],
     diameters: [] as string[],
     widths: [] as string[],
@@ -59,13 +96,13 @@ const WheelsPage = () => {
   };
 
   useEffect(() => {
-    if (!isInitialLoading) {
+    if (!isLoading) {
       setLoadTimedOut(false);
       return;
     }
     const t = setTimeout(() => setLoadTimedOut(true), LOAD_TIMEOUT_MS);
     return () => clearTimeout(t);
-  }, [isInitialLoading]);
+  }, [isLoading]);
 
   // Initialize search and parsed filters from URL params
   useEffect(() => {
@@ -87,6 +124,10 @@ const WheelsPage = () => {
     if (tireSizes.length > 0) newParsedFilters.tireSize = tireSizes;
     const colors = searchParams.getAll('color');
     if (colors.length > 0) newParsedFilters.color = colors;
+    const hasGoodPic = searchParams.getAll('hasGoodPic');
+    if (hasGoodPic.length > 0) newParsedFilters.hasGoodPic = hasGoodPic;
+    const hasBadPic = searchParams.getAll('hasBadPic');
+    if (hasBadPic.length > 0) newParsedFilters.hasBadPic = hasBadPic;
 
     setParsedFilters(newParsedFilters);
   }, [searchParams]);
@@ -94,44 +135,36 @@ const WheelsPage = () => {
   // Reset flipped cards when filters change
   useEffect(() => {
     setFlippedCards({});
-  }, [searchTags, parsedFilters]);
+    setCurrentPage(1);
+    duplicateControl.clearSelection();
+  }, [searchTags, parsedFilters, itemsPerLoad, sortBy, duplicateControl.clearSelection]);
 
-  const hasActiveCollectionFilters =
-    searchTags.length > 0 ||
-    Object.values(parsedFilters).some((values) => (values?.length ?? 0) > 0);
-
-  const sourceWheels = hasActiveCollectionFilters ? allWheels : wheels;
-  const isGridLoading = hasActiveCollectionFilters ? isAllWheelsLoading : isInitialLoading;
-
-  // Infinite scroll: fetch next page from server when near bottom (saves DB bandwidth)
   useEffect(() => {
-    if (hasActiveCollectionFilters) return;
-    if (status !== "CanLoadMore") return;
-    const sentinel = loadMoreSentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [e] = entries;
-        if (!e?.isIntersecting) return;
-        if (loadMoreRef.current === undefined) return;
-        const now = Date.now();
-        if (now - lastLoadMoreTimeRef.current < LOAD_MORE_COOLDOWN_MS) return;
-        lastLoadMoreTimeRef.current = now;
-        const load = itemsPerLoadRef.current;
-        if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
-        loadMoreTimeoutRef.current = setTimeout(() => {
-          loadMoreTimeoutRef.current = undefined;
-          loadMoreRef.current(load);
-        }, LOAD_MORE_DELAY_MS);
-      },
-      { rootMargin: "120px", threshold: 0 }
-    );
-    observer.observe(sentinel);
-    return () => {
-      observer.disconnect();
-      if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
-    };
-  }, [hasActiveCollectionFilters, status]);
+    if (pageNumber !== currentPage) {
+      setCurrentPage(pageNumber);
+    }
+  }, [pageNumber, currentPage]);
+
+  useEffect(() => {
+    setPageInputValue(String(currentPage));
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (!isEditingPageNumber) return;
+    pageInputRef.current?.focus();
+    pageInputRef.current?.select();
+  }, [isEditingPageNumber]);
+
+  useEffect(() => {
+    const scrollParent = findScrollParent(contentRef.current);
+    if (scrollParent) {
+      scrollParent.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    duplicateControl.clearSelection();
+  }, [currentPage, duplicateControl.clearSelection]);
 
   // Handle tag click from filter sidebar
   const handleTagClick = (tag: string, category: string) => {
@@ -144,15 +177,17 @@ const WheelsPage = () => {
     } else {
       params.append(category, tag);
     }
+    params.delete("page");
     navigate(`/wheels?${params.toString()}`);
   };
 
   // Handle clearing all filters
   const handleClearAllFilters = () => {
     const params = new URLSearchParams(searchParams);
-    ['brand', 'diameter', 'width', 'boltPattern', 'centerBore', 'tireSize', 'color', 'search'].forEach(key => {
+    ['brand', 'diameter', 'width', 'boltPattern', 'centerBore', 'tireSize', 'color', 'hasGoodPic', 'hasBadPic', 'search'].forEach(key => {
       params.delete(key);
     });
+    params.delete("page");
     navigate(`/wheels?${params.toString()}`);
   };
 
@@ -161,6 +196,7 @@ const WheelsPage = () => {
     if (!searchTags.includes(tag)) {
       const params = new URLSearchParams(searchParams);
       params.append('search', tag);
+      params.delete("page");
       navigate(`/wheels?${params.toString()}`);
     }
   };
@@ -171,107 +207,9 @@ const WheelsPage = () => {
     const allSearchValues = params.getAll('search');
     params.delete('search');
     allSearchValues.filter(v => v !== tag).forEach(v => params.append('search', v));
+    params.delete("page");
     navigate(`/wheels?${params.toString()}`);
   };
-
-  // Filter wheels
-  const filteredWheels = (sourceWheels || []).filter(wheel => {
-    const normalizeBoltPattern = (value: string) =>
-      value.replace(/×/g, 'x').replace(/\s+/g, '').toLowerCase().trim();
-    const normalizeTireSize = (value: string) =>
-      value.replace(/\s+/g, '').toUpperCase().trim();
-
-    // Apply multi-tag search filter
-    if (searchTags.length > 0) {
-      const specsString = wheel.specifications ? JSON.stringify(wheel.specifications).toLowerCase() : '';
-      const matchesAnyTag = searchTags.some(tag => {
-        const searchLower = tag.toLowerCase();
-        return wheel.wheel_name?.toLowerCase().includes(searchLower) ||
-          wheel.brand_name?.toLowerCase().includes(searchLower) ||
-          specsString.includes(searchLower);
-      });
-      if (!matchesAnyTag) return false;
-    }
-
-    // Apply parsed filters
-    if (parsedFilters.brand?.length) {
-      const matches = parsedFilters.brand.some(b =>
-        wheel.brand_name?.toLowerCase().includes(b.toLowerCase())
-      );
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.diameter?.length) {
-      const matches = parsedFilters.diameter.some(d => {
-        const clean = d.replace(' inch', '').replace('"', '').trim();
-        return wheel.diameter?.toLowerCase().includes(clean.toLowerCase());
-      });
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.width?.length) {
-      const matches = parsedFilters.width.some(w => {
-        const clean = w.replace('J', '').trim();
-        return wheel.width?.toLowerCase().includes(clean.toLowerCase());
-      });
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.boltPattern?.length) {
-      const wheelBolt = wheel.bolt_pattern ? normalizeBoltPattern(wheel.bolt_pattern) : '';
-      const matches = parsedFilters.boltPattern.some(bp =>
-        wheelBolt.includes(normalizeBoltPattern(bp))
-      );
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.centerBore?.length) {
-      const matches = parsedFilters.centerBore.some(cb => {
-        const clean = cb.replace('mm', '').trim();
-        return wheel.center_bore?.toLowerCase().includes(clean.toLowerCase());
-      });
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.tireSize?.length) {
-      const wheelTireSize = wheel.tire_size ? normalizeTireSize(wheel.tire_size) : '';
-      const matches = parsedFilters.tireSize.some(ts =>
-        wheelTireSize.includes(normalizeTireSize(ts))
-      );
-      if (!matches) return false;
-    }
-
-    if (parsedFilters.color?.length) {
-      const matches = parsedFilters.color.some(c =>
-        wheel.color?.toLowerCase().includes(c.toLowerCase())
-      );
-      if (!matches) return false;
-    }
-
-    return true;
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case "nameAsc":
-        return (a.wheel_name || '').localeCompare(b.wheel_name || '');
-      case "nameDesc":
-        return (b.wheel_name || '').localeCompare(a.wheel_name || '');
-      case "brandDesc":
-        return (b.brand_name || '').localeCompare(a.brand_name || '') ||
-          (a.wheel_name || '').localeCompare(b.wheel_name || '');
-      case "diameterAsc":
-        return getNumberFromText(a.diameter) - getNumberFromText(b.diameter) ||
-          (a.wheel_name || '').localeCompare(b.wheel_name || '');
-      case "diameterDesc":
-        return getNumberFromText(b.diameter) - getNumberFromText(a.diameter) ||
-          (a.wheel_name || '').localeCompare(b.wheel_name || '');
-      case "brandAsc":
-      default:
-        return (a.brand_name || '').localeCompare(b.brand_name || '') ||
-          (a.wheel_name || '').localeCompare(b.wheel_name || '');
-    }
-  });
-
-  const hasMore = !hasActiveCollectionFilters && status === "CanLoadMore";
 
   // One measurement per tag: split any "16 inch, 17 inch" into separate tags
   const oneValuePerTag = (vals: string[]): string[] =>
@@ -286,6 +224,12 @@ const WheelsPage = () => {
     { label: 'Center Bore', category: 'centerBore', values: oneValuePerTag(filterOptions.centerBores) },
     { label: 'Tire Size', category: 'tireSize', values: oneValuePerTag(filterOptions.tireSizes ?? []) },
     { label: 'Color', category: 'color', values: oneValuePerTag(filterOptions.colors ?? []) },
+    ...(isDevMode
+      ? [
+          { label: 'Has Good Pic', category: 'hasGoodPic', values: ['Yes', 'No'] },
+          { label: 'Has Bad Pic', category: 'hasBadPic', values: ['Yes', 'No'] },
+        ]
+      : []),
   ];
 
   const sortOptions = [
@@ -300,6 +244,38 @@ const WheelsPage = () => {
   const toggleCardFlip = (id: string) => {
     setFlippedCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > totalPages || nextPage === currentPage) return;
+    setCurrentPage(nextPage);
+  };
+
+  const commitPageInput = () => {
+    const parsed = Number.parseInt(pageInputValue, 10);
+    if (Number.isFinite(parsed)) {
+      handlePageChange(parsed);
+    }
+    setPageInputValue(String(currentPage));
+    setIsEditingPageNumber(false);
+  };
+
+  const buildPageItems = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, "ellipsis-right", totalPages] as const;
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, "ellipsis-left", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages] as const;
+    }
+    return [1, "ellipsis-left", currentPage - 1, currentPage, currentPage + 1, "ellipsis-right", totalPages] as const;
+  };
+
+  const pageItems = buildPageItems();
+  const selectedWheelLabels = duplicateControl.selectedIds
+    .map((selectedId) => wheels.find((wheel) => (wheel.convexId ?? wheel.id) === selectedId)?.wheel_name)
+    .filter((value): value is string => Boolean(value));
 
   return (
     <DashboardLayout
@@ -317,7 +293,7 @@ const WheelsPage = () => {
           searchTags={searchTags}
           onAddSearchTag={handleAddSearchTag}
           onRemoveSearchTag={handleRemoveSearchTag}
-          totalResults={filteredWheels.length}
+          totalResults={totalCount}
         />
       }
       sortTitle="Sort Wheels"
@@ -327,12 +303,28 @@ const WheelsPage = () => {
           options={sortOptions}
           selectedValue={sortBy}
           onChange={setSortBy}
-          totalResults={filteredWheels.length}
+          totalResults={totalCount}
         />
+      }
+      customTitle="Admin"
+      customActionIcon={<Shield className="h-4 w-4" />}
+      customSidebarInteractive={showAdminTools}
+      customSidebar={
+        showAdminTools ? (
+          <CollectionAdminSidebar
+            itemLabel="wheels"
+            selectionMode={duplicateControl.selectionMode}
+            selectedCount={duplicateControl.selectedCount}
+            selectedLabels={selectedWheelLabels}
+            isMerging={duplicateControl.isMerging}
+            onDuplicateControl={duplicateControl.handleDuplicateControl}
+            onClearSelection={duplicateControl.clearSelection}
+          />
+        ) : null
       }
       disableContentPadding={true}
     >
-      <div className="h-full p-2 overflow-y-auto">
+      <div ref={contentRef} className="h-full p-2">
         {error ? (
           <Card className="p-8 text-center bg-destructive/5 border-destructive/20">
             <CircleSlash2 className="h-10 w-10 mx-auto mb-3 text-destructive/50" />
@@ -346,25 +338,102 @@ const WheelsPage = () => {
               Check that <code className="bg-muted px-1 rounded">VITE_CONVEX_URL</code> is set in <code className="bg-muted px-1 rounded">.env.local</code> and that <code className="bg-muted px-1 rounded">npx convex dev</code> is running (or your Convex deployment is up). Then refresh the page.
             </p>
           </Card>
-        ) : isGridLoading ? (
+        ) : isInitialLoading ? (
           <Card className="p-8 text-center bg-muted/20">
             <Loader2 className="h-10 w-10 animate-spin mx-auto mb-3 text-primary" />
             <p className="text-muted-foreground">Loading wheels...</p>
           </Card>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             <WheelsGrid
-              wheels={filteredWheels}
+              wheels={wheels}
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
               insertAdEvery={itemsPerLoad}
+              selectionMode={duplicateControl.selectionMode}
+              selectedIds={duplicateControl.selectedIds}
+              onToggleSelection={duplicateControl.toggleSelection}
             />
-            {hasMore && (
-              <div
-                ref={loadMoreSentinelRef}
-                className="h-4 w-full shrink-0"
-                aria-hidden
-              />
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        handlePageChange(currentPage - 1);
+                      }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                    />
+                  </PaginationItem>
+                  {pageItems.map((item, index) =>
+                    typeof item === "number" ? (
+                      <PaginationItem key={item}>
+                        <PaginationLink
+                          href="#"
+                          isActive={item === currentPage}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            handlePageChange(item);
+                          }}
+                        >
+                          {item}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={`${item}-${index}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    {isEditingPageNumber ? (
+                      <Input
+                        ref={pageInputRef}
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        value={pageInputValue}
+                        onChange={(event) => setPageInputValue(event.target.value)}
+                        onBlur={commitPageInput}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            commitPageInput();
+                          }
+                          if (event.key === "Escape") {
+                            setPageInputValue(String(currentPage));
+                            setIsEditingPageNumber(false);
+                          }
+                        }}
+                        className="h-9 w-16 text-center"
+                      />
+                    ) : (
+                      <PaginationLink
+                        href="#"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setPageInputValue(String(currentPage));
+                          setIsEditingPageNumber(true);
+                        }}
+                      >
+                        #
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        handlePageChange(currentPage + 1);
+                      }}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             )}
           </div>
         )}

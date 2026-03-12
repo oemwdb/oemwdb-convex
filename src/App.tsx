@@ -8,12 +8,14 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DevModeProvider } from "@/contexts/DevModeContext";
 import Index from "./pages/Index";
+import PublicHomePage from "./pages/PublicHomePage";
 import NotFound from "./pages/NotFound";
 
 // Import our pages
 import BrandsPage from "./pages/BrandsPage";
 import VehiclesPage from "./pages/VehiclesPage";
 import WheelsPage from "./pages/WheelsPage";
+import { WheelsPageErrorBoundary } from "./components/wheel/WheelsPageErrorBoundary";
 import ContributePage from "./pages/ContributePage";
 
 import LoginPage from "./pages/LoginPage";
@@ -56,12 +58,13 @@ const App = () => (
           <AuthProvider>
             <DevModeProvider>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<PublicHomePage />} />
+                <Route path="/dev/home" element={<ProtectedRoute requireAdmin={true} fallbackPath="/brands"><Index /></ProtectedRoute>} />
                 <Route path="/brands" element={<BrandsPage />} />
                 <Route path="/brands/:brandName" element={<BrandDetailPage />} />
                 <Route path="/vehicles" element={<VehiclesPage />} />
                 <Route path="/vehicles/:vehicleName" element={<VehicleDetailPage />} />
-                <Route path="/wheels" element={<WheelsPage />} />
+                <Route path="/wheels" element={<WheelsPageErrorBoundary><WheelsPage /></WheelsPageErrorBoundary>} />
                 <Route path="/wheels/:wheelName" element={<WheelDetailPage />} />
                 <Route path="/wheel/:wheelId" element={<WheelItemPage />} />
                 <Route path="/engines" element={<EnginesPage />} />

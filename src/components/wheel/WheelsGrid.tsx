@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { AdBar } from "@/components/AdBar";
 import { CircleSlash2 } from "lucide-react";
 import type { OemWheel } from "@/types/oem";
+import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
 
 const GRID_CLASSES =
   "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2";
@@ -14,19 +15,36 @@ interface WheelsGridProps {
   onFlip: (id: string) => void;
   /** Insert a full-width ad after every N items (e.g. 3 * columns). Ensures full rows. */
   insertAdEvery?: number;
+  selectionMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelection?: (id: string) => void;
 }
 
 function WheelCardCell({
   wheel,
   isFlipped,
   onFlip,
+  selectionMode,
+  selectedIds,
+  onToggleSelection,
 }: {
   wheel: OemWheel;
   isFlipped: boolean;
   onFlip: (id: string) => void;
+  selectionMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelection?: (id: string) => void;
 }) {
+  const selectionId = wheel.convexId ?? wheel.id.toString();
+  const selectedOrder = (selectedIds ?? []).indexOf(selectionId) + 1 || undefined;
+
   return (
-    <div key={wheel.id}>
+    <SelectableCollectionCard
+      label={wheel.wheel_name}
+      selectionMode={selectionMode}
+      selectedOrder={selectedOrder}
+      onToggleSelection={onToggleSelection ? () => onToggleSelection(selectionId) : undefined}
+    >
       <WheelCard
         wheel={{
           id: wheel.id.toString(),
@@ -46,11 +64,19 @@ function WheelCardCell({
         isFlipped={isFlipped}
         onFlip={onFlip}
       />
-    </div>
+    </SelectableCollectionCard>
   );
 }
 
-const WheelsGrid = ({ wheels, flippedCards, onFlip, insertAdEvery }: WheelsGridProps) => {
+const WheelsGrid = ({
+  wheels,
+  flippedCards,
+  onFlip,
+  insertAdEvery,
+  selectionMode,
+  selectedIds,
+  onToggleSelection,
+}: WheelsGridProps) => {
   if (wheels.length === 0) {
     return (
       <Card className="p-12 text-center bg-muted/10 border-dashed">
@@ -70,10 +96,13 @@ const WheelsGrid = ({ wheels, flippedCards, onFlip, insertAdEvery }: WheelsGridP
       chunk.forEach((wheel) => {
         children.push(
           <WheelCardCell
-            key={wheel.id}
+            key={wheel.convexId ?? wheel.id}
             wheel={wheel}
             isFlipped={flippedCards[wheel.id.toString()] || false}
             onFlip={onFlip}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelection={onToggleSelection}
           />
         );
       });
@@ -88,10 +117,13 @@ const WheelsGrid = ({ wheels, flippedCards, onFlip, insertAdEvery }: WheelsGridP
     <div className={GRID_CLASSES}>
       {wheels.map((wheel) => (
         <WheelCardCell
-          key={wheel.id}
+          key={wheel.convexId ?? wheel.id}
           wheel={wheel}
           isFlipped={flippedCards[wheel.id.toString()] || false}
           onFlip={onFlip}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelection={onToggleSelection}
         />
       ))}
     </div>

@@ -8,11 +8,24 @@
  * @module
  */
 
+import type * as alfaRomeoImageBackfill from "../alfaRomeoImageBackfill.js";
+import type * as alfaRomeoLegacyAdditive from "../alfaRomeoLegacyAdditive.js";
+import type * as alfaRomeoNavigation from "../alfaRomeoNavigation.js";
+import type * as alfaRomeoRebuild from "../alfaRomeoRebuild.js";
 import type * as auth from "../auth.js";
+import type * as brandMigrations from "../brandMigrations.js";
+import type * as brandMigrationsInternal from "../brandMigrationsInternal.js";
+import type * as collectionMerges from "../collectionMerges.js";
+import type * as debug from "../debug.js";
+import type * as http from "../http.js";
 import type * as imageMigrations from "../imageMigrations.js";
+import type * as imageTables from "../imageTables.js";
 import type * as migrations from "../migrations.js";
+import type * as miniDedupe from "../miniDedupe.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
+import type * as storage from "../storage.js";
+import type * as storageInternal from "../storageInternal.js";
 import type * as users from "../users.js";
 
 import type {
@@ -22,11 +35,24 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  alfaRomeoImageBackfill: typeof alfaRomeoImageBackfill;
+  alfaRomeoLegacyAdditive: typeof alfaRomeoLegacyAdditive;
+  alfaRomeoNavigation: typeof alfaRomeoNavigation;
+  alfaRomeoRebuild: typeof alfaRomeoRebuild;
   auth: typeof auth;
+  brandMigrations: typeof brandMigrations;
+  brandMigrationsInternal: typeof brandMigrationsInternal;
+  collectionMerges: typeof collectionMerges;
+  debug: typeof debug;
+  http: typeof http;
   imageMigrations: typeof imageMigrations;
+  imageTables: typeof imageTables;
   migrations: typeof migrations;
+  miniDedupe: typeof miniDedupe;
   mutations: typeof mutations;
   queries: typeof queries;
+  storage: typeof storage;
+  storageInternal: typeof storageInternal;
   users: typeof users;
 }>;
 

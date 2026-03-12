@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 
 export const useWheelImageLoader = (imagelink?: string | null) => {
+  const isRenderableUrl =
+    typeof imagelink === "string" &&
+    (imagelink.startsWith("http") || imagelink.startsWith("/"));
+
   // Initialize with the actual URL to prevent flash of no content
   const [imageUrl, setImageUrl] = useState<string | null>(
-    imagelink && imagelink.startsWith('http') ? imagelink : null
+    isRenderableUrl ? imagelink : null
   );
   const [hasError, setHasError] = useState(false);
 
@@ -11,14 +15,14 @@ export const useWheelImageLoader = (imagelink?: string | null) => {
     // Reset error state when imagelink changes
     setHasError(false);
     
-    if (imagelink && imagelink.startsWith('http')) {
+    if (isRenderableUrl) {
       // Valid URL - use it directly
       setImageUrl(imagelink);
     } else {
       // Not a valid URL
       setImageUrl(null);
     }
-  }, [imagelink]);
+  }, [imagelink, isRenderableUrl]);
 
   const handleImageError = () => {
     // Don't null out the URL - just track that there was an error

@@ -1,5 +1,5 @@
 /**
- * Promote ws_[brand]_wheel_variants workshop data into wheel_variants and junctions.
+ * Promote ws_[brand]_wheel_variants workshop data into oem_wheel_variants and junctions.
  *
  * ENV: .env.local with VITE_CONVEX_URL
  * Run from project root: npx tsx scripts/promote-wheel-variants.ts
