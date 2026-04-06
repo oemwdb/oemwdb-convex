@@ -10,6 +10,7 @@ import { allWheels } from "@/data/wheelsData";
 import { toast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { Trash2, PlusCircle } from "lucide-react";
+import { getVehicleRoutePath } from "@/lib/vehicleRoutes";
 
 const GaragePage: React.FC = () => {
   const { data: vehicles = [], isLoading, isError } = { data: null as any, isLoading: false, error: null };
@@ -44,6 +45,7 @@ const GaragePage: React.FC = () => {
       return;
     }
     const item = addCombo({
+      vehicleId: selectedVehicle.id,
       vehicleName: selectedVehicle.name,
       brand: selectedVehicle.brand,
       wheelId: String(wheel.id),
@@ -146,7 +148,7 @@ const GaragePage: React.FC = () => {
                   </CardContent>
                   <CardFooter className="flex items-center justify-between">
                     <div className="flex gap-2 text-xs">
-                      <Link to={`/vehicles/${encodeURIComponent(i.vehicleName)}`} className="underline">View vehicle</Link>
+                      <Link to={getVehicleRoutePath({ id: i.vehicleId, name: i.vehicleName })} className="underline">View vehicle</Link>
                       <span>•</span>
                       <Link to={`/wheels/${encodeURIComponent(i.wheelName)}`} className="underline">View wheel</Link>
                     </div>

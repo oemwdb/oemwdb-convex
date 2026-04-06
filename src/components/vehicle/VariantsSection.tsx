@@ -4,6 +4,12 @@ import { Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import {
+    buildExactEngineLabel,
+    buildFamilyEngineLabel,
+    buildPreferredVariantEngineLabel,
+    buildVariantEngineSignature,
+} from "@/lib/vehicleVariantEngines";
 
 interface VariantsSectionProps {
     vehicleId: Id<"oem_vehicles">;
@@ -31,17 +37,6 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
         return `${yearFrom}-${yearTo ?? "Present"}`;
     };
 
-    const formatEngine = (variant: RawVariant) => {
-        const parts = [
-            variant.engine_title,
-            variant.engine_code,
-            variant.displacement_l ? `${variant.displacement_l}L` : null,
-            variant.fuel_type,
-            variant.aspiration,
-        ].filter(Boolean);
-        return parts.length > 0 ? parts.join(" ") : null;
-    };
-
     const stripVehiclePrefix = (value?: string | null) => {
         const normalizedValue = normalizeText(value);
         const normalizedVehicleName = normalizeText(vehicleName);
@@ -53,13 +48,21 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
 
     const looksLikePackage = (value?: string | null) => PACKAGE_PATTERN.test(normalizeText(value));
 
+    const formatEngine = (variant: RawVariant) =>
+        buildPreferredVariantEngineLabel(variant);
+
+    const formatFamilyEngine = (variant: RawVariant) =>
+        buildFamilyEngineLabel(variant);
+
     const resolveDisplayLabel = (variant: RawVariant) => {
         const trimLevel = stripVehiclePrefix(variant.trim_level);
         const variantTitle = stripVehiclePrefix(variant.variant_title);
+        const exactEngineLabel = buildExactEngineLabel(variant);
         const engineLabel = formatEngine(variant);
 
         if (trimLevel && !looksLikePackage(trimLevel)) return trimLevel;
         if (variantTitle && !looksLikePackage(variantTitle)) return variantTitle;
+        if (exactEngineLabel) return exactEngineLabel;
         if (engineLabel) return engineLabel;
         if (trimLevel) return trimLevel;
         if (variantTitle) return variantTitle;
@@ -68,14 +71,7 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
 
     const buildGroupKey = (variant: RawVariant) => {
         const label = resolveDisplayLabel(variant).toLowerCase();
-        const engineSignature = [
-            normalizeText(variant.engine_code),
-            normalizeText(variant.engine_title),
-            variant.displacement_l ? String(variant.displacement_l) : "",
-            variant.power_hp ? String(variant.power_hp) : "",
-        ]
-            .filter(Boolean)
-            .join("|");
+        const engineSignature = buildVariantEngineSignature(variant);
 
         return `${label}::${engineSignature || "no-engine"}`;
     };
@@ -89,6 +85,7 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
                 id: string;
                 label: string;
                 engine: string | null;
+                engineFamily: string | null;
                 powerHp: number | null;
                 yearFrom: number | null;
                 yearTo: number | null;
@@ -104,6 +101,7 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
             const existing = groups.get(key);
             const label = resolveDisplayLabel(variant);
             const engine = formatEngine(variant);
+            const engineFamily = formatFamilyEngine(variant);
             const searchLabel = [vehicleName, label].filter(Boolean).join(" ").trim();
             const note = normalizeText(variant.notes);
 
@@ -112,7 +110,8 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
                     id: String(variant._id ?? variant.id ?? key),
                     label,
                     engine,
-                    powerHp: variant.power_hp ?? null,
+                    engineFamily,
+                    powerHp: variant.engine_variant_power_hp ?? variant.power_hp ?? null,
                     yearFrom: variant.year_from ?? null,
                     yearTo: variant.year_to ?? null,
                     markets: new Set(normalizeText(variant.market) ? [normalizeText(variant.market)] : []),
@@ -137,8 +136,8 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
                       ? existing.yearTo
                       : Math.max(existing.yearTo, variant.year_to);
 
-            if (!existing.powerHp && variant.power_hp) {
-                existing.powerHp = variant.power_hp;
+            if (!existing.powerHp && (variant.engine_variant_power_hp || variant.power_hp)) {
+                existing.powerHp = variant.engine_variant_power_hp ?? variant.power_hp ?? null;
             }
 
             const market = normalizeText(variant.market);
@@ -190,6 +189,11 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
                                     {variant.engine && (
                                         <p className="text-sm font-medium text-foreground">
                                             {variant.engine}
+                                        </p>
+                                    )}
+                                    {variant.engineFamily && variant.engineFamily !== variant.engine && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Family: {variant.engineFamily}
                                         </p>
                                     )}
                                 </div>

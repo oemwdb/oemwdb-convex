@@ -1,0 +1,7191 @@
+{
+  "generatedAt": "2026-03-31T11:02:17.385Z",
+  "url": "https://stoic-warthog-770.eu-west-1.convex.cloud",
+  "functions": [
+    {
+      "functionType": "HttpAction",
+      "method": "GET",
+      "path": "/api/media/*"
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "auth.js:sessionProbe",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "billyDash.js:overviewGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Mutation",
+      "identifier": "billyDash.js:refreshOverview",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "billyDashBrowser.js:overviewGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Mutation",
+      "identifier": "billyDashBrowser.js:refreshOverview",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "name": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "parentPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:createFolder",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "path": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:deleteNode",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:ensureFilesystemReady",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "relativePath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "bucketBrowser.js:getNodeDetails",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "imageRole": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetId": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "tableName": "oem_brands",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_vehicles",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_wheels",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_wheel_variants",
+                  "type": "id"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "targetType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:linkAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "parentPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "bucketBrowser.js:listChildren",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "bucketBrowser.js:listNamespaces",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fromPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "toPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:moveNode",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetTypes": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "bucketBrowser.js:searchTargets",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "imageRole": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetId": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "tableName": "oem_brands",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_vehicles",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_wheels",
+                  "type": "id"
+                },
+                {
+                  "tableName": "oem_wheel_variants",
+                  "type": "id"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "targetType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "bucketBrowser.js:unlinkAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "files": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "object",
+                "value": {
+                  "contentType": {
+                    "fieldType": {
+                      "type": "string"
+                    },
+                    "optional": true
+                  },
+                  "fileBase64": {
+                    "fieldType": {
+                      "type": "string"
+                    },
+                    "optional": false
+                  },
+                  "fileName": {
+                    "fieldType": {
+                      "type": "string"
+                    },
+                    "optional": false
+                  }
+                }
+              }
+            },
+            "optional": false
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "parentPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "bucketBrowserActions.js:uploadFiles",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "canonicalId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "duplicateIds": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "tableName": "oem_brands",
+                "type": "id"
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "collectionMerges.js:mergeBrands",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "canonicalId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "duplicateIds": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "tableName": "oem_vehicles",
+                "type": "id"
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "collectionMerges.js:mergeVehicles",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "canonicalId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "duplicateIds": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "tableName": "oem_wheels",
+                "type": "id"
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "collectionMerges.js:mergeWheels",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "colors.js:collectionGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "colors.js:detailGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "colorsBrowser.js:collectionList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "colorsBrowser.js:detailGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "market.js:adminListingsIndex",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "listingId": {
+            "fieldType": {
+              "tableName": "market_listings",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:listingArchive",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "condition": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "new"
+                },
+                {
+                  "type": "literal",
+                  "value": "like-new"
+                },
+                {
+                  "type": "literal",
+                  "value": "good"
+                },
+                {
+                  "type": "literal",
+                  "value": "fair"
+                },
+                {
+                  "type": "literal",
+                  "value": "parts"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "description": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "documents": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "images": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "listing_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "wheel"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicle"
+                },
+                {
+                  "type": "literal",
+                  "value": "part"
+                },
+                {
+                  "type": "literal",
+                  "value": "tire"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "location": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "shipping_available": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          },
+          "status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "draft"
+                },
+                {
+                  "type": "literal",
+                  "value": "active"
+                },
+                {
+                  "type": "literal",
+                  "value": "sold"
+                },
+                {
+                  "type": "literal",
+                  "value": "archived"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_variant_id": {
+            "fieldType": {
+              "tableName": "oem_wheel_variants",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:listingCreate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "listingId": {
+            "fieldType": {
+              "tableName": "market_listings",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:listingReactivate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "condition": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "new"
+                },
+                {
+                  "type": "literal",
+                  "value": "like-new"
+                },
+                {
+                  "type": "literal",
+                  "value": "good"
+                },
+                {
+                  "type": "literal",
+                  "value": "fair"
+                },
+                {
+                  "type": "literal",
+                  "value": "parts"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "description": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "documents": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "images": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "listingId": {
+            "fieldType": {
+              "tableName": "market_listings",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "listing_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "wheel"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicle"
+                },
+                {
+                  "type": "literal",
+                  "value": "part"
+                },
+                {
+                  "type": "literal",
+                  "value": "tire"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "location": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "shipping_available": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          },
+          "status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "draft"
+                },
+                {
+                  "type": "literal",
+                  "value": "active"
+                },
+                {
+                  "type": "literal",
+                  "value": "sold"
+                },
+                {
+                  "type": "literal",
+                  "value": "archived"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_variant_id": {
+            "fieldType": {
+              "tableName": "oem_wheel_variants",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:listingUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "targetType": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brand"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicle"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel_variant"
+                }
+              ]
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "market.js:marketLinkTargetsSearch",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "listingId": {
+            "fieldType": {
+              "tableName": "market_listings",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "market.js:marketListingGetById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "market.js:marketSurfaceGetByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "market.js:marketSurfaceGetByVehicle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "market.js:marketSurfaceGetByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "promotionId": {
+            "fieldType": {
+              "tableName": "market_listing_promotions",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:promotionCancel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "booked_price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "end_at": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "listing_id": {
+            "fieldType": {
+              "tableName": "market_listings",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "slot_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "top_slot"
+                },
+                {
+                  "type": "literal",
+                  "value": "featured_row"
+                },
+                {
+                  "type": "literal",
+                  "value": "boosted"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "sort_order": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "start_at": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "scheduled"
+                },
+                {
+                  "type": "literal",
+                  "value": "active"
+                },
+                {
+                  "type": "literal",
+                  "value": "expired"
+                },
+                {
+                  "type": "literal",
+                  "value": "cancelled"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "target_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brand"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicle"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel_variant"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_variant_id": {
+            "fieldType": {
+              "tableName": "oem_wheel_variants",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:promotionCreate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "promotionId": {
+            "fieldType": {
+              "tableName": "market_listing_promotions",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:promotionExpire",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "booked_price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "end_at": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "promotionId": {
+            "fieldType": {
+              "tableName": "market_listing_promotions",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "slot_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "top_slot"
+                },
+                {
+                  "type": "literal",
+                  "value": "featured_row"
+                },
+                {
+                  "type": "literal",
+                  "value": "boosted"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "sort_order": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "start_at": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "scheduled"
+                },
+                {
+                  "type": "literal",
+                  "value": "active"
+                },
+                {
+                  "type": "literal",
+                  "value": "expired"
+                },
+                {
+                  "type": "literal",
+                  "value": "cancelled"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "target_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brand"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicle"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheel_variant"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_variant_id": {
+            "fieldType": {
+              "tableName": "oem_wheel_variants",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "market.js:promotionUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "maxBatch": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "prioritizeMissingBrandId": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:backfillWheelBrandSources",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "byBrand": {
+            "fieldType": {
+              "keys": {
+                "type": "string"
+              },
+              "type": "record",
+              "values": {
+                "fieldType": {
+                  "type": "object",
+                  "value": {
+                    "boltPattern": {
+                      "fieldType": {
+                        "type": "string"
+                      },
+                      "optional": true
+                    },
+                    "centerBore": {
+                      "fieldType": {
+                        "type": "string"
+                      },
+                      "optional": true
+                    },
+                    "diameter": {
+                      "fieldType": {
+                        "type": "string"
+                      },
+                      "optional": true
+                    },
+                    "width": {
+                      "fieldType": {
+                        "type": "string"
+                      },
+                      "optional": true
+                    }
+                  }
+                },
+                "optional": false
+              }
+            },
+            "optional": false
+          },
+          "global": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "boltPattern": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                },
+                "centerBore": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                },
+                "diameter": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                },
+                "width": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                }
+              }
+            },
+            "optional": false
+          },
+          "ids": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "tableName": "oem_wheels",
+                "type": "id"
+              }
+            },
+            "optional": false
+          },
+          "maxBatch": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:backfillWheelSpecsFromCommonByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "ids": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "tableName": "oem_wheels",
+                "type": "id"
+              }
+            },
+            "optional": false
+          },
+          "maxBatch": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:backfillWheelSpecsFromJsonBatch",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:billyDashRefreshOverview",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "bolt_pattern": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:boltPatternsInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "commentId": {
+            "fieldType": {
+              "tableName": "brand_comments",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:brandCommentDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "comment_text": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:brandCommentInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:brandsDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_description": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_image_url": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_page": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "subsidiaries": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:brandsInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_description": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_image_url": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_page": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "slug": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "subsidiaries": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:brandsUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "name": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "parentPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:browserBucketCreateFolder",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "path": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:browserBucketDeleteNode",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "imageRole": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:browserBucketLinkAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fromPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "toPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:browserBucketMoveNode",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "imageRole": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:browserBucketUnlinkAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "center_bore": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:centerBoresInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "family_description": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "family_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "slug": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "swatch_hex": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:colorFamiliesInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "tableName": "oem_colors",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:colorsDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "color": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "color_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "family_id": {
+            "fieldType": {
+              "tableName": "oem_color_families",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "finish": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "hex": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "manufacturer_code": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "slug": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:colorsInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "values": {
+            "fieldType": {
+              "type": "any"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:databaseTableRowCreate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "ids": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": false
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:databaseTableRowsDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "column": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "value": {
+            "fieldType": {
+              "type": "any"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:databaseTableRowUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "diameter": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:diametersInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "centerBoreReplace": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "from": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": false
+                },
+                "to": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": false
+                }
+              }
+            },
+            "optional": true
+          },
+          "maxWheels": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "widthReplace": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "from": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": false
+                },
+                "to": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": false
+                }
+              }
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:fixWheelSpecsBadDefaults",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "tableName": "user_registered_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:registeredVehicleDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_ref": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "color": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "current_value_estimate": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "documents": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "images": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "insurance_policy_number": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "insurance_provider": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "last_service_date": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "license_plate": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "mileage": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          },
+          "next_service_due": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "ownership_status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "owned"
+                },
+                {
+                  "type": "literal",
+                  "value": "leased"
+                },
+                {
+                  "type": "literal",
+                  "value": "financed"
+                },
+                {
+                  "type": "literal",
+                  "value": "sold"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "purchase_date": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "purchase_price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "registration_expiry": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "trim": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicle_ref": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicle_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vin": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "year": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:registeredVehicleInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_ref": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "color": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "current_value_estimate": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "documents": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "tableName": "user_registered_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "images": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "insurance_policy_number": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "insurance_provider": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "last_service_date": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "license_plate": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "mileage": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "next_service_due": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "ownership_status": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "owned"
+                },
+                {
+                  "type": "literal",
+                  "value": "leased"
+                },
+                {
+                  "type": "literal",
+                  "value": "financed"
+                },
+                {
+                  "type": "literal",
+                  "value": "sold"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "purchase_date": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "purchase_price": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "registration_expiry": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "trim": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_ref": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "year": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:registeredVehicleUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedBrandLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedBrandUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedVehicleLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedVehicleUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedWheelLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:savedWheelUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "cursor": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "maxBatch": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:syncWheelJunctionBrands",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tire_size": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:tireSizesInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:userTablePreferencesDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "columnGroupsJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "columnLabelsJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "columnOrderJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "columnWidthsJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "hiddenColumnsJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "pickerHiddenTablesJson": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:userTablePreferencesUpsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "brand_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "vehicle_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehicleBrandLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "commentId": {
+            "fieldType": {
+              "tableName": "vehicle_comments",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehicleCommentDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "comment_text": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "tag": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehicleCommentInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehiclesDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "body_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "drive_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "engine_details": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "generation": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "model_name": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "platform": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "price_range": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "production_stats": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "production_years": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "segment": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "special_notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_image": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehiclesInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "body_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "drive_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "engine_details": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "generation": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "model_name": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "platform": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "price_range": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "production_stats": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "production_years": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "segment": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "slug": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "special_notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_bolt_patterns": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_brands": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_center_bores": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_diameters": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_widths": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_image": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "vehicle_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:vehiclesUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "bolt_pattern_id": {
+            "fieldType": {
+              "tableName": "oem_bolt_patterns",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelBoltPatternLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "bolt_pattern_id": {
+            "fieldType": {
+              "tableName": "oem_bolt_patterns",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelBoltPatternUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "brand_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelBrandLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "center_bore_id": {
+            "fieldType": {
+              "tableName": "oem_center_bores",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelCenterBoreLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "center_bore_id": {
+            "fieldType": {
+              "tableName": "oem_center_bores",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelCenterBoreUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "color_id": {
+            "fieldType": {
+              "tableName": "oem_colors",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelColorLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "color_id": {
+            "fieldType": {
+              "tableName": "oem_colors",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelColorUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "commentId": {
+            "fieldType": {
+              "tableName": "wheel_comments",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelCommentDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "comment_text": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelCommentInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "diameter_id": {
+            "fieldType": {
+              "tableName": "oem_diameters",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelDiameterLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "diameter_id": {
+            "fieldType": {
+              "tableName": "oem_diameters",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelDiameterUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelsDelete",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "ai_processing_complete": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          },
+          "good_pic_url": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "image_source": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "metal_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "part_numbers": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "specifications_json": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "uuid": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "weight": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheel_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelsInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "ai_processing_complete": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          },
+          "good_pic_url": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "image_source": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "jnc_brands": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "metal_type": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "notes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "part_numbers": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "slug": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "specifications_json": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_bolt_patterns": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_center_bores": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_colors": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_diameters": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_offsets": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_tire_sizes": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "text_widths": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "uuid": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "weight": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheel_title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelsUpdate",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tire_size_id": {
+            "fieldType": {
+              "tableName": "tire_sizes",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelTireSizeLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tire_size_id": {
+            "fieldType": {
+              "tableName": "tire_sizes",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelTireSizeUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelVehicleLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelVehicleUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "width_id": {
+            "fieldType": {
+              "tableName": "oem_widths",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelWidthLink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "width_id": {
+            "fieldType": {
+              "tableName": "oem_widths",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:wheelWidthUnlink",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "width": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "mutations.js:widthsInsert",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:billyDashOverviewGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:boltPatternDistribution",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:boltPatternsGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:brandCommentsGetByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:brandsGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:brandsGetAllWithCounts",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:brandsGetById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandTitle": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:brandsGetByTitle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "parentPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserBucketChildrenList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserBucketNamespacesList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "namespace": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "relativePath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserBucketNodeDetailsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "targetTypes": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserBucketTargetSearch",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserColorDetailGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserColorsCollectionList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserTableRowsList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:browserWheelAssetsByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:bucketNamespacesGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:centerBoresGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "collectionType": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brands"
+                },
+                {
+                  "type": "literal",
+                  "value": "vehicles"
+                },
+                {
+                  "type": "literal",
+                  "value": "wheels"
+                }
+              ]
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:collectionFilterOptions",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:colorDetailGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:colorsCollectionGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:colorsGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:dashboardMetrics",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "recordId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:databaseRecordGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:databaseTableRowsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:diametersGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:enginesGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "engineCode": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:enginesGetByCode",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:enginesGetById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:fullDataAudit",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:getVehiclesByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:getWheelsByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:getWheelsByVehicle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "table": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:getWsRows",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:getWsVehicleWheelConnections",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:globalSearchBrands",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:globalSearchVehicles",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "query": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:globalSearchWheels",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:marketListingsGetByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:migrationAudit",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "username": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:profileGetByUsername",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "search": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:profilesList",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:registeredVehiclesGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedBrandCheck",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedBrandsGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedVehicleCheck",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedVehiclesGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedWheelCheck",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:savedWheelsGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:tireSizesGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:userCommentsGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:userListingsGetByUser",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "userId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:userTablePreferencesGetByUserAndTable",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehicleCommentsGetByVehicle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesFilterOptions",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetAllWithBrands",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "engineId": {
+            "fieldType": {
+              "tableName": "oem_engines",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetByEngine",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "string"
+                },
+                {
+                  "tableName": "oem_vehicles",
+                  "type": "id"
+                }
+              ]
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehiclesGetByIdFull",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:vehicleVariantsGetByVehicle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelAssetsGetByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelCommentsGetByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsByBrandDistribution",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsCommonSpecsByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsFilterOptions",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetAllWithBrands",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetByBrand",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "string"
+                },
+                {
+                  "tableName": "oem_wheels",
+                  "type": "id"
+                }
+              ]
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetByIdFull",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "id": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetByOldId",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "title": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetByTitle",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetIdsWithMissingSpecs",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetIdsWithSpecJson",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsGetJunctionSpecsForBackfill",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "cursor": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "numItems": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsListOnePage",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "boltPattern": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "brand": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "centerBore": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "color": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "diameter": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "hasBadPic": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "hasGoodPic": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "page": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "pageSize": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "search": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "sortBy": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "tireSize": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "width": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsListOnePageFiltered",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "paginationOpts": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "cursor": {
+                  "fieldType": {
+                    "type": "union",
+                    "value": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "optional": false
+                },
+                "id": {
+                  "fieldType": {
+                    "type": "union",
+                    "value": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "optional": true
+                },
+                "numItems": {
+                  "fieldType": {
+                    "type": "number"
+                  },
+                  "optional": false
+                }
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelsListPaginated",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:wheelSpecDataAudit",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "queries.js:widthsGetAll",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:assignExistingWheelAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "imageType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:assignExistingWheelAssetToPool",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:clearWheelHeroImage",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "sourceUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "virtualPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:fetchExternalAssetToStorage",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "storageId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "virtualPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:moveStorageIdToPath",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brand_image_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:updateBrandImageUrlAction",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:updateVehicleImageUrlAction",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "storageId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:updateWheelImageUrlAction",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "fileBase64": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "fileName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:uploadLooseWheelBrandAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "fileBase64": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "fileName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "virtualPath": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:uploadSharedAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "fileBase64": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "fileName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:uploadWheelAsset",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "fileBase64": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "fileName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "imageType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "storage.js:uploadWheelAssetToPool",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:clearWheelImageUrl",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "storageInternal.js:getFileById",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "path": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "storageInternal.js:getFileByPath",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "storageInternal.js:getWheelBrandContext",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "createdAt": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "imageType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "isPrimary": {
+            "fieldType": {
+              "type": "boolean"
+            },
+            "optional": true
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "sortOrder": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "storageId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:insertWheelImageRow",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "fileId": {
+            "fieldType": {
+              "tableName": "oem_file_storage",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:linkFileToWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brand_id": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "contentType": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "node_type": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "file"
+                },
+                {
+                  "type": "literal",
+                  "value": "folder"
+                }
+              ]
+            },
+            "optional": true
+          },
+          "path": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "storageId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "variant_id": {
+            "fieldType": {
+              "tableName": "oem_wheel_variants",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "vehicle_id": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": true
+          },
+          "wheel_id": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:recordFile",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "brandId": {
+            "fieldType": {
+              "tableName": "oem_brands",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "brand_image_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:updateBrandImageUrl",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "vehicleId": {
+            "fieldType": {
+              "tableName": "oem_vehicles",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:updateVehicleImageUrl",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "field": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "good_pic_url"
+                },
+                {
+                  "type": "literal",
+                  "value": "bad_pic_url"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "mediaUrl": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          },
+          "storageId": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "storageInternal.js:updateWheelImageUrl",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "tableBrowser.js:rowsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Action",
+      "identifier": "tableBrowserActions.js:rowsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "offset": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "tableName": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "tableBrowserInternal.js:rowsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "users.js:current",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "wheelId": {
+            "fieldType": {
+              "tableName": "oem_wheels",
+              "type": "id"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "wheelAssets.js:getByWheel",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "wheelRecogniser.js:formOptionsGet",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "boltPattern": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "brand": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "centerBore": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "color": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "diameter": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "finish": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          },
+          "limit": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "spokeCount": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": true
+          },
+          "styleTags": {
+            "fieldType": {
+              "type": "array",
+              "value": {
+                "type": "string"
+              }
+            },
+            "optional": true
+          },
+          "width": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "wheelRecogniser.js:search",
+      "returns": {
+        "type": "any"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { v } from "convex/values";
 type BrandDoc = Doc<"oem_brands">;
 type VehicleDoc = Doc<"oem_vehicles">;
 type WheelDoc = Doc<"oem_wheels">;
+type ColorDoc = Doc<"oem_colors">;
 
 function splitCsvLike(value: string | undefined | null): string[] {
   return String(value || "")
@@ -379,6 +380,20 @@ function mergeWheelPatch(canonical: WheelDoc, duplicate: WheelDoc) {
   if (!canonical.style_number && duplicate.style_number) patch.style_number = duplicate.style_number;
   if (!canonical.brand_id && duplicate.brand_id) patch.brand_id = duplicate.brand_id;
   if (!canonical.notes && notes) patch.notes = notes;
+  return patch;
+}
+
+function mergeColorPatch(canonical: ColorDoc, duplicate: ColorDoc) {
+  const patch: Record<string, unknown> = {};
+  if (!canonical.slug && duplicate.slug) patch.slug = duplicate.slug;
+  if (!canonical.color && duplicate.color) patch.color = duplicate.color;
+  if (!canonical.color_title && duplicate.color_title) patch.color_title = duplicate.color_title;
+  if (!canonical.family_id && duplicate.family_id) patch.family_id = duplicate.family_id;
+  if (!canonical.manufacturer_code && duplicate.manufacturer_code) patch.manufacturer_code = duplicate.manufacturer_code;
+  if (!canonical.hex && duplicate.hex) patch.hex = duplicate.hex;
+  if (!canonical.finish && duplicate.finish) patch.finish = duplicate.finish;
+  if (!canonical.notes && duplicate.notes) patch.notes = duplicate.notes;
+  if (!canonical.brand_id && duplicate.brand_id) patch.brand_id = duplicate.brand_id;
   return patch;
 }
 
@@ -867,6 +882,15 @@ export const mergeWheels = mutation({
       await moveCommentRows(ctx, "wheel_comments", "by_wheel", "wheel_id", duplicate._id, canonical._id);
       await moveRegisteredVehicleWheels(ctx, duplicate._id, canonical._id, canonicalTitle);
       await moveRowsByIndex(ctx, "market_listings", "by_wheel", "wheel_id", duplicate._id, canonical._id, { updated_at: now });
+      await moveIndexedRows(
+        ctx,
+        "oem_wheel_images",
+        "by_wheel",
+        "wheel_id",
+        duplicate._id,
+        canonical._id,
+        ["image_type", "url"]
+      );
       await moveRowsByScan(ctx, "oem_file_storage", "wheel_id", duplicate._id, canonical._id);
 
       await ctx.db.delete(duplicate._id);
@@ -874,6 +898,92 @@ export const mergeWheels = mutation({
     }
 
     await syncWheelBrandMirror(ctx, args.canonicalId);
+
+    return {
+      canonicalId: args.canonicalId,
+      mergedCount: mergedIds.length,
+      mergedIds,
+    };
+  },
+});
+
+export const mergeColors = mutation({
+  args: {
+    canonicalId: v.id("oem_colors"),
+    duplicateIds: v.array(v.id("oem_colors")),
+  },
+  handler: async (ctx, args) => {
+    const duplicateIds = [...new Set(args.duplicateIds)].filter((id) => id !== args.canonicalId);
+    if (duplicateIds.length === 0) {
+      throw new Error("Select at least two colors to merge.");
+    }
+
+    let canonical = await ctx.db.get(args.canonicalId);
+    if (!canonical) {
+      throw new Error("Canonical color not found.");
+    }
+
+    const now = new Date().toISOString();
+    const mergedIds: string[] = [];
+
+    for (const duplicateId of duplicateIds) {
+      const duplicate = await ctx.db.get(duplicateId);
+      if (!duplicate) continue;
+
+      const patch = mergeColorPatch(canonical, duplicate);
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(canonical._id, { ...patch, updated_at: now });
+      }
+
+      canonical = (await ctx.db.get(args.canonicalId)) ?? canonical;
+      const canonicalTitle = String(
+        canonical.color_title ?? canonical.color ?? duplicate.color_title ?? duplicate.color ?? ""
+      ).trim();
+
+      await moveIndexedRows(
+        ctx,
+        "j_wheel_color",
+        "by_color",
+        "color_id",
+        duplicate._id,
+        canonical._id,
+        ["wheel_id"],
+        { color: canonicalTitle }
+      );
+      await moveIndexedRows(
+        ctx,
+        "j_vehicle_color",
+        "by_color",
+        "color_id",
+        duplicate._id,
+        canonical._id,
+        ["vehicle_id"],
+        { color: canonicalTitle }
+      );
+      await moveIndexedRows(
+        ctx,
+        "j_oem_vehicle_variant_color",
+        "by_color",
+        "color_id",
+        duplicate._id,
+        canonical._id,
+        ["variant_id"],
+        { color: canonicalTitle }
+      );
+      await moveIndexedRows(
+        ctx,
+        "j_oem_wheel_variant_color",
+        "by_color",
+        "color_id",
+        duplicate._id,
+        canonical._id,
+        ["variant_id"],
+        { color: canonicalTitle }
+      );
+
+      await ctx.db.delete(duplicate._id);
+      mergedIds.push(String(duplicate.color_title ?? duplicate.color ?? duplicate._id));
+    }
 
     return {
       canonicalId: args.canonicalId,

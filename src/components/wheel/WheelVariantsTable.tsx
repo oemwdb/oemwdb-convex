@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface VehicleInfo {
     id?: string;
@@ -40,6 +41,7 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
     const weightVal = weight || '—';
     const tireVal = tireSize || '—';
     const partNum = partNumbers?.split(/[,;\n]/)[0]?.trim() || '???';
+    const hasTireSize = Boolean(tireSize && tireSize.trim() && tireSize.trim() !== "—");
 
     // Since all vehicles share the same wheel specs, group them into a single row
     // Each vehicle becomes a clickable tag
@@ -95,7 +97,24 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
                     <td style={{ padding: '8px 12px', color: '#ccc' }}>{boreVal}</td>
                     <td style={{ padding: '8px 12px', color: '#ccc' }}>{boltVal}</td>
                     <td style={{ padding: '8px 12px', color: '#ccc' }}>{weightVal}</td>
-                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{tireVal}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>{tireVal}</span>
+                            {hasTireSize ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 rounded-full px-3 text-[11px] font-medium"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                    }}
+                                >
+                                    Buy Tires
+                                </Button>
+                            ) : null}
+                        </div>
+                    </td>
                     <td style={{ padding: '8px 12px', color: '#ccc' }}>{partNum}</td>
                 </tr>
             </tbody>

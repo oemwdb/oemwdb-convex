@@ -2,6 +2,7 @@ import React from "react";
 import BrandCard from "@/components/brand/BrandCard";
 import { AdBar } from "@/components/AdBar";
 import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
+import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 
 const GRID_CLASSES =
   "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2";
@@ -23,6 +24,7 @@ interface BrandsGridProps {
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
+  selectionTone?: "merge" | "delete";
 }
 
 export default function BrandsGrid({
@@ -33,7 +35,17 @@ export default function BrandsGrid({
   selectionMode,
   selectedIds,
   onToggleSelection,
+  selectionTone = "merge",
 }: BrandsGridProps) {
+  if (brands.length === 0) {
+    return (
+      <CollectionEmptyState
+        title="No brands found"
+        description="Try adjusting your search or filters to see more results."
+      />
+    );
+  }
+
   if (insertAdEvery != null && insertAdEvery > 0) {
     const children: React.ReactNode[] = [];
 
@@ -50,6 +62,7 @@ export default function BrandsGrid({
             selectionMode={selectionMode}
             selectedOrder={selectedOrder}
             onToggleSelection={onToggleSelection ? () => onToggleSelection(selectionId) : undefined}
+            selectionTone={selectionTone}
           >
             <BrandCard
               brand={brand}
@@ -81,6 +94,7 @@ export default function BrandsGrid({
           selectionMode={selectionMode}
           selectedOrder={(selectedIds ?? []).indexOf(brand.id ?? brand.name) + 1 || undefined}
           onToggleSelection={onToggleSelection ? () => onToggleSelection(brand.id ?? brand.name) : undefined}
+          selectionTone={selectionTone}
         >
           <BrandCard
             brand={brand}

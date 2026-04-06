@@ -6,6 +6,7 @@ import { MillerColumns } from "./miller-columns/MillerColumns";
 import { Loader2, Upload, FolderPlus, RefreshCw, X, Search, LayoutGrid, LayoutList, CheckSquare, Folder, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ViewMode, ColumnItem } from "./miller-columns/types";
+import { useBuckets, useStorageActions } from "@/hooks/useStorage";
 
 export function StorageExplorer() {
     const { data: buckets, isLoading } = useBuckets();

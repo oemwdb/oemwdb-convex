@@ -4,11 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Heart, RotateCw } from "lucide-react";
+import {
+  collectCardBackValues,
+  firstCardBackValue,
+  stripCardBackContext,
+} from "@/lib/cardBackValues";
 
 interface WheelCardBackProps {
   wheel: {
     id: string;
     name: string;
+    diameter?: string | null;
+    width?: string | null;
+    bolt_pattern?: string | null;
+    center_bore?: string | null;
+    color?: string | null;
+    tire_size?: string | null;
+    brand_name?: string | null;
+    vehicle_names?: string[] | string | null;
     diameter_ref?: any;
     width_ref?: any;
     bolt_pattern_ref?: any;
@@ -38,34 +51,6 @@ const WheelCardBack = ({
   onFlip,
   linkToDetail = false,
 }: WheelCardBackProps) => {
-  // Helper to extract values from JSONB array
-  const extractValues = (jsonb: any): string[] => {
-    if (!jsonb) return [];
-    if (typeof jsonb === 'string') {
-      try {
-        jsonb = JSON.parse(jsonb);
-      } catch {
-        return [jsonb]; // Return as-is if not parseable
-      }
-    }
-    if (Array.isArray(jsonb)) {
-      return jsonb.map(item => {
-        if (typeof item === 'string') return item;
-        // Handle JSONB objects with various formats
-        if (typeof item === 'object' && item !== null) {
-          // Try common value fields
-          if (item.value) return String(item.value);
-          if (item.raw) return String(item.raw);
-          if (item.title) return String(item.title);
-          if (item.name) return String(item.name);
-          if (item.id) return String(item.id);
-        }
-        return null;
-      }).filter(Boolean) as string[];
-    }
-    return [];
-  };
-
   return (
     <>
       <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 hover:shadow-md overflow-hidden">
@@ -76,9 +61,7 @@ const WheelCardBack = ({
             <div className="flex-1 flex flex-col min-h-0">
               <div className="pl-4 pr-12 pt-4 pb-2 flex-shrink-0">
                 <h4 className="font-medium text-foreground text-sm">
-                  {wheel.brand_ref && extractValues(wheel.brand_ref).length > 0
-                    ? extractValues(wheel.brand_ref)[0]
-                    : "Specifications"}
+                  {firstCardBackValue(wheel.brand_name, wheel.brand_ref) ?? "Specifications"}
                 </h4>
               </div>
               <div
@@ -88,13 +71,16 @@ const WheelCardBack = ({
                 {(() => {
                   // Define fields to display with labels
                   const fields = [
-                    { label: 'Vehicle', values: wheel.vehicle_ref ? extractValues(wheel.vehicle_ref).map(v => v.replace(/^.*?\s-\s/, '')) : [] },
-                    { label: 'Diameter', values: wheel.diameter_ref ? extractValues(wheel.diameter_ref) : [] },
-                    { label: 'Width', values: wheel.width_ref ? extractValues(wheel.width_ref) : [] },
-                    { label: 'Bolt Pattern', values: wheel.bolt_pattern_ref ? extractValues(wheel.bolt_pattern_ref) : [] },
-                    { label: 'Center Bore', values: wheel.center_bore_ref ? extractValues(wheel.center_bore_ref) : [] },
-                    { label: 'Color', values: wheel.color_ref ? extractValues(wheel.color_ref) : [] },
-                    { label: 'Tire Size', values: wheel.tire_size_ref ? extractValues(wheel.tire_size_ref) : [] },
+                    {
+                      label: 'Vehicle',
+                      values: collectCardBackValues(wheel.vehicle_names, wheel.vehicle_ref).map(stripCardBackContext),
+                    },
+                    { label: 'Diameter', values: collectCardBackValues(wheel.diameter, wheel.diameter_ref) },
+                    { label: 'Width', values: collectCardBackValues(wheel.width, wheel.width_ref) },
+                    { label: 'Bolt Pattern', values: collectCardBackValues(wheel.bolt_pattern, wheel.bolt_pattern_ref) },
+                    { label: 'Center Bore', values: collectCardBackValues(wheel.center_bore, wheel.center_bore_ref) },
+                    { label: 'Color', values: collectCardBackValues(wheel.color, wheel.color_ref) },
+                    { label: 'Tire Size', values: collectCardBackValues(wheel.tire_size, wheel.tire_size_ref) },
                   ];
 
                   return fields.map((field, idx) => (

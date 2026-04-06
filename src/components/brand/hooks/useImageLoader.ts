@@ -1,22 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 
 
 export const useImageLoader = (imagelink?: string | null) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const candidates = useMemo(() => getMediaUrlCandidates(imagelink), [imagelink]);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [imageUrl, setImageUrl] = useState<string | null>(candidates[0] ?? null);
 
   useEffect(() => {
-    if (imagelink) {
-      // If it's already a full URL, use it directly
-      if (imagelink.startsWith('http')) {
-        setImageUrl(imagelink);
-      } else {
-        // Relative path: use as-is (e.g. Convex storage URL or relative path)
-        setImageUrl(imagelink);
-      }
-    }
-  }, [imagelink]);
+    setCandidateIndex(0);
+    setImageUrl(candidates[0] ?? null);
+  }, [candidates]);
 
   const handleImageError = () => {
+    const nextIndex = candidateIndex + 1;
+    if (nextIndex < candidates.length) {
+      setCandidateIndex(nextIndex);
+      setImageUrl(candidates[nextIndex] ?? null);
+      return;
+    }
+
     setImageUrl(null);
   };
 

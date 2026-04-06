@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import BackendTargetBadge from "./BackendTargetBadge";
 import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
@@ -37,9 +38,14 @@ interface DashboardLayoutProps {
   secondaryActionIcon?: React.ReactNode;
   customActionIcon?: React.ReactNode;
   customSidebarInteractive?: boolean;
+  customSidebarSide?: "left" | "right";
 
   // Header customization
   headerActions?: React.ReactNode;
+  headerLeftContent?: React.ReactNode;
+  leadingButtonIcon?: React.ReactNode;
+  onLeadingButtonClick?: () => void;
+  leadingButtonTitle?: string;
   showSearch?: boolean;
   showBreadcrumb?: boolean;
   disableContentPadding?: boolean;
@@ -75,7 +81,12 @@ const DashboardLayout = ({
   secondaryActionIcon,
   customActionIcon,
   customSidebarInteractive = false,
+  customSidebarSide = "left",
   headerActions,
+  headerLeftContent,
+  leadingButtonIcon,
+  onLeadingButtonClick,
+  leadingButtonTitle,
   showSearch = false,
   showBreadcrumb = true,
   disableContentPadding = false
@@ -95,6 +106,7 @@ const DashboardLayout = ({
   const showFilterPanel = !!secondarySidebar && activePanel === "filter";
   const showSortPanel = !!sortSidebar && activePanel === "sort";
   const showCustomPanel = !!customSidebar && activePanel === "custom";
+  const isRightCustomPanel = showCustomPanel && customSidebarSide === "right";
   const activePanelContent =
     activePanel === "sort"
       ? sortSidebar
@@ -111,6 +123,17 @@ const DashboardLayout = ({
       : activePanel === "custom"
         ? (customTitle || "Panel")
         : (secondaryTitle || "Filters");
+  const customSidebarButton = customSidebar ? (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10"
+      onClick={() => setActivePanel((prev) => prev === "custom" ? null : "custom")}
+      title={customTitle || "Open panel"}
+    >
+      {customActionIcon || <Search className="h-4 w-4 text-white" />}
+    </Button>
+  ) : null;
 
   return (
     <div className="flex h-screen w-full bg-sidebar overflow-hidden p-2 gap-2">
@@ -123,6 +146,11 @@ const DashboardLayout = ({
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-background rounded-2xl border shadow-sm overflow-hidden relative">
+        {hideHeader ? (
+          <div className="absolute top-3 right-3 z-50">
+            <BackendTargetBadge />
+          </div>
+        ) : null}
         {!hideHeader && (
           <Header
             className="border-b-0 bg-background/50 backdrop-blur-sm"
@@ -149,21 +177,20 @@ const DashboardLayout = ({
             onSortClick={() => setActivePanel((prev) => prev === "sort" ? null : "sort")}
             showSearch={showSearch}
             showBreadcrumb={showBreadcrumb}
+            leadingButtonIcon={leadingButtonIcon}
+            onLeadingButtonClick={onLeadingButtonClick}
+            leadingButtonTitle={leadingButtonTitle}
             leftActions={
-              customSidebar ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10"
-                  onClick={() => setActivePanel((prev) => prev === "custom" ? null : "custom")}
-                  title={customTitle || "Open panel"}
-                >
-                  {customActionIcon || <Search className="h-4 w-4 text-white" />}
-                </Button>
-              ) : null
+              <>
+                {customSidebarSide === "left" ? customSidebarButton : null}
+                {headerLeftContent}
+              </>
             }
           >
-            {headerActions}
+            <>
+              {headerActions}
+              {customSidebarSide === "right" ? customSidebarButton : null}
+            </>
           </Header>
         )}
 
@@ -185,7 +212,14 @@ const DashboardLayout = ({
             )}
 
             {/* Floating panel expanding from header filter button (full height column on left) */}
-            <aside className="absolute top-2 bottom-1 left-2 w-[320px] bg-sidebar border border-border rounded-2xl shadow-2xl flex flex-col z-40 animate-in zoom-in-95 fade-in-0 slide-in-from-left-2 duration-200">
+            <aside
+              className={[
+                "absolute top-2 bottom-1 w-[320px] bg-sidebar border border-border rounded-2xl shadow-2xl flex flex-col z-40 animate-in zoom-in-95 fade-in-0 duration-200",
+                isRightCustomPanel
+                  ? "right-2 slide-in-from-right-2"
+                  : "left-2 slide-in-from-left-2",
+              ].join(" ")}
+            >
               {/* Secondary Header with search pill (replaces plain 'Filters' text) */}
               <div className="h-11 flex items-center justify-between border-b border-border px-3 gap-2 shrink-0 rounded-t-2xl">
                 <div className="flex-1 flex items-center">
@@ -203,7 +237,11 @@ const DashboardLayout = ({
                   onClick={() => setActivePanel(null)}
                   title="Close filters"
                 >
-                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                  {isRightCustomPanel ? (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </Button>
               </div>
 

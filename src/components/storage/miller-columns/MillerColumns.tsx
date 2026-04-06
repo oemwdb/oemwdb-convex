@@ -6,6 +6,7 @@ import { ColumnItem, ViewMode } from "./types";
 import { Folder, FileText, Trash2, X, Copy, ExternalLink, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useStorageActions } from "@/hooks/useStorage";
 
 interface MillerColumnsProps {
     bucketName: string;

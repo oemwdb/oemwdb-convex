@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useBrandVehicles, useBrandWheels } from "@/hooks/useBrandDetail";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelCard from "@/components/vehicle/WheelCard";
 import { SaveButton } from "@/components/SaveButton";
-import { Loader2, ImageOff, MessageSquare } from "lucide-react";
+import { ImageOff, Loader2 } from "lucide-react";
 import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
+import { getPrimaryMediaUrl } from "@/lib/mediaUrls";
+import { MarketSurfacePanel } from "@/components/market/MarketSurfacePanel";
+import { useConvexResourceQuery } from "@/hooks/useConvexResourceQuery";
+import { ConvexBackendUnavailableCard } from "@/components/convex/ConvexBackendUnavailableCard";
+import { getConvexErrorMessage } from "@/lib/convexErrors";
+import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
+import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
+import { ItemPageEmptyState, ItemPageGrid } from "@/components/item-page/ItemPageCommonBlocks";
 
 const BrandDetailPage = () => {
   const { brandName } = useParams<{ brandName: string }>();
-  const [activeTab, setActiveTab] = useState("vehicles");
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("brand");
 
   // Format brand name for display (convert from URL format)
   const formattedBrandName = brandName
@@ -23,7 +31,14 @@ const BrandDetailPage = () => {
 
   const brandSlug = brandName ?? "";
   const brand = useQuery(api.queries.brandsGetById, brandSlug ? { id: brandSlug } : "skip");
+  const { template } = useResolvedItemPageLayoutTemplate("brand_item");
   const brandTitle = brand?.brand_title ?? "";
+  const marketSurface = useConvexResourceQuery<any>({
+    queryKey: ["brand-market-surface", brand?._id ?? "missing"],
+    queryRef: api.market.surfaceByBrand,
+    args: brand?._id ? { brandId: brand._id } : "skip",
+    enabled: Boolean(brand?._id),
+  });
 
   const { data: brandVehicles, isLoading: vehiclesLoading } = useBrandVehicles(brandTitle);
   const { data: brandWheels, isLoading: wheelsLoading } = useBrandWheels(brandTitle);
@@ -44,6 +59,7 @@ const BrandDetailPage = () => {
     specs: [w.diameter, w.width, w.bolt_pattern, w.color].filter(Boolean) as string[],
     imageUrl: w.good_pic_url || "/placeholder.svg",
   }));
+  const brandReferenceImageUrl = getPrimaryMediaUrl(brand?.brand_image_url, "oemwdb images");
 
   // Auto-flip all cards back to front when switching tabs
   useEffect(() => {
@@ -56,66 +72,61 @@ const BrandDetailPage = () => {
     setFlippedCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  useEffect(() => {
+    const enabledTabIds = template.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    if (!enabledTabIds.includes(activeTab)) {
+      setActiveTab(template.defaultActiveTab);
+    }
+  }, [activeTab, template]);
+
   return (
-    <DashboardLayout
-      title={formattedBrandName}
-      secondaryTitle="Comments"
-      secondarySidebar={
-        <ItemCommentsPanel
-          itemType="brand"
-          itemId={brand?._id}
-          itemName={formattedBrandName}
-        />
-      }
-      secondaryActionIcon={<MessageSquare className="h-4 w-4" />}
-      disableContentPadding={true}
-    >
-      <div className="h-full p-2 space-y-4 overflow-y-auto">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-3xl font-bold">
-                {formattedBrandName.charAt(0)}
+    <ItemPageTabsShell
+      titleTabLabel={formattedBrandName}
+      template={template}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      onBack={() => navigate(-1)}
+      renderBlock={(block) => {
+        switch (block.kind) {
+          case "hero":
+            return (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center gap-4 md:flex-row">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-200 text-3xl font-bold">
+                      {formattedBrandName.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold">{formattedBrandName}</h1>
+                        {brand ? (
+                          <SaveButton
+                            itemId={brand.id}
+                            itemType="brand"
+                            convexId={brand._id}
+                          />
+                        ) : null}
+                      </div>
+                      <p className="text-slate-500">
+                        {vehicleCardList.length} vehicles • {wheelCardList.length} wheels
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          case "vehicles_grid":
+            return brand === undefined || vehiclesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{formattedBrandName}</h1>
-                  {brand && (
-                    <SaveButton
-                      itemId={brand.id}
-                      itemType="brand"
-                      convexId={brand._id}
-                    />
-                  )}
-                </div>
-                <p className="text-slate-500">
-                  {vehicleCardList.length} vehicles • {wheelCardList.length} wheels
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto flex flex-wrap gap-1 bg-card border border-border rounded-lg p-1 mb-4">
-            <TabsTrigger value="vehicles" className="flex-1 min-w-fit">
-              Vehicles ({vehicleCardList.length})
-            </TabsTrigger>
-            <TabsTrigger value="wheels" className="flex-1 min-w-fit">
-              Wheels ({wheelCardList.length})
-            </TabsTrigger>
-            <TabsTrigger value="badpic" className="flex-1 min-w-fit">
-              Bad Pic
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="vehicles">
-            {brand === undefined || vehiclesLoading ? (
-              <p className="text-slate-500">Loading vehicles...</p>
             ) : vehicleCardList.length === 0 ? (
-              <p className="text-slate-500">No vehicles found for this brand.</p>
+              <ItemPageEmptyState
+                title="No vehicles found"
+                description="This brand does not have vehicles linked on the current backend yet."
+              />
             ) : (
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <ItemPageGrid>
                 {vehicleCardList.map((vehicle) => (
                   <VehicleCard
                     key={vehicle.id ?? vehicle.name}
@@ -124,19 +135,20 @@ const BrandDetailPage = () => {
                     onFlip={toggleCardFlip}
                   />
                 ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="wheels">
-            {brand === undefined || wheelsLoading ? (
+              </ItemPageGrid>
+            );
+          case "wheels_grid":
+            return brand === undefined || wheelsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : wheelCardList.length === 0 ? (
-              <p className="text-slate-500">No wheels found for this brand.</p>
+              <ItemPageEmptyState
+                title="No wheels found"
+                description="This brand does not have wheels linked on the current backend yet."
+              />
             ) : (
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <ItemPageGrid>
                 {wheelCardList.map((wheel) => (
                   <WheelCard
                     key={wheel.id}
@@ -146,38 +158,69 @@ const BrandDetailPage = () => {
                     linkToDetail={true}
                   />
                 ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="badpic">
-            <Card>
-              <CardContent className="pt-4">
-                {brand?.brand_image_url ? (
-                  <div className="space-y-4">
-                    <div className="relative rounded-lg overflow-hidden bg-muted">
-                      <img
-                        src={brand.brand_image_url}
-                        alt={`${formattedBrandName} reference`}
-                        className="w-full max-h-[600px] object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        }}
-                      />
+              </ItemPageGrid>
+            );
+          case "market":
+            return marketSurface.isBackendUnavailable ? (
+              <ConvexBackendUnavailableCard
+                title="Market unavailable on this backend"
+                description="The brand market surface query is not deployed on the active backend yet."
+                error={marketSurface.error}
+              />
+            ) : marketSurface.isError ? (
+              <Card className="border-destructive/30 bg-destructive/5">
+                <CardContent className="pt-4">
+                  <p className="text-sm font-medium text-destructive">Could not load market data</p>
+                  <p className="text-sm text-muted-foreground">{getConvexErrorMessage(marketSurface.error)}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <MarketSurfacePanel
+                title="Listings"
+                items={marketSurface.data?.items}
+                emptyTitle="No linked listings yet"
+                emptyDescription={`Nothing is linked directly to ${formattedBrandName} right now.`}
+              />
+            );
+          case "gallery":
+            return (
+              <Card>
+                <CardContent className="pt-4">
+                  {brandReferenceImageUrl ? (
+                    <div className="space-y-4">
+                      <div className="relative overflow-hidden rounded-lg bg-muted">
+                        <img
+                          src={brandReferenceImageUrl}
+                          alt={`${formattedBrandName} reference`}
+                          className="max-h-[600px] w-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <ImageOff className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                    <p>No reference image available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
+                  ) : (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <ImageOff className="mx-auto mb-4 h-16 w-16 opacity-30" />
+                      <p>No reference image available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          case "comments":
+            return (
+              <ItemCommentsPanel
+                itemType="brand"
+                itemId={brand?._id}
+                itemName={formattedBrandName}
+              />
+            );
+          default:
+            return null;
+        }
+      }}
+    />
   );
 };
 

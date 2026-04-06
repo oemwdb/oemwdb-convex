@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSafeConvexQuery } from "@/hooks/useSafeConvexQuery";
 
-export type CommentableItemType = "brand" | "vehicle" | "wheel";
+export type CommentableItemType = "brand" | "vehicle" | "wheel" | "engine";
 
 export interface ItemComment {
   id: string;
@@ -36,39 +37,52 @@ function getUserDisplayName(user: unknown): string {
 
 export function useItemComments(
   itemType: CommentableItemType,
-  itemId: Id<"oem_brands"> | Id<"oem_vehicles"> | Id<"oem_wheels"> | null | undefined
+  itemId: Id<"oem_brands"> | Id<"oem_vehicles"> | Id<"oem_wheels"> | Id<"oem_engines"> | null | undefined
 ) {
   const { user, isAuthenticated } = useAuth();
 
-  const vehicleCommentsRaw = useQuery(
+  const vehicleCommentsState = useSafeConvexQuery<any[]>(
     api.queries.vehicleCommentsGetByVehicle,
     itemType === "vehicle" && itemId
       ? { vehicleId: itemId as Id<"oem_vehicles"> }
       : "skip"
   );
-  const wheelCommentsRaw = useQuery(
+  const wheelCommentsState = useSafeConvexQuery<any[]>(
     api.queries.wheelCommentsGetByWheel,
     itemType === "wheel" && itemId
       ? { wheelId: itemId as Id<"oem_wheels"> }
       : "skip"
   );
-  const brandCommentsRaw = useQuery(
+  const brandCommentsState = useSafeConvexQuery<any[]>(
     api.queries.brandCommentsGetByBrand,
     itemType === "brand" && itemId
       ? { brandId: itemId as Id<"oem_brands"> }
       : "skip"
   );
+  const engineCommentsState = useSafeConvexQuery<any[]>(
+    api.queries.engineCommentsGetByEngine,
+    itemType === "engine" && itemId
+      ? { engineId: itemId as Id<"oem_engines"> }
+      : "skip"
+  );
 
   const insertVehicleComment = useMutation(api.mutations.vehicleCommentInsert);
+  const insertEngineComment = useMutation(api.mutations.engineCommentInsert);
   const insertWheelComment = useMutation(api.mutations.wheelCommentInsert);
   const insertBrandComment = useMutation(api.mutations.brandCommentInsert);
 
-  const commentsRaw =
+  const commentsState =
     itemType === "vehicle"
-      ? vehicleCommentsRaw
+      ? vehicleCommentsState
+      : itemType === "engine"
+        ? engineCommentsState
       : itemType === "wheel"
-        ? wheelCommentsRaw
-        : brandCommentsRaw;
+        ? wheelCommentsState
+        : brandCommentsState;
+
+  const commentsRaw = commentsState.data;
+  const commentsError = commentsState.error;
+  const hasMissingFunctionError = commentsError?.message?.includes("Could not find public function") ?? false;
 
   const comments: ItemComment[] =
     commentsRaw?.map((comment) => ({
@@ -90,12 +104,25 @@ export function useItemComments(
     if (!itemId) {
       throw new Error("Item not found");
     }
+    if (hasMissingFunctionError) {
+      throw new Error("Comments are unavailable on this backend");
+    }
 
     const userName = getUserDisplayName(user);
 
     if (itemType === "vehicle") {
       await insertVehicleComment({
         vehicleId: itemId as Id<"oem_vehicles">,
+        userId: user.id,
+        userName,
+        comment_text: trimmed,
+      });
+      return;
+    }
+
+    if (itemType === "engine") {
+      await insertEngineComment({
+        engineId: itemId as Id<"oem_engines">,
         userId: user.id,
         userName,
         comment_text: trimmed,
@@ -124,7 +151,9 @@ export function useItemComments(
   return {
     comments,
     addComment,
-    isLoading: !!itemId && commentsRaw === undefined,
+    isLoading: !!itemId && commentsState.isLoading,
     isAuthenticated,
+    error: commentsError,
+    isAvailable: !hasMissingFunctionError,
   };
 }

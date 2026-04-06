@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
@@ -12,7 +12,14 @@ interface WheelCardProps {
     id: string;
     name: string;
     diameter?: string;
+    width?: string;
     boltPattern?: string;
+    bolt_pattern?: string;
+    center_bore?: string;
+    color?: string;
+    tire_size?: string;
+    brand_name?: string | null;
+    vehicle_names?: string[] | string | null;
     specs?: string[];
     imageUrl?: string | null;
     imageSource?: string | null;
@@ -68,11 +75,19 @@ const WheelCard = ({ wheel, isFlipped, onFlip, linkToDetail = false, dataMapping
   // Decide which image to load
   // IF dev mode AND viewBadPic is true AND we have a bad pic -> show bad pic
   // ELSE show standard logic
-  const imageSourceValue = (isDevMode && viewBadPic && rawObsidianPath)
-    ? rawObsidianPath
-    : (wheel.imageUrl ?? (wheel as any).good_pic_url ?? (wheel as any).image ?? null);
+  const imageSources = useMemo(() => {
+    if (isDevMode && viewBadPic && rawObsidianPath) {
+      return [{ value: rawObsidianPath, bucketHint: "BADPICS" }];
+    }
 
-  const { imageUrl, handleImageError } = useWheelImageLoader(imageSourceValue);
+    return [
+      { value: (wheel as any).good_pic_url ?? wheel.imageUrl ?? (wheel as any).image ?? null, bucketHint: "oemwdb images" },
+      { value: rawObsidianPath, bucketHint: "BADPICS" },
+      { value: wheel.imageUrl ?? (wheel as any).image ?? null, bucketHint: "oemwdb images" },
+    ];
+  }, [isDevMode, viewBadPic, rawObsidianPath, wheel.imageUrl, (wheel as any).good_pic_url, (wheel as any).image]);
+
+  const { imageUrl, handleImageError } = useWheelImageLoader(imageSources);
 
   useEffect(() => {
     const checkOverflow = () => {

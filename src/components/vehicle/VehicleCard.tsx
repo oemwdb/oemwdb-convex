@@ -7,10 +7,14 @@ import { RotateCw, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CardBackSlot } from "@/components/cards/CardBackSlot";
 import VehicleCardButtons from "./VehicleCardButtons";
+import { getMediaUrlCandidates } from "@/lib/mediaUrls";
+import { getVehicleRoutePath } from "@/lib/vehicleRoutes";
 
 interface VehicleCardProps {
   vehicle: {
     id?: string;
+    slug?: string;
+    routeId?: string;
     name: string;
     brand: string;
     wheels: number;
@@ -41,6 +45,7 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
   const textRef = useRef<HTMLParagraphElement>(null);
   const backTextRef = useRef<HTMLParagraphElement>(null);
   const [imageError, setImageError] = useState(false);
+  const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
 
   // Check if text is overflowing
   useEffect(() => {
@@ -96,8 +101,15 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
     }
   }, [isFlipped]);
 
+  useEffect(() => {
+    setImageCandidateIndex(0);
+    setImageError(false);
+  }, [vehicle.image]);
+
   // Use chassis code (name) directly - no brand stripping needed for chassis codes like F55, F56
   const displayName = vehicle.name;
+  const imageCandidates = getMediaUrlCandidates(vehicle.image, "oemwdb images");
+  const vehicleImageUrl = !imageError ? imageCandidates[imageCandidateIndex] ?? null : null;
 
   const toggleSource = () => {
     setIsSourceExpanded(!isSourceExpanded);
@@ -120,12 +132,19 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
           <div className="relative h-full w-full bg-muted flex flex-col justify-between">
             {/* Background with image or centered vehicle name */}
             <div className="flex-grow flex items-center justify-center overflow-hidden rounded-t-lg">
-              {vehicle.image && !imageError ? (
+              {vehicleImageUrl ? (
                 <img
-                  src={vehicle.image}
+                  src={vehicleImageUrl}
                   alt={vehicle.name}
                   className="w-full h-full object-cover"
-                  onError={() => setImageError(true)}
+                  onError={() => {
+                    const nextIndex = imageCandidateIndex + 1;
+                    if (nextIndex < imageCandidates.length) {
+                      setImageCandidateIndex(nextIndex);
+                      return;
+                    }
+                    setImageError(true);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg">
@@ -301,9 +320,8 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
   );
 
   // Use vehicle ID for link if available, otherwise fallback to name-based slug
-  const vehicleLink = vehicle.id
-    ? `/vehicles/${encodeURIComponent(vehicle.id)}`
-    : `/vehicles/${vehicle.name.toLowerCase().replace(/\s+/g, '-')}`;
+  const vehicleLink = getVehicleRoutePath(vehicle);
+  const flipKey = vehicle.id || vehicle.slug || vehicle.routeId || vehicle.name;
 
   return (
     <Link
@@ -315,7 +333,7 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
         isFlipped={isFlipped}
         isSourceExpanded={isSourceExpanded}
         imageSource={vehicle.image}
-        onFlip={() => onFlip(vehicle.name)}
+        onFlip={() => onFlip(flipKey)}
         onToggleSource={toggleSource}
       />
     </Link>

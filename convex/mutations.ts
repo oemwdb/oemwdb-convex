@@ -5,11 +5,75 @@
 
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import {
+  DEFAULT_ADMIN_TABLE_SELECTOR_LAYOUT_SCOPE,
+  requireAdmin,
+  requireAdminUserId,
+} from "./adminAuth";
 
 const optionalString = v.optional(v.string());
 const optionalNumber = v.optional(v.number());
 const optionalBoolean = v.optional(v.boolean());
 const optionalStringArray = v.optional(v.array(v.string()));
+
+function cleanEngineText(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeCanonicalEngineCode(code: string): string {
+  const trimmed = code.trim();
+  if (/^ingenium$/i.test(trimmed)) return "Ingenium";
+  return trimmed.toUpperCase();
+}
+
+function extractCanonicalEngineCodeFromText(raw: string | null | undefined): string | null {
+  const text = cleanEngineText(raw);
+  if (!text) return null;
+
+  const matchers: RegExp[] = [
+    /\bAJ\d+[A-Z0-9]*\b/i,
+    /\bIngenium\b/i,
+    /\bTDV\d+\b/i,
+    /\bSDV\d+\b/i,
+    /\bTD\d+\b/i,
+    /\bSD\d+\b/i,
+    /\bCDI\b/i,
+    /\bEQ\b/i,
+    /\bED\b/i,
+    /\bMHD\b/i,
+    /\bBlueHDi\b/i,
+    /\bPureTech\b/i,
+    /\bEcoBoost\b/i,
+    /\bDuratorq\b/i,
+    /\bDuratec\b/i,
+    /\bTwinAir\b/i,
+    /\bMultiAir\b/i,
+    /\bT-?Jet\b/i,
+  ];
+
+  for (const pattern of matchers) {
+    const match = text.match(pattern);
+    if (match?.[0]) return normalizeCanonicalEngineCode(match[0]);
+  }
+
+  return null;
+}
+
+function cleanFamilyEngineTitle(raw: string | null | undefined): string | null {
+  const text = cleanEngineText(raw);
+  if (!text) return null;
+
+  return text
+    .replace(/^(Roadster\s+Coup[eé]|Roadster|Coup[eé]|Cabrio|Crossblade)\s+/i, "")
+    .replace(/\bcdi\b/g, "CDI")
+    .replace(/\beq\b/g, "EQ")
+    .replace(/\bed\b/g, "ED")
+    .replace(/\bmhd\b/g, "MHD")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 // =============================================================================
 // REFERENCE TABLES (for migration script — get-or-create, return _id)
@@ -63,6 +127,37 @@ export const colorsInsert = mutation({
       created_at: now,
       updated_at: now,
     });
+  },
+});
+
+export const colorsUpdate = mutation({
+  args: {
+    id: v.id("oem_colors"),
+    slug: optionalString,
+    color: optionalString,
+    color_title: optionalString,
+    family_id: v.optional(v.id("oem_color_families")),
+    manufacturer_code: optionalString,
+    hex: optionalString,
+    finish: optionalString,
+    notes: optionalString,
+    brand_id: v.optional(v.id("oem_brands")),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    });
+    return id;
+  },
+});
+
+export const colorsDelete = mutation({
+  args: { id: v.id("oem_colors") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+    return args.id;
   },
 });
 
@@ -237,6 +332,60 @@ export const vehiclesDelete = mutation({
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
     return args.id;
+  },
+});
+
+export const enginesNormalizeCanon = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? false;
+    const all = await ctx.db.query("oem_engines").collect();
+    let updated = 0;
+    const samples: Array<{
+      id: string | null;
+      beforeTitle: string | null;
+      afterTitle: string | null;
+      beforeCode: string | null;
+      afterCode: string | null;
+    }> = [];
+
+    for (const doc of all) {
+      const currentTitle = cleanEngineText(doc.engine_title);
+      const currentCode = cleanEngineText(doc.engine_code);
+      const nextTitle = cleanFamilyEngineTitle(doc.engine_title);
+      const nextCode =
+        currentCode ??
+        extractCanonicalEngineCodeFromText(doc.engine_title) ??
+        extractCanonicalEngineCodeFromText(doc.id);
+
+      const titleChanged = nextTitle !== currentTitle;
+      const codeChanged = nextCode !== currentCode;
+      if (!titleChanged && !codeChanged) continue;
+
+      const patch: Record<string, string> = {};
+      if (titleChanged && nextTitle != null) patch.engine_title = nextTitle;
+      if (codeChanged && nextCode != null) patch.engine_code = nextCode;
+      patch.updated_at = new Date().toISOString();
+
+      if (!dryRun) {
+        await ctx.db.patch(doc._id, patch);
+      }
+
+      updated += 1;
+      if (samples.length < 25) {
+        samples.push({
+          id: cleanEngineText(doc.id),
+          beforeTitle: currentTitle,
+          afterTitle: nextTitle,
+          beforeCode: currentCode,
+          afterCode: nextCode,
+        });
+      }
+    }
+
+    return { updated, dryRun, samples };
   },
 });
 
@@ -454,6 +603,7 @@ export const wheelsUpdate = mutation({
     text_center_bores: optionalString,
     text_colors: optionalString,
     text_offsets: optionalString,
+    text_tire_sizes: optionalString,
     jnc_brands: optionalString,
   },
   handler: async (ctx, args) => {
@@ -1139,6 +1289,26 @@ export const vehicleCommentInsert = mutation({
   },
 });
 
+export const engineCommentInsert = mutation({
+  args: {
+    engineId: v.id("oem_engines"),
+    userId: v.string(),
+    userName: optionalString,
+    comment_text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("engine_comments", {
+      engine_id: args.engineId,
+      user_id: args.userId,
+      user_name: args.userName ?? undefined,
+      comment_text: args.comment_text,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
 export const wheelCommentInsert = mutation({
   args: {
     wheelId: v.id("oem_wheels"),
@@ -1198,7 +1368,12 @@ export const userTablePreferencesUpsert = mutation({
   args: {
     userId: v.string(),
     tableName: v.string(),
-    columnOrderJson: v.string(),
+    columnOrderJson: v.optional(v.string()),
+    hiddenColumnsJson: v.optional(v.string()),
+    columnLabelsJson: v.optional(v.string()),
+    columnGroupsJson: v.optional(v.string()),
+    columnWidthsJson: v.optional(v.string()),
+    pickerHiddenTablesJson: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -1211,6 +1386,11 @@ export const userTablePreferencesUpsert = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         column_order_json: args.columnOrderJson,
+        hidden_columns_json: args.hiddenColumnsJson,
+        column_labels_json: args.columnLabelsJson,
+        column_groups_json: args.columnGroupsJson,
+        column_widths_json: args.columnWidthsJson,
+        picker_hidden_tables_json: args.pickerHiddenTablesJson,
         updated_at: now,
       });
       return existing._id;
@@ -1219,6 +1399,11 @@ export const userTablePreferencesUpsert = mutation({
       user_id: args.userId,
       table_name: args.tableName,
       column_order_json: args.columnOrderJson,
+      hidden_columns_json: args.hiddenColumnsJson,
+      column_labels_json: args.columnLabelsJson,
+      column_groups_json: args.columnGroupsJson,
+      column_widths_json: args.columnWidthsJson,
+      picker_hidden_tables_json: args.pickerHiddenTablesJson,
       created_at: now,
       updated_at: now,
     });
@@ -1238,6 +1423,86 @@ export const userTablePreferencesDelete = mutation({
       await ctx.db.delete(existing._id);
       return existing._id;
     }
+    return null;
+  },
+});
+
+export const adminTableSelectorLayoutUpsert = mutation({
+  args: {
+    layoutScope: v.optional(v.string()),
+    customGroupsJson: v.string(),
+    hiddenTablesJson: v.optional(v.string()),
+    schemaNodePositionsJson: v.optional(v.string()),
+    schemaSectionLayoutsJson: v.optional(v.string()),
+    schemaViewportJson: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireAdmin(ctx);
+    const userId = requireAdminUserId(identity);
+    const layoutScope = args.layoutScope?.trim() || DEFAULT_ADMIN_TABLE_SELECTOR_LAYOUT_SCOPE;
+    const now = new Date().toISOString();
+    const sharedFields = {
+      custom_groups_json: args.customGroupsJson,
+      ...(typeof args.hiddenTablesJson === "string"
+        ? { hidden_tables_json: args.hiddenTablesJson }
+        : {}),
+      ...(typeof args.schemaNodePositionsJson === "string"
+        ? { schema_node_positions_json: args.schemaNodePositionsJson }
+        : {}),
+      ...(typeof args.schemaSectionLayoutsJson === "string"
+        ? { schema_section_layouts_json: args.schemaSectionLayoutsJson }
+        : {}),
+      ...(typeof args.schemaViewportJson === "string"
+        ? { schema_viewport_json: args.schemaViewportJson }
+        : {}),
+    };
+
+    const existing = await ctx.db
+      .query("admin_table_selector_layouts")
+      .withIndex("by_user_scope", (q) =>
+        q.eq("user_id", userId).eq("layout_scope", layoutScope)
+      )
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        ...sharedFields,
+        updated_at: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("admin_table_selector_layouts", {
+      user_id: userId,
+      layout_scope: layoutScope,
+      ...sharedFields,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const adminTableSelectorLayoutDelete = mutation({
+  args: {
+    layoutScope: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireAdmin(ctx);
+    const userId = requireAdminUserId(identity);
+    const layoutScope = args.layoutScope?.trim() || DEFAULT_ADMIN_TABLE_SELECTOR_LAYOUT_SCOPE;
+
+    const existing = await ctx.db
+      .query("admin_table_selector_layouts")
+      .withIndex("by_user_scope", (q) =>
+        q.eq("user_id", userId).eq("layout_scope", layoutScope)
+      )
+      .first();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      return existing._id;
+    }
+
     return null;
   },
 });

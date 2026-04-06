@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useUser, useClerk } from '@clerk/react';
-import { ADMIN_EMAILS, readStoredPerspective, type ViewerPerspective } from '@/lib/perspective';
+import {
+  ADMIN_EMAILS,
+  PERSPECTIVE_STORAGE_KEY,
+  readStoredPerspective,
+  type ViewerPerspective,
+} from '@/lib/perspective';
 
 interface AuthContextType {
   user: any | null;
@@ -35,6 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isLoading = !isLoaded;
   const actualIsAuthenticated = !!isSignedIn;
+  const previousAuthRef = useRef(actualIsAuthenticated);
+  const previousAdminRef = useRef(false);
 
   useEffect(() => {
     const syncPerspective = () => {
@@ -68,6 +75,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() ??
     null;
   const isAdmin = !!primaryEmail && ADMIN_EMAILS.has(primaryEmail);
+
+  useEffect(() => {
+    const wasAuthenticated = previousAuthRef.current;
+    const wasAdmin = previousAdminRef.current;
+    const justSignedIn = !wasAuthenticated && actualIsAuthenticated;
+    const justBecameAdmin = !wasAdmin && isAdmin;
+
+    const syncPerspective = (nextPerspective: ViewerPerspective) => {
+      if (storedPerspective === nextPerspective) return;
+      window.localStorage.setItem(PERSPECTIVE_STORAGE_KEY, nextPerspective);
+      window.dispatchEvent(new Event("viewer-perspective-change"));
+      setStoredPerspective(nextPerspective);
+    };
+
+    if (!actualIsAuthenticated) {
+      syncPerspective("basic");
+    } else if (!isAdmin) {
+      syncPerspective("user");
+    } else if (justSignedIn || justBecameAdmin) {
+      syncPerspective("dev");
+    }
+
+    previousAuthRef.current = actualIsAuthenticated;
+    previousAdminRef.current = isAdmin;
+  }, [actualIsAuthenticated, isAdmin, storedPerspective]);
+
   const perspective: ViewerPerspective = !actualIsAuthenticated
     ? 'basic'
     : isAdmin

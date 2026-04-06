@@ -552,3 +552,65 @@ export const applyWheelImageStorage = mutation({
     };
   },
 });
+
+export const reclassifyWheelImageType = mutation({
+  args: {
+    wheelId: v.id("oem_wheels"),
+    fromType: v.string(),
+    toType: v.string(),
+    fromUrl: v.optional(v.string()),
+    toUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("oem_wheel_images")
+      .withIndex("by_wheel", (q) => q.eq("wheel_id", args.wheelId))
+      .collect();
+
+    const normalizedFromUrl = clean(args.fromUrl);
+    const normalizedToUrl = clean(args.toUrl) ?? normalizedFromUrl;
+    const candidates = rows.filter((row) => {
+      if (row.image_type !== args.fromType) return false;
+      if (!normalizedFromUrl) return true;
+      return clean(row.url) === normalizedFromUrl || clean(row.url) === normalizedToUrl;
+    });
+
+    const existingTarget = rows.find(
+      (row) => row.image_type === args.toType && clean(row.url) === normalizedToUrl
+    );
+
+    let patched = 0;
+    let deleted = 0;
+    let inserted = 0;
+
+    if (candidates.length === 0 && normalizedToUrl) {
+      await ctx.db.insert("oem_wheel_images", {
+        wheel_id: args.wheelId,
+        storage_id: undefined,
+        url: normalizedToUrl,
+        image_type: args.toType,
+        sort_order: 0,
+        is_primary: true,
+        created_at: new Date().toISOString(),
+      });
+      inserted += 1;
+      return { patched, deleted, inserted };
+    }
+
+    for (const row of candidates) {
+      if (existingTarget && existingTarget._id !== row._id) {
+        await ctx.db.delete(row._id);
+        deleted += 1;
+        continue;
+      }
+      await ctx.db.patch(row._id, {
+        image_type: args.toType,
+        url: normalizedToUrl ?? row.url,
+        is_primary: true,
+      });
+      patched += 1;
+    }
+
+    return { patched, deleted, inserted };
+  },
+});

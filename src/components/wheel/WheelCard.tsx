@@ -7,8 +7,12 @@ import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import WheelCardButtons from "@/components/wheel/WheelCardButtons";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
-import { useDevMode } from "@/contexts/DevModeContext";
-import { useStorageActions } from "@/hooks/useStorage";
+import { getMediaUrlCandidates } from "@/lib/mediaUrls";
+import {
+    collectCardBackValues,
+    firstCardBackValue,
+    stripCardBackContext,
+} from "@/lib/cardBackValues";
 
 interface WheelCardProps {
     wheel: {
@@ -18,6 +22,14 @@ interface WheelCardProps {
         good_pic_url?: string | null;
         bad_pic_url?: string | null;
         imageSource?: string | null;
+        brand_name?: string | null;
+        diameter?: string | null;
+        width?: string | null;
+        bolt_pattern?: string | null;
+        center_bore?: string | null;
+        color?: string | null;
+        tire_size?: string | null;
+        vehicle_names?: string[] | string | null;
         // JSONB reference fields for back of card
         diameter_ref?: any;
         width_ref?: any;
@@ -99,42 +111,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
         }
     }, [isFlipped]);
 
-    // Helper to extract values from JSONB array
-    const extractValues = (jsonb: any): string[] => {
-        if (!jsonb) return [];
-        if (typeof jsonb === 'string') {
-            try {
-                jsonb = JSON.parse(jsonb);
-            } catch {
-                return [jsonb]; // Return as-is if not parseable
-            }
-        }
-        if (Array.isArray(jsonb)) {
-            return jsonb.map(item => {
-                if (typeof item === 'string') return item;
-                // Handle JSONB objects with various formats
-                if (typeof item === 'object' && item !== null) {
-                    if (item.value !== undefined) return String(item.value);
-                    if (item.raw !== undefined) return String(item.raw);
-                    if (item.title !== undefined) return String(item.title);
-                    if (item.name !== undefined) return String(item.name);
-                    // For vehicle_ref that has id and title
-                    if (item.id && item.title) return String(item.title);
-                }
-                return null;
-            }).filter(Boolean) as string[];
-        }
-        return [];
-    };
-
-    // Extract brand name from brand_ref
-    const extractBrandName = (): string | null => {
-        if (!wheel.brand_ref) return null;
-        const values = extractValues(wheel.brand_ref);
-        return values.length > 0 ? values[0] : null;
-    };
-
-    const brandName = extractBrandName();
+    const brandName = firstCardBackValue(wheel.brand_name, wheel.brand_ref);
 
     // Helper to remove brand name from wheel name
     const getDisplayName = () => {
@@ -147,40 +124,24 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
 
     const displayName = getDisplayName();
 
-    const { isDevMode } = useDevMode();
-    const { getPublicUrl } = useStorageActions();
-
     const toggleSource = () => {
         setIsSourceExpanded(!isSourceExpanded);
     };
 
-    // Calculate effective image URL based on dev mode
-    // Priority: 1. Good Pic | 2. Bad Pic (fallback) | 3. imageUrl (legacy)
-    let effectiveImageUrl: string | null = null;
-    let isBadPic = false;
+    // Priority: 1. Good Pic | 2. Bad Pic fallback | 3. imageUrl (legacy)
+    const sourceCandidates = [
+        ...getMediaUrlCandidates(wheel.good_pic_url, "oemwdb images"),
+        ...getMediaUrlCandidates(wheel.bad_pic_url, "BADPICS"),
+        ...getMediaUrlCandidates(wheel.imageUrl, "oemwdb images"),
+    ].filter((candidate, index, all) => all.indexOf(candidate) === index);
 
-    if (wheel.good_pic_url && wheel.good_pic_url.length > 5 && wheel.good_pic_url.startsWith('http')) {
-        effectiveImageUrl = wheel.good_pic_url;
-    } else if (isDevMode && wheel.bad_pic_url && wheel.bad_pic_url.length > 1) {
-        // STRICTLY only show bad pic if we are in Dev Mode
-        effectiveImageUrl = wheel.bad_pic_url;
-        isBadPic = true;
-    } else if (wheel.imageUrl && wheel.imageUrl.length > 5) {
-        effectiveImageUrl = wheel.imageUrl;
-    }
-
-    // If we have an image URL but it's not absolute (http/https), resolve it to storage
-    if (effectiveImageUrl && !effectiveImageUrl.startsWith('http') && !effectiveImageUrl.startsWith('/')) {
-        // Use BADPICS bucket for bad_pic_url values, otherwise use oemwdb images
-        const bucketName = isBadPic ? 'BADPICS' : 'oemwdb images';
-        effectiveImageUrl = getPublicUrl(bucketName, effectiveImageUrl);
-    }
-
-    const imageUrl = effectiveImageUrl && effectiveImageUrl.length > 5 ? effectiveImageUrl : null;
+    const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
+    const imageUrl = sourceCandidates[imageCandidateIndex] ?? null;
 
     useEffect(() => {
         setImageError(false);
-    }, [imageUrl]);
+        setImageCandidateIndex(0);
+    }, [wheel.good_pic_url, wheel.bad_pic_url, wheel.imageUrl]);
 
     const cardContent = (
         <div
@@ -206,7 +167,14 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
                                         src={imageUrl}
                                         alt={wheel.name}
                                         className="max-w-[105%] max-h-[105%] object-contain will-change-transform"
-                                        onError={() => setImageError(true)}
+                                        onError={() => {
+                                            const nextIndex = imageCandidateIndex + 1;
+                                            if (nextIndex < sourceCandidates.length) {
+                                                setImageCandidateIndex(nextIndex);
+                                                return;
+                                            }
+                                            setImageError(true);
+                                        }}
                                         onMouseEnter={handleWheelMouseEnter}
                                         onMouseLeave={handleWheelMouseLeave}
                                     />
@@ -276,13 +244,16 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
                                 {(() => {
                                     // Define fields to display with labels (wheel-specific)
                                     const fields = [
-                                        { label: 'Vehicle', values: wheel.vehicle_ref ? extractValues(wheel.vehicle_ref).map(v => v.replace(/^.*?\s-\s/, '')) : [] },
-                                        { label: 'Diameter', values: extractValues(wheel.diameter_ref) },
-                                        { label: 'Width', values: extractValues(wheel.width_ref) },
-                                        { label: 'Bolt Pattern', values: extractValues(wheel.bolt_pattern_ref) },
-                                        { label: 'Center Bore', values: extractValues(wheel.center_bore_ref) },
-                                        { label: 'Color', values: extractValues(wheel.color_ref) },
-                                        { label: 'Tire Size', values: extractValues(wheel.tire_size_ref) },
+                                        {
+                                            label: 'Vehicle',
+                                            values: collectCardBackValues(wheel.vehicle_names, wheel.vehicle_ref).map(stripCardBackContext),
+                                        },
+                                        { label: 'Diameter', values: collectCardBackValues(wheel.diameter, wheel.diameter_ref) },
+                                        { label: 'Width', values: collectCardBackValues(wheel.width, wheel.width_ref) },
+                                        { label: 'Bolt Pattern', values: collectCardBackValues(wheel.bolt_pattern, wheel.bolt_pattern_ref) },
+                                        { label: 'Center Bore', values: collectCardBackValues(wheel.center_bore, wheel.center_bore_ref) },
+                                        { label: 'Color', values: collectCardBackValues(wheel.color, wheel.color_ref) },
+                                        { label: 'Tire Size', values: collectCardBackValues(wheel.tire_size, wheel.tire_size_ref) },
                                     ];
 
                                     return fields.map((field, idx) => (

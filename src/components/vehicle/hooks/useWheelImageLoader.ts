@@ -1,34 +1,59 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 
-export const useWheelImageLoader = (imagelink?: string | null) => {
-  const isRenderableUrl =
-    typeof imagelink === "string" &&
-    (imagelink.startsWith("http") || imagelink.startsWith("/"));
+type WheelImageSource =
+  | string
+  | null
+  | undefined
+  | {
+      value?: string | null;
+      bucketHint?: string | null;
+    };
 
-  // Initialize with the actual URL to prevent flash of no content
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    isRenderableUrl ? imagelink : null
-  );
-  const [hasError, setHasError] = useState(false);
+export const useWheelImageLoader = (
+  source?: WheelImageSource | WheelImageSource[],
+  bucketHint?: string | null
+) => {
+  const candidates = useMemo(() => {
+    if (Array.isArray(source)) {
+      return [
+        ...new Set(
+          source.flatMap((entry) => {
+            if (typeof entry === "string" || entry == null) {
+              return getMediaUrlCandidates(entry, bucketHint);
+            }
+
+            return getMediaUrlCandidates(entry.value, entry.bucketHint);
+          })
+        ),
+      ];
+    }
+
+    if (typeof source === "string" || source == null) {
+      return getMediaUrlCandidates(source, bucketHint);
+    }
+
+    return getMediaUrlCandidates(source.value, source.bucketHint);
+  }, [source, bucketHint]);
+
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [imageUrl, setImageUrl] = useState<string | null>(candidates[0] ?? null);
 
   useEffect(() => {
-    // Reset error state when imagelink changes
-    setHasError(false);
-    
-    if (isRenderableUrl) {
-      // Valid URL - use it directly
-      setImageUrl(imagelink);
-    } else {
-      // Not a valid URL
-      setImageUrl(null);
-    }
-  }, [imagelink, isRenderableUrl]);
+    setCandidateIndex(0);
+    setImageUrl(candidates[0] ?? null);
+  }, [candidates]);
 
   const handleImageError = () => {
-    // Don't null out the URL - just track that there was an error
-    // This allows the browser to retry and prevents permanent failure
-    setHasError(true);
-    console.warn('Wheel image failed to load:', imageUrl);
+    const nextIndex = candidateIndex + 1;
+    if (nextIndex < candidates.length) {
+      setCandidateIndex(nextIndex);
+      setImageUrl(candidates[nextIndex] ?? null);
+      return;
+    }
+
+    setImageUrl(null);
+    console.warn("Wheel image failed to load:", imageUrl);
   };
 
   return { imageUrl, handleImageError };

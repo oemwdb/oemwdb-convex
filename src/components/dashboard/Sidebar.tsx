@@ -6,10 +6,13 @@ import {
   Car,
   CircleDot,
   Gauge,
+  Palette,
   LayoutDashboard,
   Database,
   LogIn,
   LogOut,
+  Megaphone,
+  Network,
   Settings,
   Terminal,
   UserCircle2,
@@ -18,6 +21,7 @@ import {
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBackendTarget } from "@/contexts/BackendTargetContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -47,6 +51,7 @@ const Sidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { isDevMode, perspective, setPerspective, canUsePerspectiveSwitcher } = useDevMode();
+  const { selectedTarget, activeTarget, setSelectedTarget, canUseWorkshop, workshopConfigured } = useBackendTarget();
   const showAdminUi = isAdmin && isDevMode;
   const accountTriggerRef = useRef<HTMLButtonElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
@@ -92,8 +97,11 @@ const Sidebar = ({
     { icon: Building2, label: "Brands", path: "/brands", adminOnly: false },
     { icon: Car, label: "Vehicles", path: "/vehicles", adminOnly: false },
     { icon: CircleDot, label: "Wheels", path: "/wheels", adminOnly: false },
+    { icon: Palette, label: "Colors", path: "/colors", adminOnly: false },
     { icon: Gauge, label: "Engines", path: "/engines", adminOnly: false },
     { icon: LayoutDashboard, label: "Dev", path: "/dev", adminOnly: true },
+    { icon: Megaphone, label: "Advertising", path: "/dev/advertising", adminOnly: true },
+    { icon: Network, label: "Schema", path: "/dev/schema", adminOnly: true },
     { icon: Database, label: "Buckets", path: "/dev/buckets", adminOnly: true },
     { icon: Terminal, label: "Tables", path: "/dev/tables", adminOnly: true }
   ];
@@ -258,6 +266,53 @@ const Sidebar = ({
                     </>
                   ) : null}
                 </div>
+
+                {actualIsAuthenticated && isAdmin ? (
+                  <div className="mt-4">
+                    <div className="flex items-center gap-1 rounded-full p-0.5 bg-white/5 border border-white/10 w-full">
+                      {(["control", "workshop"] as const).map((target) => {
+                        const isWorkshop = target === "workshop";
+                        const disabled = isWorkshop && !canUseWorkshop;
+                        return (
+                          <button
+                            key={target}
+                            type="button"
+                            disabled={disabled}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTarget(target);
+                            }}
+                            className={cn(
+                              "flex-1 rounded-full px-2 py-1 text-[11px] font-medium transition-all duration-200",
+                              target === "control" && [
+                                "text-sky-300",
+                                selectedTarget === "control"
+                                  ? "bg-sky-500/90 text-white shadow-[0_0_8px_rgba(14,165,233,0.35)]"
+                                  : "hover:bg-sky-500/20 hover:text-sky-100",
+                              ],
+                              target === "workshop" && [
+                                "text-red-300",
+                                selectedTarget === "workshop"
+                                  ? "bg-red-500/90 text-white shadow-[0_0_10px_rgba(239,68,68,0.45)]"
+                                  : "hover:bg-red-500/20 hover:text-red-100",
+                              ],
+                              disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-red-300"
+                            )}
+                            title={
+                              disabled
+                                ? workshopConfigured
+                                  ? "Workshop is only available to admins."
+                                  : "Set VITE_CONVEX_WORKSHOP_URL to enable Workshop."
+                                : undefined
+                            }
+                          >
+                            {target === "control" ? "Control" : "Workshop"}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <Separator />

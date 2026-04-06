@@ -24,6 +24,10 @@ import {
   Terminal,
   ScanLine,
   ChevronDown,
+  Search,
+  Bot,
+  Megaphone,
+  Network,
 } from "lucide-react";
 
 const DevPage = () => {
@@ -114,6 +118,18 @@ const DevPage = () => {
               description="Marketplace listings"
             />
             <AppIcon
+              to="/dev/advertising"
+              icon={Megaphone}
+              label="Advertising"
+              description="Affiliate and sponsor control"
+            />
+            <AppIcon
+              to="/dev/schema"
+              icon={Network}
+              label="Schema"
+              description="Visualize schema tables and relations"
+            />
+            <AppIcon
               to="/dev/storage"
               icon={Database}
               label="Storage"
@@ -124,6 +140,12 @@ const DevPage = () => {
               icon={Database}
               label="Database"
               description="Database management & data"
+            />
+            <AppIcon
+              to="/dev/billy-dash"
+              icon={Bot}
+              label="Billy Dash"
+              description="Workshop Billy completion and coverage heartbeat"
             />
             <AppIcon
               to="https://dashboard.convex.dev"
@@ -207,6 +229,12 @@ const DevPage = () => {
               icon={Link2}
               label="Site Map"
               description="Interactive navigation map"
+            />
+            <AppIcon
+              to="/dev/wheel-recogniser"
+              icon={Search}
+              label="Wheel Recogniser"
+              description="Upload, align, and metadata-match wheel photos"
             />
             </div>
           </CollapsibleContent>

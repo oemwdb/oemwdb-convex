@@ -304,27 +304,12 @@ export function useAdvancedTable({
     setCurrentView((prev) => ({ ...prev, groupBy }));
   }, []);
 
-  const groupedData = useMemo(() => {
-    if (!data.length || !currentView.groupBy) return null;
-    const groups = new Map<string, Record<string, unknown>[]>();
-    data.forEach((row: Record<string, unknown>) => {
-      const groupValue = String(row[currentView.groupBy!.column] ?? "Uncategorized");
-      if (!groups.has(groupValue)) groups.set(groupValue, []);
-      groups.get(groupValue)!.push(row);
-    });
-    return Array.from(groups.entries()).map(([key, items]) => ({
-      key,
-      items,
-      collapsed: currentView.groupBy?.collapsed?.includes(key) ?? false,
-    }));
-  }, [data, currentView.groupBy]);
-
   const refetch = useCallback(() => {
     // Convex is reactive; no-op for API compatibility
   }, []);
 
   return {
-    data: groupedData ?? data ?? [],
+    data: data ?? [],
     isLoading,
     error,
     refetch,

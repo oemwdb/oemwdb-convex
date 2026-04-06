@@ -4,6 +4,7 @@ import BrandsGrid from "@/components/brand/BrandsGrid";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
+import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -12,7 +13,8 @@ import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
-import { Shield } from "lucide-react";
+import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
+import { GitMerge } from "lucide-react";
 
 const LOAD_TIMEOUT_MS = 12_000;
 const ROWS_PER_LOAD = 3;
@@ -42,6 +44,7 @@ const BrandsPage = () => {
   const { isAdmin } = useAuth();
   const showAdminTools = isAdmin && isDevMode;
   const mergeBrands = useMutation(api.collectionMerges.mergeBrands);
+  const deleteBrand = useMutation(api.mutations.brandsDelete);
   const duplicateControl = useCollectionDuplicateControl({
     itemLabel: "brands",
     onMerge: ({ canonicalId, duplicateIds }) =>
@@ -49,6 +52,13 @@ const BrandsPage = () => {
         canonicalId: canonicalId as Id<"oem_brands">,
         duplicateIds: duplicateIds as Id<"oem_brands">[],
       }),
+  });
+  const deleteControl = useCollectionDeleteControl({
+    itemLabel: "brands",
+    onDelete: async (ids) => {
+      await Promise.all(ids.map((id) => deleteBrand({ id: id as Id<"oem_brands"> })));
+      return { deletedCount: ids.length };
+    },
   });
 
   const rawBrands = useQuery(api.queries.brandsGetAllWithCounts);
@@ -101,7 +111,8 @@ const BrandsPage = () => {
     setFlippedCards({});
     setVisibleCount(itemsPerLoad);
     duplicateControl.clearSelection();
-  }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection]);
+    deleteControl.clearSelection();
+  }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection, deleteControl.clearSelection]);
 
   // Handle tag click
   const handleTagClick = (tag: string, category: string) => {
@@ -255,6 +266,14 @@ const BrandsPage = () => {
   const selectedBrandLabels = duplicateControl.selectedIds
     .map((selectedId) => filteredBrands.find((brand) => (brand.id ?? brand.name) === selectedId)?.name)
     .filter((value): value is string => Boolean(value));
+  const handleMergeControl = async () => {
+    if (!duplicateControl.selectionMode) deleteControl.clearSelection();
+    await duplicateControl.handleDuplicateControl();
+  };
+  const handleDeleteControl = async () => {
+    if (!deleteControl.selectionMode) duplicateControl.clearSelection();
+    await deleteControl.handleDeleteControl();
+  };
 
   return (
     <DashboardLayout
@@ -285,9 +304,10 @@ const BrandsPage = () => {
           totalResults={filteredBrands.length}
         />
       }
-      customTitle="Admin"
-      customActionIcon={<Shield className="h-4 w-4" />}
-      customSidebarInteractive={showAdminTools}
+      customTitle="Merge"
+      customActionIcon={<GitMerge className="h-4 w-4" />}
+      customSidebarSide="right"
+      customSidebarInteractive={false}
       customSidebar={
         showAdminTools ? (
           <CollectionAdminSidebar
@@ -296,8 +316,19 @@ const BrandsPage = () => {
             selectedCount={duplicateControl.selectedCount}
             selectedLabels={selectedBrandLabels}
             isMerging={duplicateControl.isMerging}
-            onDuplicateControl={duplicateControl.handleDuplicateControl}
+            onDuplicateControl={handleMergeControl}
             onClearSelection={duplicateControl.clearSelection}
+          />
+        ) : null
+      }
+      headerActions={
+        showAdminTools ? (
+          <CollectionDeleteHeaderButton
+            itemLabel="brands"
+            selectionMode={deleteControl.selectionMode}
+            selectedCount={deleteControl.selectedCount}
+            isDeleting={deleteControl.isDeleting}
+            onClick={handleDeleteControl}
           />
         ) : null
       }
@@ -322,9 +353,16 @@ const BrandsPage = () => {
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
               insertAdEvery={itemsPerLoad}
-              selectionMode={duplicateControl.selectionMode}
-              selectedIds={duplicateControl.selectedIds}
-              onToggleSelection={duplicateControl.toggleSelection}
+              selectionMode={duplicateControl.selectionMode || deleteControl.selectionMode}
+              selectedIds={duplicateControl.selectionMode ? duplicateControl.selectedIds : deleteControl.selectedIds}
+              onToggleSelection={
+                duplicateControl.selectionMode
+                  ? duplicateControl.toggleSelection
+                  : deleteControl.selectionMode
+                    ? deleteControl.toggleSelection
+                    : undefined
+              }
+              selectionTone={deleteControl.selectionMode ? "delete" : "merge"}
             />
             {hasMore && (
               <div

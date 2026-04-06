@@ -1,10 +1,9 @@
 import React from "react";
 import WheelCard from "@/components/wheel/WheelCard";
-import { Card } from "@/components/ui/card";
 import { AdBar } from "@/components/AdBar";
-import { CircleSlash2 } from "lucide-react";
 import type { OemWheel } from "@/types/oem";
 import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
+import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 
 const GRID_CLASSES =
   "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2";
@@ -18,6 +17,7 @@ interface WheelsGridProps {
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
+  selectionTone?: "merge" | "delete";
 }
 
 function WheelCardCell({
@@ -27,6 +27,7 @@ function WheelCardCell({
   selectionMode,
   selectedIds,
   onToggleSelection,
+  selectionTone,
 }: {
   wheel: OemWheel;
   isFlipped: boolean;
@@ -34,6 +35,7 @@ function WheelCardCell({
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
+  selectionTone?: "merge" | "delete";
 }) {
   const selectionId = wheel.convexId ?? wheel.id.toString();
   const selectedOrder = (selectedIds ?? []).indexOf(selectionId) + 1 || undefined;
@@ -44,6 +46,7 @@ function WheelCardCell({
       selectionMode={selectionMode}
       selectedOrder={selectedOrder}
       onToggleSelection={onToggleSelection ? () => onToggleSelection(selectionId) : undefined}
+      selectionTone={selectionTone}
     >
       <WheelCard
         wheel={{
@@ -52,6 +55,13 @@ function WheelCardCell({
           imageUrl: wheel.good_pic_url,
           good_pic_url: wheel.good_pic_url,
           bad_pic_url: wheel.bad_pic_url,
+          brand_name: wheel.brand_name ?? wheel.jnc_brands,
+          diameter: wheel.diameter,
+          width: wheel.width,
+          bolt_pattern: wheel.bolt_pattern,
+          center_bore: wheel.center_bore,
+          color: wheel.color,
+          tire_size: wheel.tire_size,
           diameter_ref: wheel.diameter_ref,
           width_ref: wheel.width_ref,
           bolt_pattern_ref: wheel.bolt_pattern_ref,
@@ -76,16 +86,14 @@ const WheelsGrid = ({
   selectionMode,
   selectedIds,
   onToggleSelection,
+  selectionTone = "merge",
 }: WheelsGridProps) => {
   if (wheels.length === 0) {
     return (
-      <Card className="p-12 text-center bg-muted/10 border-dashed">
-        <CircleSlash2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-        <h3 className="text-lg font-semibold mb-2">No Wheels Found</h3>
-        <p className="text-sm text-muted-foreground">
-          Try adjusting your search or filters to see more results
-        </p>
-      </Card>
+      <CollectionEmptyState
+        title="No wheels found"
+        description="Try adjusting your search or filters to see more results."
+      />
     );
   }
 
@@ -103,6 +111,7 @@ const WheelsGrid = ({
             selectionMode={selectionMode}
             selectedIds={selectedIds}
             onToggleSelection={onToggleSelection}
+            selectionTone={selectionTone}
           />
         );
       });
@@ -124,6 +133,7 @@ const WheelsGrid = ({
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onToggleSelection={onToggleSelection}
+          selectionTone={selectionTone}
         />
       ))}
     </div>

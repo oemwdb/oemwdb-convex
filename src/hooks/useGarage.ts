@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export interface GarageItem {
   id: string;
+  vehicleId?: string;
   vehicleName: string;
   brand: string;
   wheelId: string;

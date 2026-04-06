@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Copy, GitMerge, Loader2, ShieldCheck, X } from "lucide-react";
+import { GitMerge, Loader2, ShieldCheck, X } from "lucide-react";
 
 interface CollectionAdminSidebarProps {
   itemLabel: string;
@@ -11,6 +11,8 @@ interface CollectionAdminSidebarProps {
   isMerging?: boolean;
   onDuplicateControl: () => void;
   onClearSelection: () => void;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 export function CollectionAdminSidebar({
@@ -21,6 +23,8 @@ export function CollectionAdminSidebar({
   isMerging = false,
   onDuplicateControl,
   onClearSelection,
+  disabled = false,
+  disabledReason,
 }: CollectionAdminSidebarProps) {
   const primaryLabel = selectedLabels[0] ?? null;
   const extraSelected = Math.max(0, selectedLabels.length - 4);
@@ -33,11 +37,13 @@ export function CollectionAdminSidebar({
           Admin only
         </Badge>
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Duplicate control</h3>
+          <h3 className="text-sm font-semibold text-foreground">Merge control</h3>
           <p className="text-xs leading-5 text-muted-foreground">
-            {selectionMode
+            {disabled
+              ? disabledReason ?? `Merge control is not wired for ${itemLabel} yet.`
+              : selectionMode
               ? `Pick the ${itemLabel} to collapse. The first selected item is the keeper.`
-              : `Turn on duplicate control to select and merge ${itemLabel} from this page.`}
+              : `Open merge mode to select and collapse duplicate ${itemLabel} from this page.`}
           </p>
         </div>
       </div>
@@ -88,16 +94,16 @@ export function CollectionAdminSidebar({
           type="button"
           className="w-full justify-center gap-2"
           onClick={onDuplicateControl}
-          disabled={isMerging}
+          disabled={isMerging || disabled}
         >
           {isMerging ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : selectionMode ? (
             <GitMerge className="h-4 w-4" />
           ) : (
-            <Copy className="h-4 w-4" />
+            <GitMerge className="h-4 w-4" />
           )}
-          {selectionMode ? "Merge Selected" : "Duplicate Control"}
+          {selectionMode ? "Merge Selected" : "Start Merge"}
         </Button>
 
         {selectionMode && (

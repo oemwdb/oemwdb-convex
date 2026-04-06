@@ -5,6 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
+import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
 import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -13,7 +14,8 @@ import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
-import { Shield } from "lucide-react";
+import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
+import { GitMerge } from "lucide-react";
 
 const LOAD_TIMEOUT_MS = 12_000;
 const ROWS_PER_LOAD = 3;
@@ -48,6 +50,7 @@ const VehiclesPage = () => {
   const { isAdmin } = useAuth();
   const showAdminTools = isAdmin && isDevMode;
   const mergeVehicles = useMutation(api.collectionMerges.mergeVehicles);
+  const deleteVehicle = useMutation(api.mutations.vehiclesDelete);
   const duplicateControl = useCollectionDuplicateControl({
     itemLabel: "vehicles",
     onMerge: ({ canonicalId, duplicateIds }) =>
@@ -55,6 +58,13 @@ const VehiclesPage = () => {
         canonicalId: canonicalId as Id<"oem_vehicles">,
         duplicateIds: duplicateIds as Id<"oem_vehicles">[],
       }),
+  });
+  const deleteControl = useCollectionDeleteControl({
+    itemLabel: "vehicles",
+    onDelete: async (ids) => {
+      await Promise.all(ids.map((id) => deleteVehicle({ id: id as Id<"oem_vehicles"> })));
+      return { deletedCount: ids.length };
+    },
   });
 
   const vehiclesData = useQuery(api.queries.vehiclesGetAllWithBrands, {});
@@ -117,7 +127,8 @@ const VehiclesPage = () => {
     setFlippedCards({});
     setVisibleCount(itemsPerLoad);
     duplicateControl.clearSelection();
-  }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection]);
+    deleteControl.clearSelection();
+  }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection, deleteControl.clearSelection]);
 
   // Handle tag click
   const handleTagClick = (tag: string, category: string) => {
@@ -324,6 +335,14 @@ const VehiclesPage = () => {
   const selectedVehicleLabels = duplicateControl.selectedIds
     .map((selectedId) => filteredVehicles.find((vehicle) => (vehicle.id ?? vehicle.name) === selectedId)?.name)
     .filter((value): value is string => Boolean(value));
+  const handleMergeControl = async () => {
+    if (!duplicateControl.selectionMode) deleteControl.clearSelection();
+    await duplicateControl.handleDuplicateControl();
+  };
+  const handleDeleteControl = async () => {
+    if (!deleteControl.selectionMode) duplicateControl.clearSelection();
+    await deleteControl.handleDeleteControl();
+  };
 
   return (
     <DashboardLayout
@@ -354,9 +373,10 @@ const VehiclesPage = () => {
           totalResults={filteredVehicles.length}
         />
       }
-      customTitle="Admin"
-      customActionIcon={<Shield className="h-4 w-4" />}
-      customSidebarInteractive={showAdminTools}
+      customTitle="Merge"
+      customActionIcon={<GitMerge className="h-4 w-4" />}
+      customSidebarSide="right"
+      customSidebarInteractive={false}
       customSidebar={
         showAdminTools ? (
           <CollectionAdminSidebar
@@ -365,8 +385,19 @@ const VehiclesPage = () => {
             selectedCount={duplicateControl.selectedCount}
             selectedLabels={selectedVehicleLabels}
             isMerging={duplicateControl.isMerging}
-            onDuplicateControl={duplicateControl.handleDuplicateControl}
+            onDuplicateControl={handleMergeControl}
             onClearSelection={duplicateControl.clearSelection}
+          />
+        ) : null
+      }
+      headerActions={
+        showAdminTools ? (
+          <CollectionDeleteHeaderButton
+            itemLabel="vehicles"
+            selectionMode={deleteControl.selectionMode}
+            selectedCount={deleteControl.selectedCount}
+            isDeleting={deleteControl.isDeleting}
+            onClick={handleDeleteControl}
           />
         ) : null
       }
@@ -394,9 +425,16 @@ const VehiclesPage = () => {
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
               insertAdEvery={itemsPerLoad}
-              selectionMode={duplicateControl.selectionMode}
-              selectedIds={duplicateControl.selectedIds}
-              onToggleSelection={duplicateControl.toggleSelection}
+              selectionMode={duplicateControl.selectionMode || deleteControl.selectionMode}
+              selectedIds={duplicateControl.selectionMode ? duplicateControl.selectedIds : deleteControl.selectedIds}
+              onToggleSelection={
+                duplicateControl.selectionMode
+                  ? duplicateControl.toggleSelection
+                  : deleteControl.selectionMode
+                    ? deleteControl.toggleSelection
+                    : undefined
+              }
+              selectionTone={deleteControl.selectionMode ? "delete" : "merge"}
             />
             {hasMore && (
               <div

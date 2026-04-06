@@ -23,6 +23,7 @@ interface FileListViewProps {
   onCreateRecord?: (data: Record<string, any>) => Promise<void>;
   searchQuery: string;
   onColumnReorder: (oldIndex: number, newIndex: number) => void;
+  columnBoundaryMap?: Record<string, { left?: boolean; right?: boolean }>;
 }
 
 export function FileListView({
@@ -37,6 +38,7 @@ export function FileListView({
   onCreateRecord,
   searchQuery,
   onColumnReorder,
+  columnBoundaryMap = {},
 }: FileListViewProps) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set()); // Format: "rowId:columnId"
   const [lastSelectedCell, setLastSelectedCell] = useState<{ rowId: string; columnId: string } | null>(null);
@@ -313,6 +315,7 @@ export function FileListView({
         <CellSelectableTable
           data={sortedData}
           columns={columns}
+          columnBoundaryMap={columnBoundaryMap}
           selectedCells={selectedCells}
           onCellClick={handleCellClick}
           onSelectAll={handleSelectAll}

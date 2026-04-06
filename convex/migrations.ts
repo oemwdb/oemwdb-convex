@@ -6,6 +6,65 @@
 import { mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+function cleanEngineText(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeCanonicalEngineCode(code: string): string {
+  const trimmed = code.trim();
+  if (/^ingenium$/i.test(trimmed)) return "Ingenium";
+  return trimmed.toUpperCase();
+}
+
+function extractCanonicalEngineCodeFromText(raw: string | null | undefined): string | null {
+  const text = cleanEngineText(raw);
+  if (!text) return null;
+
+  const matchers: RegExp[] = [
+    /\bAJ\d+[A-Z0-9]*\b/i,
+    /\bIngenium\b/i,
+    /\bTDV\d+\b/i,
+    /\bSDV\d+\b/i,
+    /\bTD\d+\b/i,
+    /\bSD\d+\b/i,
+    /\bCDI\b/i,
+    /\bEQ\b/i,
+    /\bED\b/i,
+    /\bMHD\b/i,
+    /\bBlueHDi\b/i,
+    /\bPureTech\b/i,
+    /\bEcoBoost\b/i,
+    /\bDuratorq\b/i,
+    /\bDuratec\b/i,
+    /\bTwinAir\b/i,
+    /\bMultiAir\b/i,
+    /\bT-?Jet\b/i,
+  ];
+
+  for (const pattern of matchers) {
+    const match = text.match(pattern);
+    if (match?.[0]) return normalizeCanonicalEngineCode(match[0]);
+  }
+
+  return null;
+}
+
+function cleanFamilyEngineTitle(raw: string | null | undefined): string | null {
+  const text = cleanEngineText(raw);
+  if (!text) return null;
+
+  return text
+    .replace(/^(Roadster\s+Coup[eé]|Roadster|Coup[eé]|Cabrio|Crossblade)\s+/i, "")
+    .replace(/\bcdi\b/g, "CDI")
+    .replace(/\beq\b/g, "EQ")
+    .replace(/\bed\b/g, "ED")
+    .replace(/\bmhd\b/g, "MHD")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /**
  * Internal: patch a wheel's image URL field after storing the image in Convex storage.
  * Called from imageMigrations:migrateWheelImageFromUrl action.
@@ -131,6 +190,59 @@ export const backfillEngineSlugs = mutation({
       updated += 1;
     }
     return { updated };
+  },
+});
+
+export const normalizeEngineCanonData = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? false;
+    const all = await ctx.db.query("oem_engines").collect();
+    let updated = 0;
+    const samples: Array<{
+      id: string | null;
+      beforeTitle: string | null;
+      afterTitle: string | null;
+      beforeCode: string | null;
+      afterCode: string | null;
+    }> = [];
+
+    for (const doc of all) {
+      const nextTitle = cleanFamilyEngineTitle(doc.engine_title);
+      const nextCode =
+        cleanEngineText(doc.engine_code) ??
+        extractCanonicalEngineCodeFromText(doc.engine_title) ??
+        extractCanonicalEngineCodeFromText(doc.id);
+
+      const currentTitle = cleanEngineText(doc.engine_title);
+      const currentCode = cleanEngineText(doc.engine_code);
+      const titleChanged = nextTitle !== currentTitle;
+      const codeChanged = nextCode !== currentCode;
+      if (!titleChanged && !codeChanged) continue;
+
+      const patch: Record<string, string> = {};
+      if (titleChanged && nextTitle != null) patch.engine_title = nextTitle;
+      if (codeChanged && nextCode != null) patch.engine_code = nextCode;
+
+      if (!dryRun) {
+        await ctx.db.patch(doc._id, patch);
+      }
+
+      updated += 1;
+      if (samples.length < 25) {
+        samples.push({
+          id: cleanEngineText(doc.id),
+          beforeTitle: currentTitle,
+          afterTitle: nextTitle,
+          beforeCode: currentCode,
+          afterCode: nextCode,
+        });
+      }
+    }
+
+    return { updated, dryRun, samples };
   },
 });
 

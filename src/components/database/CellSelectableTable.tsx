@@ -24,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 interface CellSelectableTableProps {
   data: any[];
   columns: TableColumn[];
+  columnBoundaryMap?: Record<string, { left?: boolean; right?: boolean }>;
   selectedCells: Set<string>; // Format: "rowId:columnId"
   onCellClick: (rowId: string, columnId: string, isShiftKey: boolean) => void;
   onSelectAll: (checked: boolean) => void;
@@ -38,12 +39,14 @@ function SortableHeader({
   column,
   sortColumn,
   sortDirection,
-  onSort
+  onSort,
+  boundaryShadow,
 }: {
   column: TableColumn;
   sortColumn: string | null;
   sortDirection: "asc" | "desc";
   onSort: (columnId: string) => void;
+  boundaryShadow?: string;
 }) {
   const {
     attributes,
@@ -66,6 +69,10 @@ function SortableHeader({
       style={style}
       className="px-4 py-3 text-left font-medium text-muted-foreground relative group select-none whitespace-nowrap"
     >
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 right-0"
+        style={{ boxShadow: boundaryShadow }}
+      />
       <div className="flex items-center gap-2">
         <div
           {...attributes}
@@ -91,6 +98,7 @@ function SortableHeader({
 export function CellSelectableTable({
   data,
   columns,
+  columnBoundaryMap = {},
   selectedCells,
   onCellClick,
   onSelectAll,
@@ -191,6 +199,16 @@ export function CellSelectableTable({
     return truncateText(String(value || "—"));
   };
 
+  const getBoundaryShadow = (columnId: string) => {
+    const boundary = columnBoundaryMap[columnId];
+    if (!boundary) return undefined;
+
+    const shadows: string[] = [];
+    if (boundary.left) shadows.push("inset 2px 0 0 rgba(255,255,255,0.78)");
+    if (boundary.right) shadows.push("inset -2px 0 0 rgba(255,255,255,0.78)");
+    return shadows.length ? shadows.join(", ") : undefined;
+  };
+
   return (
     <div className="flex-1 overflow-auto">
       <table className="w-full text-sm border-collapse">
@@ -220,6 +238,7 @@ export function CellSelectableTable({
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={onSort}
+                    boundaryShadow={getBoundaryShadow(column.id)}
                   />
                 ))}
               </SortableContext>
@@ -273,6 +292,7 @@ export function CellSelectableTable({
                       "px-4 py-3 text-foreground align-middle cursor-pointer transition-colors relative",
                       isSelected && "bg-muted/50 font-medium"
                     )}
+                    style={{ boxShadow: getBoundaryShadow(column.id) }}
                     onClick={(e) => !isEditing && onCellClick(row.id, column.id, e.shiftKey)}
                     onDoubleClick={() => startEditing(row.id, column.id, cellValue)}
                     title={String(cellValue || "")}

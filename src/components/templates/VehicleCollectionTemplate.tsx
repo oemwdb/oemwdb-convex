@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
+import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 
 interface VehicleCollectionTemplateProps {
   config: {
@@ -109,9 +110,10 @@ const VehicleCollectionTemplate: React.FC<VehicleCollectionTemplateProps> = ({ c
       </div>
 
       {filteredVehicles.length === 0 && (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No vehicles match your filters</p>
-        </div>
+        <CollectionEmptyState
+          title="No vehicles found"
+          description="Try adjusting your search or filters to see more results."
+        />
       )}
     </div>
   );

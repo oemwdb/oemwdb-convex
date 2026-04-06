@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "sonner";
+import { getPrimaryMediaUrl } from "@/lib/mediaUrls";
 
 // -- Types --
 
@@ -114,7 +115,7 @@ export function useStorageActions() {
   });
 
   const getPublicUrl = (bucket: string, path: string) => {
-    return path ? `/${bucket}/${path}` : `/${bucket}`;
+    return getPrimaryMediaUrl(path, bucket) ?? "";
   };
 
   const moveFile = useMutation({

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchableBreadcrumb from "@/components/navigation/SearchableBreadcrumb";
 import type { ParsedFilters } from '@/utils/filterParser';
+import BackendTargetBadge from "@/components/dashboard/BackendTargetBadge";
 
 interface HeaderProps {
   title?: string;
@@ -34,6 +35,9 @@ interface HeaderProps {
   onSortClick?: () => void;
   sortActionIcon?: React.ReactNode;
   leftActions?: React.ReactNode;
+  leadingButtonIcon?: React.ReactNode;
+  onLeadingButtonClick?: () => void;
+  leadingButtonTitle?: string;
 }
 
 const Header = ({
@@ -62,6 +66,9 @@ const Header = ({
   onSortClick,
   sortActionIcon,
   leftActions,
+  leadingButtonIcon,
+  onLeadingButtonClick,
+  leadingButtonTitle,
 }: HeaderProps) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [tempSearchValue, setTempSearchValue] = useState("");
@@ -73,7 +80,13 @@ const Header = ({
   const hasActiveTags = Object.values(parsedFilters).some(arr => arr && arr.length > 0);
   const totalTagCount = Object.values(parsedFilters).reduce((sum, arr) => sum + (arr?.length || 0), 0);
 
-  const collectionPages = { '/brands': 'brands', '/vehicles': 'vehicles', '/wheels': 'wheels' };
+  const collectionPages = {
+    '/brands': 'brands',
+    '/vehicles': 'vehicles',
+    '/wheels': 'wheels',
+    '/colors': 'colors',
+    '/engines': 'engines',
+  };
   const isCollectionPage = !!collectionPages[location.pathname as keyof typeof collectionPages];
 
   useEffect(() => {
@@ -128,6 +141,9 @@ const Header = ({
     }
   };
 
+  const hasPrimaryLeadingButton = !!onLeadingButtonClick;
+  const hasFilterLeadingButton = (!!onSidebarToggle || !!onFilterClick) && (showFilterButton || sidebarCollapsed);
+
   return (
     <header className={cn(
       "h-12 flex items-center border-b border-border bg-sidebar px-4 gap-4 flex-shrink-0",
@@ -135,14 +151,15 @@ const Header = ({
     )}>
 
       {/* Toggle Sidebar Trigger (Left) */}
-      {(showFilterButton || sidebarCollapsed) && (
+      {(hasPrimaryLeadingButton || hasFilterLeadingButton) && (
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10 -ml-2"
-          onClick={onSidebarToggle || onFilterClick}
+          onClick={onLeadingButtonClick || onSidebarToggle || onFilterClick}
+          title={leadingButtonTitle}
         >
-          {actionIcon ? actionIcon : <Search className="h-4 w-4 text-white" />}
+          {leadingButtonIcon || actionIcon || <Search className="h-4 w-4 text-white" />}
         </Button>
       )}
 
@@ -262,20 +279,19 @@ const Header = ({
         <div className="flex-1 min-w-0 overflow-hidden flex items-center">
           <SearchableBreadcrumb />
         </div>
-      ) : (
+      ) : title ? (
         <div className="flex items-center px-2">
           <h1 className="text-sm font-medium">{title}</h1>
         </div>
-      )}
+      ) : null}
 
       {/* Spacer if using title (to handle flex) */}
       {!showBreadcrumb && <div className="flex-1" />}
 
-      {/* Custom Actions (Children) */}
-      {children}
-
-      {/* Actions */}
-      <div className="flex items-center gap-1" />
+      <div className="flex items-center gap-2">
+        <BackendTargetBadge />
+        {children}
+      </div>
 
       {/* Dropdown */}
       {(searchDropdown || filterSearchDropdown) && (

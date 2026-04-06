@@ -2,6 +2,7 @@ import React from "react";
 import VehicleCard from "@/components/vehicle/VehicleCard";
 import { AdBar } from "@/components/AdBar";
 import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
+import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 
 const GRID_CLASSES =
   "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2";
@@ -15,6 +16,7 @@ interface VehiclesGridProps {
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
+  selectionTone?: "merge" | "delete";
 }
 
 const VehiclesGrid: React.FC<VehiclesGridProps> = ({
@@ -25,20 +27,14 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
   selectionMode,
   selectedIds,
   onToggleSelection,
+  selectionTone = "merge",
 }) => {
   if (!vehicles.length) {
     return (
-      <div className="col-span-full text-center py-10">
-        <p className="text-slate-500 mb-2">No vehicles match your filters — or your database is empty.</p>
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-4 mx-auto max-w-xl">
-          <span>
-            <b>Debugging tips</b>:<br />
-            - Ensure you have data in the Convex <i>OEM Vehicles</i> table.<br />
-            - Check the browser dev console for details.<br />
-            - If your database is empty, add rows via Convex dashboard or migrations.<br />
-          </span>
-        </div>
-      </div>
+      <CollectionEmptyState
+        title="No vehicles found"
+        description="Try adjusting your search or filters to see more results."
+      />
     );
   }
 
@@ -56,6 +52,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             selectionMode={selectionMode}
             selectedOrder={selectedOrder}
             onToggleSelection={onToggleSelection ? () => onToggleSelection(selectionId) : undefined}
+            selectionTone={selectionTone}
           >
             <VehicleCard
               vehicle={{
@@ -91,6 +88,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
           selectionMode={selectionMode}
           selectedOrder={(selectedIds ?? []).indexOf(vehicle.id ?? vehicle.name) + 1 || undefined}
           onToggleSelection={onToggleSelection ? () => onToggleSelection(vehicle.id ?? vehicle.name) : undefined}
+          selectionTone={selectionTone}
         >
           <VehicleCard
             vehicle={{

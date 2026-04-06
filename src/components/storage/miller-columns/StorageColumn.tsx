@@ -7,6 +7,7 @@ import { StorageItem } from "./StorageItem";
 import { StorageGridItem } from "./StorageGridItem";
 import { ColumnItem, ViewMode } from "./types";
 import { toast } from "sonner";
+import { useFiles, useStorageActions } from "@/hooks/useStorage";
 import {
     ContextMenu,
     ContextMenuContent,

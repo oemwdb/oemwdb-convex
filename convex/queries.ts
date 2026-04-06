@@ -4,9 +4,15 @@
  */
 
 import { query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { paginationOptsValidator as basePaginationOptsValidator } from "convex/server";
+import {
+  DEFAULT_ADMIN_TABLE_SELECTOR_LAYOUT_SCOPE,
+  requireAdmin,
+  requireAdminUserId,
+} from "./adminAuth";
 
 // Relaxed validator to handle "id": "initial" or "cursor": null from frontend
 export const paginationOptsValidator = v.object({
@@ -14,6 +20,60 @@ export const paginationOptsValidator = v.object({
   cursor: v.union(v.string(), v.null()),
   id: v.optional(v.union(v.number(), v.string())),
 });
+
+const getVehicleVariantEngineLayers = async (
+  ctx: any,
+  variant: Doc<"oem_vehicle_variants">
+) => {
+  const familyEngine = variant.engine_id
+    ? await ctx.db.get(variant.engine_id)
+    : null;
+
+  const linkedEngineVariantId =
+    variant.engine_variant_id ??
+    (
+      await ctx.db
+        .query("j_oem_vehicle_variant_engine_variant")
+        .withIndex("by_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+        .first()
+    )?.engine_variant_id ??
+    null;
+
+  const exactEngineVariant = linkedEngineVariantId
+    ? await ctx.db.get(linkedEngineVariantId)
+    : null;
+
+  const parentFamilyEngine =
+    familyEngine ??
+    (exactEngineVariant?.engine_id
+      ? await ctx.db.get(exactEngineVariant.engine_id)
+      : null);
+
+  return {
+    ...variant,
+    engine_title: parentFamilyEngine?.engine_title ?? null,
+    engine_code: parentFamilyEngine?.engine_code ?? null,
+    engine_display_title: (parentFamilyEngine as any)?.engine_display_title ?? null,
+    engine_family_label: (parentFamilyEngine as any)?.engine_family_label ?? null,
+    configuration: parentFamilyEngine?.configuration ?? null,
+    engine_layout: parentFamilyEngine?.engine_layout ?? null,
+    cylinders: parentFamilyEngine?.cylinders ?? null,
+    power_hp: parentFamilyEngine?.power_hp ?? null,
+    power_kw: parentFamilyEngine?.power_kw ?? null,
+    displacement_l: parentFamilyEngine?.displacement_l ?? null,
+    fuel_type: parentFamilyEngine?.fuel_type ?? null,
+    aspiration: parentFamilyEngine?.aspiration ?? null,
+    engine_variant_title: exactEngineVariant?.engine_variant_title ?? null,
+    engine_variant_code: exactEngineVariant?.engine_variant_code ?? null,
+    powertrain_designation: exactEngineVariant?.powertrain_designation ?? null,
+    engine_variant_displacement_l: (exactEngineVariant as any)?.displacement_l ?? null,
+    engine_variant_power_hp: exactEngineVariant?.engine_variant_power_hp ?? null,
+    engine_variant_power_kw: exactEngineVariant?.engine_variant_power_kw ?? null,
+    engine_variant_fuel_type: exactEngineVariant?.engine_variant_fuel_type ?? null,
+    engine_variant_aspiration: exactEngineVariant?.engine_variant_aspiration ?? null,
+    engine_variant_electrification: exactEngineVariant?.engine_variant_electrification ?? null,
+  };
+};
 
 // =============================================================================
 // OEM BRANDS
@@ -235,21 +295,7 @@ export const vehicleVariantsGetByVehicle = query({
         .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", args.vehicleId))
         .collect();
       const variantsWithEngines = await Promise.all(
-        variants.map(async (variant) => {
-          const engine = variant.engine_id
-            ? await ctx.db.get(variant.engine_id)
-            : null;
-
-          return {
-            ...variant,
-            engine_title: engine?.engine_title ?? null,
-            engine_code: engine?.engine_code ?? null,
-            power_hp: engine?.power_hp ?? null,
-            displacement_l: engine?.displacement_l ?? null,
-            fuel_type: engine?.fuel_type ?? null,
-            aspiration: engine?.aspiration ?? null,
-          };
-        })
+        variants.map((variant) => getVehicleVariantEngineLayers(ctx, variant))
       );
 
       return variantsWithEngines.sort(
@@ -297,7 +343,7 @@ export const vehiclesGetByIdFull = query({
       if (!vehicle) return null;
 
       const vehicleId = vehicle._id;
-      const [variants, wheelLinks] = await Promise.all([
+      const [variants, wheelLinks, engineLinks, directVehicleEngine] = await Promise.all([
         ctx.db
           .query("oem_vehicle_variants")
           .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", vehicleId))
@@ -306,17 +352,36 @@ export const vehiclesGetByIdFull = query({
           .query("j_wheel_vehicle")
           .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicleId))
           .collect(),
+        ctx.db
+          .query("j_vehicle_engine")
+          .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicleId))
+          .collect(),
+        vehicle.oem_engine_id ? ctx.db.get("oem_engines", vehicle.oem_engine_id) : null,
       ]);
 
       const wheelDocs = await Promise.all(
         wheelLinks.map((j) => ctx.db.get("oem_wheels", j.wheel_id))
       );
+      const linkedEngineDocs = await Promise.all(
+        engineLinks.map((j) => ctx.db.get("oem_engines", j.engine_id))
+      );
+      const engineMap = new Map<string, NonNullable<(typeof linkedEngineDocs)[number]>>();
+      if (directVehicleEngine) {
+        engineMap.set(String(directVehicleEngine._id), directVehicleEngine);
+      }
+      for (const engine of linkedEngineDocs) {
+        if (!engine) continue;
+        engineMap.set(String(engine._id), engine);
+      }
 
       return {
         ...vehicle,
         brand: null,
         engine: null,
-        variants: variants ?? [],
+        engines: Array.from(engineMap.values()),
+        variants: await Promise.all(
+          (variants ?? []).map((variant) => getVehicleVariantEngineLayers(ctx, variant))
+        ),
         wheels: wheelDocs.filter((w): w is NonNullable<typeof w> => w !== null),
       };
     } catch {
@@ -328,6 +393,459 @@ export const vehiclesGetByIdFull = query({
 // =============================================================================
 // OEM ENGINES
 // =============================================================================
+
+function cleanEngineValue(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function normalizeEngineValue(value: unknown) {
+  return cleanEngineValue(value).toLowerCase();
+}
+
+function slugifyEngineValue(value: unknown) {
+  return cleanEngineValue(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizeEngineCodeRoot(value: unknown) {
+  const raw = cleanEngineValue(value).toUpperCase();
+  if (!raw) return "";
+  if (raw === "AJ16S") return "AJ16";
+  if (raw === "AJ34S") return "AJ34";
+  return raw;
+}
+
+function normalizeEngineLayoutToken(value: unknown) {
+  const raw = normalizeEngineValue(value).replace(/\s+/g, "");
+  if (!raw) return null;
+  if (raw.includes("inline-4") || raw.includes("inline4") || raw === "i4") return "I4";
+  if (raw.includes("inline-5") || raw.includes("inline5") || raw === "i5") return "I5";
+  if (raw.includes("inline-6") || raw.includes("inline6") || raw === "i6") return "I6";
+  if (raw.includes("v12")) return "V12";
+  if (raw.includes("v8")) return "V8";
+  if (raw.includes("v6")) return "V6";
+  if (raw.includes("v4")) return "V4";
+  return cleanEngineValue(value) || null;
+}
+
+function buildEngineFamilyDescriptor(
+  engine: Doc<"oem_engines">,
+  brandTitle?: string | null,
+) {
+  const root = normalizeEngineCodeRoot(engine.engine_code);
+  if (!root) return null;
+
+  const layoutToken =
+    normalizeEngineLayoutToken(engine.engine_layout) ??
+    normalizeEngineLayoutToken(engine.configuration);
+
+  switch (root) {
+    case "INGENIUM":
+      if (layoutToken === "I4" || layoutToken === "I6") {
+        return {
+          key: `ingenium-${layoutToken.toLowerCase()}`,
+          title: `Ingenium ${layoutToken}`,
+          code: "Ingenium",
+          configuration: engine.configuration ?? layoutToken,
+          engineLayout: engine.engine_layout ?? layoutToken,
+          cylinders: engine.cylinders ?? (layoutToken === "I4" ? 4 : 6),
+        };
+      }
+      return {
+        key: "ingenium",
+        title: "Ingenium",
+        code: "Ingenium",
+        configuration: engine.configuration ?? null,
+        engineLayout: engine.engine_layout ?? null,
+        cylinders: engine.cylinders ?? null,
+      };
+    case "AJ16":
+      return {
+        key: "aj16",
+        title: "AJ16",
+        code: "AJ16",
+        configuration: engine.configuration ?? "Inline-6",
+        engineLayout: engine.engine_layout ?? "Inline-6",
+        cylinders: engine.cylinders ?? 6,
+      };
+    case "AJ-V8":
+      return {
+        key: "aj-v8",
+        title: "AJ-V8",
+        code: "AJ-V8",
+        configuration: engine.configuration ?? "V8",
+        engineLayout: engine.engine_layout ?? "V8",
+        cylinders: engine.cylinders ?? 8,
+      };
+    case "AJ34":
+      return {
+        key: "aj34",
+        title: "AJ34",
+        code: "AJ34",
+        configuration: engine.configuration ?? "V8",
+        engineLayout: engine.engine_layout ?? "V8",
+        cylinders: engine.cylinders ?? 8,
+      };
+    case "AJ126":
+      return {
+        key: "aj126",
+        title: "AJ126",
+        code: "AJ126",
+        configuration: engine.configuration ?? "V6",
+        engineLayout: engine.engine_layout ?? "V6",
+        cylinders: engine.cylinders ?? 6,
+      };
+    case "AJ133":
+      return {
+        key: "aj133",
+        title: "AJ133",
+        code: "AJ133",
+        configuration: engine.configuration ?? "V8",
+        engineLayout: engine.engine_layout ?? "V8",
+        cylinders: engine.cylinders ?? 8,
+      };
+    case "ROVER V8":
+      return {
+        key: "rover-v8",
+        title: "Rover V8",
+        code: "Rover V8",
+        configuration: engine.configuration ?? "V8",
+        engineLayout: engine.engine_layout ?? "V8",
+        cylinders: engine.cylinders ?? 8,
+      };
+    case "PUMA":
+      return {
+        key: "puma",
+        title: "Puma",
+        code: "Puma",
+        configuration: engine.configuration ?? "Inline-4",
+        engineLayout: engine.engine_layout ?? "Inline-4",
+        cylinders: engine.cylinders ?? 4,
+      };
+    case "TDV6":
+      return {
+        key: "tdv6",
+        title: "TDV6",
+        code: "TDV6",
+        configuration: engine.configuration ?? "V6",
+        engineLayout: engine.engine_layout ?? "V6",
+        cylinders: engine.cylinders ?? 6,
+      };
+    case "TDV8":
+      return {
+        key: "tdv8",
+        title: "TDV8",
+        code: "TDV8",
+        configuration: engine.configuration ?? "V8",
+        engineLayout: engine.engine_layout ?? "V8",
+        cylinders: engine.cylinders ?? 8,
+      };
+    case "TD5":
+      return {
+        key: "td5",
+        title: "Td5",
+        code: "Td5",
+        configuration: engine.configuration ?? "Inline-5",
+        engineLayout: engine.engine_layout ?? "Inline-5",
+        cylinders: engine.cylinders ?? 5,
+      };
+    default:
+      return null;
+  }
+}
+
+function resolveEngineFamilyTitle(
+  familyEngine: Doc<"oem_engines"> | null | undefined,
+  descriptor: ReturnType<typeof buildEngineFamilyDescriptor>,
+) {
+  const descriptorCode = normalizeEngineCodeRoot(descriptor?.code);
+  if (descriptorCode === "INGENIUM") {
+    const layoutToken =
+      normalizeEngineLayoutToken(descriptor?.engineLayout) ??
+      normalizeEngineLayoutToken(descriptor?.configuration) ??
+      normalizeEngineLayoutToken(familyEngine?.engine_layout) ??
+      normalizeEngineLayoutToken(familyEngine?.configuration);
+    if (layoutToken === "I4" || layoutToken === "I6") {
+      return `Ingenium ${layoutToken}`;
+    }
+  }
+
+  return (
+    descriptor?.title ||
+    cleanEngineValue(familyEngine?.engine_title) ||
+    cleanEngineValue(familyEngine?.engine_code) ||
+    "Engine"
+  );
+}
+
+function isGenericFamilyEngineRow(
+  engine: Doc<"oem_engines">,
+  descriptor: ReturnType<typeof buildEngineFamilyDescriptor>,
+) {
+  if (!descriptor) return false;
+  const title = normalizeEngineValue(engine.engine_title);
+  return (
+    title === normalizeEngineValue(descriptor.title) ||
+    normalizeEngineValue(engine.id) === normalizeEngineValue(descriptor.key) ||
+    normalizeEngineValue(engine.slug) === normalizeEngineValue(descriptor.key)
+  );
+}
+
+function summarizeNumericDisplacements(values: Array<number | null | undefined>) {
+  const unique = [...new Set(values.filter((value): value is number => typeof value === "number" && value > 0))]
+    .sort((a, b) => a - b);
+  if (unique.length === 0) return null;
+  if (unique.length === 1) return `${unique[0]}L`;
+  return `${unique[0]}-${unique[unique.length - 1]}L`;
+}
+
+function summarizeTextValues(values: Array<string | null | undefined>, maxItems = 3) {
+  const unique = [...new Set(
+    values
+      .map((value) => cleanEngineValue(value))
+      .filter((value) => value.length > 0),
+  )];
+  if (unique.length === 0) return null;
+  if (unique.length <= maxItems) return unique.join(" / ");
+  return `${unique.slice(0, maxItems).join(" / ")} +${unique.length - maxItems}`;
+}
+
+async function buildEngineFamilyBrowseRows(ctx: QueryCtx) {
+  const [engines, engineVariants, brands, vehicleLinks, vehicles, engineBrandLinks] = await Promise.all([
+    ctx.db.query("oem_engines").collect(),
+    ctx.db.query("oem_engine_variants").collect(),
+    ctx.db.query("oem_brands").collect(),
+    ctx.db.query("j_vehicle_engine").collect(),
+    ctx.db.query("oem_vehicles").collect(),
+    ctx.db.query("j_engine_brand").collect(),
+  ]);
+
+  const brandById = new Map(brands.map((brand) => [String(brand._id), brand]));
+  const engineById = new Map(engines.map((engine) => [String(engine._id), engine]));
+  const vehicleById = new Map(vehicles.map((vehicle) => [String(vehicle._id), vehicle]));
+
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      brandTitle: string | null;
+      descriptor: ReturnType<typeof buildEngineFamilyDescriptor>;
+      engines: Doc<"oem_engines">[];
+      exactVariants: Doc<"oem_engine_variants">[];
+      vehicleIds: Set<string>;
+      brandTitles: Set<string>;
+      familyEngine: Doc<"oem_engines"> | null;
+    }
+  >();
+
+  const ensureGroup = (engine: Doc<"oem_engines">) => {
+    const brandTitle = brandById.get(String(engine.brand_id ?? ""))?.brand_title ?? null;
+    const descriptor = buildEngineFamilyDescriptor(engine, brandTitle);
+    const key = descriptor?.key ?? String(engine._id);
+    const existing = groups.get(key);
+    if (existing) return existing;
+    const created = {
+      key,
+      brandTitle,
+      descriptor,
+      engines: [],
+      exactVariants: [],
+      vehicleIds: new Set<string>(),
+      brandTitles: new Set(brandTitle ? [brandTitle] : []),
+      familyEngine: null,
+    };
+    groups.set(key, created);
+    return created;
+  };
+
+  for (const engine of engines) {
+    const group = ensureGroup(engine);
+    group.engines.push(engine);
+    const engineBrandTitle = brandById.get(String(engine.brand_id ?? ""))?.brand_title ?? null;
+    if (engineBrandTitle) {
+      group.brandTitles.add(engineBrandTitle);
+    }
+    if (!group.familyEngine && isGenericFamilyEngineRow(engine, group.descriptor)) {
+      group.familyEngine = engine;
+    }
+  }
+
+  for (const variant of engineVariants) {
+    const parent = engineById.get(String(variant.engine_id));
+    if (!parent) continue;
+    ensureGroup(parent).exactVariants.push(variant);
+  }
+
+  for (const link of vehicleLinks) {
+    const parent = engineById.get(String(link.engine_id));
+    if (!parent) continue;
+    ensureGroup(parent).vehicleIds.add(String(link.vehicle_id));
+  }
+
+  for (const link of engineBrandLinks) {
+    const parent = engineById.get(String(link.engine_id));
+    if (!parent) continue;
+    const brandTitle = brandById.get(String(link.brand_id))?.brand_title ?? (cleanEngineValue(link.brand_title) || null);
+    if (!brandTitle) continue;
+    ensureGroup(parent).brandTitles.add(brandTitle);
+  }
+
+  const rows = Array.from(groups.values()).map((group) => {
+    const familyEngine = group.familyEngine ?? group.engines[0];
+    const familyTitle = resolveEngineFamilyTitle(familyEngine, group.descriptor);
+    const familyCode = group.descriptor?.code ?? (cleanEngineValue(familyEngine?.engine_code) || null);
+    const brandSummary = summarizeTextValues(Array.from(group.brandTitles), 2);
+    const syntheticConcreteVariants = group.descriptor
+      ? group.engines
+          .filter((engine) => !isGenericFamilyEngineRow(engine, group.descriptor))
+          .map((engine) => {
+            const rootCode = normalizeEngineCodeRoot(engine.engine_code);
+            const familyRootCode = normalizeEngineCodeRoot(group.descriptor?.code);
+            const exactCode =
+              rootCode && familyRootCode && rootCode !== familyRootCode
+                ? cleanEngineValue(engine.engine_code)
+                : (normalizeEngineValue(engine.engine_code) !== normalizeEngineValue(group.descriptor?.code)
+                    ? cleanEngineValue(engine.engine_code)
+                    : null);
+            return {
+              id: `engine-row:${engine._id}`,
+              label: exactCode || cleanEngineValue(engine.engine_title) || "Variant",
+              title: cleanEngineValue(engine.engine_title) || cleanEngineValue(engine.engine_code) || "Variant",
+              engine_variant_code: exactCode,
+              powertrain_designation: null,
+              displacement_l: engine.displacement_l ?? null,
+              fuel_type: engine.fuel_type ?? null,
+              aspiration: engine.aspiration ?? null,
+              power_hp: engine.power_hp ?? null,
+              power_kw: engine.power_kw ?? null,
+              source: "engine_row",
+            };
+          })
+      : [];
+
+    const exactVariants = group.exactVariants.map((variant) => ({
+      id: `engine-variant:${variant._id}`,
+      label:
+        cleanEngineValue(variant.powertrain_designation) ||
+        cleanEngineValue(variant.engine_variant_code) ||
+        cleanEngineValue(variant.engine_variant_title) ||
+        "Variant",
+      title:
+        cleanEngineValue(variant.engine_variant_title) ||
+        cleanEngineValue(variant.engine_variant_code) ||
+        "Variant",
+      engine_variant_code: cleanEngineValue(variant.engine_variant_code) || null,
+      powertrain_designation: cleanEngineValue(variant.powertrain_designation) || null,
+      displacement_l: variant.displacement_l ?? null,
+      fuel_type: variant.engine_variant_fuel_type ?? null,
+      aspiration: variant.engine_variant_aspiration ?? null,
+      power_hp: variant.engine_variant_power_hp ?? null,
+      power_kw: variant.engine_variant_power_kw ?? null,
+      source: "engine_variant",
+    }));
+
+    const seenVariantKeys = new Set<string>();
+    const variants = [...exactVariants, ...syntheticConcreteVariants]
+      .filter((variant) => {
+        const dedupeKey = `${normalizeEngineValue(variant.label)}::${normalizeEngineValue(variant.title)}`;
+        if (seenVariantKeys.has(dedupeKey)) return false;
+        seenVariantKeys.add(dedupeKey);
+        return true;
+      })
+      .sort((a, b) => {
+        const aPriority = a.powertrain_designation || a.engine_variant_code ? 0 : 1;
+        const bPriority = b.powertrain_designation || b.engine_variant_code ? 0 : 1;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      });
+
+    const linkedVehicles = Array.from(group.vehicleIds)
+      .map((vehicleId) => vehicleById.get(vehicleId))
+      .filter((vehicle): vehicle is NonNullable<typeof vehicle> => Boolean(vehicle))
+      .sort((a, b) =>
+        cleanEngineValue(a.vehicle_title ?? a.model_name).localeCompare(
+          cleanEngineValue(b.vehicle_title ?? b.model_name),
+          undefined,
+          { sensitivity: "base" },
+        ),
+      )
+      .map((vehicle) => ({
+        _id: vehicle._id,
+        id: vehicle.id ?? null,
+        slug: vehicle.slug ?? null,
+        vehicle_title: vehicle.vehicle_title ?? vehicle.model_name ?? "Unknown Vehicle",
+        model_name: vehicle.model_name ?? null,
+        production_years: vehicle.production_years ?? null,
+        vehicle_image: vehicle.vehicle_image ?? null,
+        brand_title: brandById.get(String(vehicle.brand_id ?? ""))?.brand_title ?? null,
+      }));
+
+    const displacementSummary = summarizeNumericDisplacements([
+      familyEngine?.displacement_l ?? null,
+      ...syntheticConcreteVariants.map((variant) => variant.displacement_l),
+      ...exactVariants.map((variant) => variant.displacement_l),
+    ]);
+
+    const fuelSummary = summarizeTextValues([
+      familyEngine?.fuel_type ?? null,
+      ...syntheticConcreteVariants.map((variant) => variant.fuel_type),
+      ...exactVariants.map((variant) => variant.fuel_type),
+    ]);
+
+    const aspirationSummary = summarizeTextValues([
+      familyEngine?.aspiration ?? null,
+      ...syntheticConcreteVariants.map((variant) => variant.aspiration),
+      ...exactVariants.map((variant) => variant.aspiration),
+    ]);
+
+    return {
+      id: group.key,
+      family_key: group.key,
+      family_row_id: familyEngine?._id ?? null,
+      family_title: familyTitle,
+      family_code: familyCode,
+      brand_ref: brandSummary,
+      configuration: group.descriptor?.configuration ?? familyEngine?.configuration ?? null,
+      engine_layout: group.descriptor?.engineLayout ?? familyEngine?.engine_layout ?? null,
+      cylinders: group.descriptor?.cylinders ?? familyEngine?.cylinders ?? null,
+      displacement_summary: displacementSummary,
+      fuel_summary: fuelSummary,
+      aspiration_summary: aspirationSummary,
+      variant_count: variants.length,
+      family_engine_count: group.engines.length,
+      linked_vehicle_count: linkedVehicles.length,
+      linked_vehicle_titles: linkedVehicles.slice(0, 3).map((vehicle) => vehicle.vehicle_title),
+      linked_vehicles: linkedVehicles,
+      variants,
+      search_text: [
+        familyTitle,
+        familyCode,
+        ...group.engines.map((engine) => engine.engine_title ?? engine.engine_code ?? ""),
+        ...variants.flatMap((variant) => [variant.label, variant.title]),
+        ...linkedVehicles.map((vehicle) => vehicle.vehicle_title),
+      ]
+        .map((value) => cleanEngineValue(value))
+        .filter((value) => value.length > 0)
+        .join(" "),
+    };
+  });
+
+  return rows.sort((a, b) => {
+    const brandCompare = cleanEngineValue(a.brand_ref).localeCompare(cleanEngineValue(b.brand_ref), undefined, {
+      sensitivity: "base",
+    });
+    if (brandCompare !== 0) return brandCompare;
+    const titleCompare = cleanEngineValue(a.family_title).localeCompare(cleanEngineValue(b.family_title), undefined, {
+      sensitivity: "base",
+    });
+    if (titleCompare !== 0) return titleCompare;
+    return cleanEngineValue(a.id).localeCompare(cleanEngineValue(b.id), undefined, {
+      sensitivity: "base",
+    });
+  });
+}
 
 export const enginesGetAll = query({
   args: {},
@@ -348,10 +866,73 @@ export const enginesGetById = query({
   args: { id: v.string() },
   handler: async (ctx, args) => {
     try {
-      return await ctx.db
+      if (/^[a-z0-9]{20,}$/i.test(args.id)) {
+        const byConvexId = await ctx.db.get("oem_engines", args.id as Id<"oem_engines">);
+        if (byConvexId) return byConvexId;
+      }
+      const byBusinessId = await ctx.db
         .query("oem_engines")
         .filter((q) => q.eq(q.field("id"), args.id))
         .first();
+      if (byBusinessId) return byBusinessId;
+      return await ctx.db
+        .query("oem_engines")
+        .withIndex("by_slug", (q) => q.eq("slug", args.id))
+        .first();
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const engineVariantsGetAll = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const rows = await ctx.db.query("oem_engine_variants").collect();
+      return rows.sort((a, b) => {
+        const titleCompare = String(a.engine_variant_title ?? "").localeCompare(
+          String(b.engine_variant_title ?? ""),
+          undefined,
+          { sensitivity: "base" },
+        );
+        if (titleCompare !== 0) return titleCompare;
+        const codeCompare = String(a.engine_variant_code ?? "").localeCompare(
+          String(b.engine_variant_code ?? ""),
+          undefined,
+          { sensitivity: "base" },
+        );
+        if (codeCompare !== 0) return codeCompare;
+        return String(a._id).localeCompare(String(b._id));
+      });
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const engineFamiliesBrowse = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      return await buildEngineFamilyBrowseRows(ctx);
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const engineFamiliesGetById = query({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      const rows = await buildEngineFamilyBrowseRows(ctx);
+      const normalized = normalizeEngineValue(args.id);
+      return (
+        rows.find((row) => normalizeEngineValue(row.id) === normalized) ??
+        rows.find((row) => normalizeEngineValue(row.family_row_id) === normalized) ??
+        null
+      );
     } catch {
       return null;
     }
@@ -368,6 +949,57 @@ export const enginesGetByCode = query({
         .first();
     } catch {
       return null;
+    }
+  },
+});
+
+export const engineVariantsGetById = query({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      if (/^[a-z0-9]{20,}$/i.test(args.id)) {
+        const byConvexId = await ctx.db.get("oem_engine_variants", args.id as Id<"oem_engine_variants">);
+        if (byConvexId) return byConvexId;
+      }
+      const byBusinessId = await ctx.db
+        .query("oem_engine_variants")
+        .filter((q) => q.eq(q.field("id"), args.id))
+        .first();
+      if (byBusinessId) return byBusinessId;
+      return await ctx.db
+        .query("oem_engine_variants")
+        .withIndex("by_slug", (q) => q.eq("slug", args.id))
+        .first();
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const engineVariantsGetByCode = query({
+  args: { engineVariantCode: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      return await ctx.db
+        .query("oem_engine_variants")
+        .withIndex("by_engine_variant_code", (q) => q.eq("engine_variant_code", args.engineVariantCode))
+        .first();
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const engineVariantsGetByEngine = query({
+  args: { engineId: v.id("oem_engines") },
+  handler: async (ctx, args) => {
+    try {
+      return await ctx.db
+        .query("oem_engine_variants")
+        .withIndex("by_engine_id", (q) => q.eq("engine_id", args.engineId))
+        .collect();
+    } catch {
+      return [];
     }
   },
 });
@@ -1880,6 +2512,25 @@ export const vehicleCommentsGetByVehicle = query({
   },
 });
 
+export const engineCommentsGetByEngine = query({
+  args: { engineId: v.id("oem_engines") },
+  handler: async (ctx, args) => {
+    try {
+      const comments = await ctx.db
+        .query("engine_comments")
+        .withIndex("by_engine", (q) => q.eq("engine_id", args.engineId))
+        .collect();
+      return comments.sort((a, b) => {
+        const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tB - tA;
+      });
+    } catch {
+      return [];
+    }
+  },
+});
+
 export const wheelCommentsGetByWheel = query({
   args: { wheelId: v.id("oem_wheels") },
   handler: async (ctx, args) => {
@@ -2146,6 +2797,28 @@ export const userTablePreferencesGetByUserAndTable = query({
         .query("user_table_preferences")
         .withIndex("by_user_table", (q) =>
           q.eq("user_id", args.userId).eq("table_name", args.tableName)
+        )
+        .first();
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const adminTableSelectorLayoutGet = query({
+  args: {
+    layoutScope: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const identity = await requireAdmin(ctx);
+      const userId = requireAdminUserId(identity);
+      const layoutScope = args.layoutScope?.trim() || DEFAULT_ADMIN_TABLE_SELECTOR_LAYOUT_SCOPE;
+
+      return await ctx.db
+        .query("admin_table_selector_layouts")
+        .withIndex("by_user_scope", (q) =>
+          q.eq("user_id", userId).eq("layout_scope", layoutScope)
         )
         .first();
     } catch {
