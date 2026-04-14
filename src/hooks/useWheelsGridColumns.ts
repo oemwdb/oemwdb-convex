@@ -28,6 +28,14 @@ function getVehiclesColumns(width: number): number {
   return 1;
 }
 
+function getEngineColumns(width: number): number {
+  if (width >= 1280) return 6;
+  if (width >= 1024) return 5;
+  if (width >= 768) return 4;
+  if (width >= 640) return 3;
+  return 2;
+}
+
 export function useWheelsGridColumns(): number {
   const [columns, setColumns] = useState(() =>
     getWheelsColumns(typeof window !== "undefined" ? window.innerWidth : 1280)
@@ -46,6 +54,18 @@ export function useVehicleGridColumns(): number {
   );
   useEffect(() => {
     const onResize = () => setColumns(getVehiclesColumns(window.innerWidth));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return columns;
+}
+
+export function useEngineGridColumns(): number {
+  const [columns, setColumns] = useState(() =>
+    getEngineColumns(typeof window !== "undefined" ? window.innerWidth : 1280)
+  );
+  useEffect(() => {
+    const onResize = () => setColumns(getEngineColumns(window.innerWidth));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);

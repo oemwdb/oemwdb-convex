@@ -61,6 +61,14 @@ interface AdvancedTableViewProps {
   onColumnResize?: (columnId: string, width: number) => void;
   showGroupBy?: boolean;
   columnBoundaryMap?: Record<string, { left?: boolean; right?: boolean }>;
+  tableTabsContent?: React.ReactNode;
+  focusColumnId?: string | null;
+  multiSelectColumns?: boolean;
+  onHorizontalScroll?: (scrollLeft: number) => void;
+  onColumnHeaderDragStart?: (
+    columnId: string,
+    event: React.DragEvent<HTMLTableHeaderCellElement>,
+  ) => void;
 }
 
 export function AdvancedTableView({
@@ -99,6 +107,11 @@ export function AdvancedTableView({
   onColumnResize,
   showGroupBy = true,
   columnBoundaryMap = {},
+  tableTabsContent,
+  focusColumnId,
+  multiSelectColumns = false,
+  onHorizontalScroll,
+  onColumnHeaderDragStart,
 }: AdvancedTableViewProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [localHiddenColumnIds, setLocalHiddenColumnIds] = useState<string[]>([]);
@@ -114,6 +127,21 @@ export function AdvancedTableView({
   useEffect(() => {
     hiddenColumns.current = new Set(effectiveHiddenColumnIds);
   }, [effectiveHiddenColumnIds]);
+
+  useEffect(() => {
+    if (!focusColumnId || !tableRef.current) return;
+    const columnHeader = tableRef.current.querySelector<HTMLElement>(`[data-column-id="${focusColumnId}"]`);
+    if (!columnHeader) return;
+
+    tableRef.current.scrollTo({
+      left: Math.max(0, columnHeader.offsetLeft - 8),
+      behavior: "smooth",
+    });
+  }, [focusColumnId]);
+
+  useEffect(() => {
+    onHorizontalScroll?.(tableRef.current?.scrollLeft ?? 0);
+  }, [onHorizontalScroll]);
 
   // Enhanced keyboard navigation
   useEffect(() => {
@@ -237,6 +265,9 @@ export function AdvancedTableView({
           onToggleColumnSelection(allColumnIds[i]);
         }
       }
+    } else if (multiSelectColumns) {
+      onToggleColumnSelection(columnId);
+      setLastSelectedColumn(columnId);
     } else if (e.ctrlKey || e.metaKey) {
       // Ctrl/Cmd+click for multi-select
       onToggleColumnSelection(columnId);
@@ -252,7 +283,7 @@ export function AdvancedTableView({
       onToggleColumnSelection(columnId);
       setLastSelectedColumn(columnId);
     }
-  }, [columns, effectiveHiddenColumnIds, lastSelectedColumn, onToggleColumnSelection, selectedColumns]);
+  }, [columns, effectiveHiddenColumnIds, lastSelectedColumn, multiSelectColumns, onToggleColumnSelection, selectedColumns]);
 
   // Handle row actions
   const handleDuplicateRow = (row: any) => {
@@ -501,22 +532,25 @@ export function AdvancedTableView({
         />
       )}
 
+      {tableTabsContent ? (
+        <div className="border-b border-border/70 bg-card px-3 pt-2">
+          {tableTabsContent}
+        </div>
+      ) : null}
+
       {/* Table */}
-      <div ref={tableRef} className="flex-1 overflow-auto">
+      <div
+        ref={tableRef}
+        className="flex-1 overflow-auto"
+        onScroll={(event) => onHorizontalScroll?.(event.currentTarget.scrollLeft)}
+      >
         <table className="w-full border-collapse text-xs">
           <thead className="sticky top-0 z-10 bg-card border-b border-border/70">
             <tr>
-              <th className="w-8 px-2 py-2">
+              <th className="w-8 border-r border-border/60 px-2 py-2">
                 <Checkbox
                   checked={selectedRows.size === data.length && data.length > 0}
                   onCheckedChange={onToggleSelectAll}
-                  className="h-3.5 w-3.5 border-muted-foreground/30"
-                />
-              </th>
-              <th className="w-8 px-2 py-2">
-                <Checkbox
-                  checked={selectedColumns.size === visibleColumns.length && visibleColumns.length > 0}
-                  onCheckedChange={onToggleSelectAllColumns}
                   className="h-3.5 w-3.5 border-muted-foreground/30"
                 />
               </th>
@@ -524,7 +558,7 @@ export function AdvancedTableView({
                 <th
                   key={column.id}
                   className={cn(
-                    "relative text-left px-3 py-2 text-xs font-medium cursor-pointer select-none transition-colors",
+                    "relative border-r border-border/60 text-left px-3 py-2 text-xs font-medium cursor-pointer select-none transition-colors last:border-r-0",
                     selectedColumns.has(column.id) 
                       ? "bg-primary/20 text-foreground font-medium" 
                       : "text-muted-foreground hover:bg-white/[0.03]"
@@ -532,6 +566,9 @@ export function AdvancedTableView({
                   style={{ width: column.width ?? localColumnWidths[column.id] ?? 150 }}
                   onClick={(e) => handleColumnSelection(column.id, e)}
                   data-column-boundary={columnBoundaryMap[column.id] ? "true" : undefined}
+                  data-column-id={column.id}
+                  draggable={Boolean(onColumnHeaderDragStart)}
+                  onDragStart={(event) => onColumnHeaderDragStart?.(column.id, event)}
                 >
                   <div className="flex items-center gap-1">
                     {column.label}
@@ -599,19 +636,18 @@ export function AdvancedTableView({
                         selectedRows.has(row.id) && "bg-muted"
                       )}
                     >
-                      <td className="px-2 py-2">
+                      <td className="border-r border-border/60 px-2 py-2">
                         <Checkbox
                           checked={selectedRows.has(row.id)}
                           onCheckedChange={(e) => handleRowSelection(row.id, e as any)}
                           className="h-3.5 w-3.5"
                         />
                       </td>
-                      <td className="w-8"></td>
                       {visibleColumns.map(column => (
                         <td 
                           key={column.id} 
                           className={cn(
-                            "px-3 py-2 transition-colors",
+                            "border-r border-border/60 px-3 py-2 transition-colors last:border-r-0",
                             selectedColumns.has(column.id) && "bg-primary/10",
                             selectedRows.has(row.id) && selectedColumns.has(column.id) && "bg-primary/25"
                           )}
@@ -642,19 +678,18 @@ export function AdvancedTableView({
                     selectedRows.has(row.id) && "bg-muted"
                   )}
                 >
-                  <td className="px-2 py-2">
+                  <td className="border-r border-border/60 px-2 py-2">
                     <Checkbox
                       checked={selectedRows.has(row.id)}
                       onCheckedChange={(e) => handleRowSelection(row.id, e as any)}
                       className="h-3.5 w-3.5"
                     />
                   </td>
-                  <td className="w-8"></td>
                   {visibleColumns.map(column => (
                     <td 
                       key={column.id} 
                       className={cn(
-                        "px-3 py-2 transition-colors",
+                        "border-r border-border/60 px-3 py-2 transition-colors last:border-r-0",
                         selectedColumns.has(column.id) && "bg-primary/10",
                         selectedRows.has(row.id) && selectedColumns.has(column.id) && "bg-primary/25"
                       )}

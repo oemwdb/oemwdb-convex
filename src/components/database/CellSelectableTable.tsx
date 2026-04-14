@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type DragEvent } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,8 @@ interface CellSelectableTableProps {
   data: any[];
   columns: TableColumn[];
   columnBoundaryMap?: Record<string, { left?: boolean; right?: boolean }>;
+  focusColumnId?: string | null;
+  onHorizontalScroll?: (scrollLeft: number) => void;
   selectedCells: Set<string>; // Format: "rowId:columnId"
   onCellClick: (rowId: string, columnId: string, isShiftKey: boolean) => void;
   onSelectAll: (checked: boolean) => void;
@@ -33,6 +35,10 @@ interface CellSelectableTableProps {
   sortDirection: "asc" | "desc";
   onColumnReorder?: (oldIndex: number, newIndex: number) => void;
   onCellEdit?: (rowId: string, columnId: string, value: any) => void;
+  onColumnHeaderDragStart?: (
+    columnId: string,
+    event: DragEvent<HTMLTableHeaderCellElement>,
+  ) => void;
 }
 
 function SortableHeader({
@@ -41,12 +47,17 @@ function SortableHeader({
   sortDirection,
   onSort,
   boundaryShadow,
+  onColumnHeaderDragStart,
 }: {
   column: TableColumn;
   sortColumn: string | null;
   sortDirection: "asc" | "desc";
   onSort: (columnId: string) => void;
   boundaryShadow?: string;
+  onColumnHeaderDragStart?: (
+    columnId: string,
+    event: DragEvent<HTMLTableHeaderCellElement>,
+  ) => void;
 }) {
   const {
     attributes,
@@ -67,7 +78,10 @@ function SortableHeader({
     <th
       ref={setNodeRef}
       style={style}
-      className="px-4 py-3 text-left font-medium text-muted-foreground relative group select-none whitespace-nowrap"
+      className="relative group select-none whitespace-nowrap border-r border-border/60 px-4 py-3 text-left font-medium text-muted-foreground last:border-r-0"
+      data-column-id={column.id}
+      draggable={Boolean(onColumnHeaderDragStart)}
+      onDragStart={(event) => onColumnHeaderDragStart?.(column.id, event)}
     >
       <div
         className="pointer-events-none absolute inset-y-0 left-0 right-0"
@@ -99,6 +113,8 @@ export function CellSelectableTable({
   data,
   columns,
   columnBoundaryMap = {},
+  focusColumnId,
+  onHorizontalScroll,
   selectedCells,
   onCellClick,
   onSelectAll,
@@ -107,10 +123,12 @@ export function CellSelectableTable({
   sortDirection,
   onColumnReorder,
   onCellEdit,
+  onColumnHeaderDragStart,
 }: CellSelectableTableProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null); // Format: "rowId:columnId"
   const [editValue, setEditValue] = useState<any>("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -123,6 +141,21 @@ export function CellSelectableTable({
       inputRef.current.select();
     }
   }, [editingCell]);
+
+  useEffect(() => {
+    if (!focusColumnId || !tableRef.current) return;
+    const columnHeader = tableRef.current.querySelector<HTMLElement>(`[data-column-id="${focusColumnId}"]`);
+    if (!columnHeader) return;
+
+    tableRef.current.scrollTo({
+      left: Math.max(0, columnHeader.offsetLeft - 8),
+      behavior: "smooth",
+    });
+  }, [focusColumnId]);
+
+  useEffect(() => {
+    onHorizontalScroll?.(tableRef.current?.scrollLeft ?? 0);
+  }, [onHorizontalScroll]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -210,18 +243,22 @@ export function CellSelectableTable({
   };
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div
+      ref={tableRef}
+      className="flex-1 overflow-auto"
+      onScroll={(event) => onHorizontalScroll?.(event.currentTarget.scrollLeft)}
+    >
       <table className="w-full text-sm border-collapse">
         <thead className="sticky top-0 bg-card z-10">
           <tr className="border-b border-border">
-            <th className="w-10 px-4 py-3 text-left">
+            <th className="w-10 border-r border-border/60 px-4 py-3 text-left">
               <Checkbox
                 checked={selectedCells.size === data.length * columns.length && data.length > 0}
                 onCheckedChange={onSelectAll}
                 className="translate-y-[2px]"
               />
             </th>
-            <th className="w-12 px-4 py-3"></th>
+            <th className="w-12 border-r border-border/60 px-4 py-3"></th>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -239,6 +276,7 @@ export function CellSelectableTable({
                     sortDirection={sortDirection}
                     onSort={onSort}
                     boundaryShadow={getBoundaryShadow(column.id)}
+                    onColumnHeaderDragStart={onColumnHeaderDragStart}
                   />
                 ))}
               </SortableContext>
@@ -248,7 +286,7 @@ export function CellSelectableTable({
         <tbody>
           {data.map((row) => (
             <tr key={row.id} className="border-b border-border hover:bg-muted/50 transition-colors group">
-              <td className="px-4 py-3">
+              <td className="border-r border-border/60 px-4 py-3">
                 <Checkbox
                   className="translate-y-[2px] opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
                   checked={selectedCells.has(`row-all:${row.id}`) || columns.some(c => selectedCells.has(`${row.id}:${c.id}`))}
@@ -263,7 +301,7 @@ export function CellSelectableTable({
                   disabled
                 />
               </td>
-              <td className="px-4 py-3">
+              <td className="border-r border-border/60 px-4 py-3">
                 {getImageUrl(row) ? (
                   <img
                     src={getImageUrl(row)}
@@ -289,7 +327,7 @@ export function CellSelectableTable({
                   <td
                     key={column.id}
                     className={cn(
-                      "px-4 py-3 text-foreground align-middle cursor-pointer transition-colors relative",
+                      "relative border-r border-border/60 px-4 py-3 text-foreground align-middle cursor-pointer transition-colors last:border-r-0",
                       isSelected && "bg-muted/50 font-medium"
                     )}
                     style={{ boxShadow: getBoundaryShadow(column.id) }}

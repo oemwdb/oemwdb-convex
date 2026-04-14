@@ -6,7 +6,11 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
 import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
-import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+  useCollectionSecondarySidebarState,
+} from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ParsedVehicleFilters } from "@/utils/vehicleFilterParser";
@@ -130,43 +134,17 @@ const VehiclesPage = () => {
     deleteControl.clearSelection();
   }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection, deleteControl.clearSelection]);
 
-  // Handle tag click
-  const handleTagClick = (tag: string, category: string) => {
+  const applySidebarFilters = (nextFilters: Record<string, string[] | undefined>, searchQuery: string) => {
     const params = new URLSearchParams(searchParams);
-    const existingValues = params.getAll(category);
-
-    if (existingValues.includes(tag)) {
-      params.delete(category);
-      existingValues.filter(v => v !== tag).forEach(v => params.append(category, v));
-    } else {
-      params.append(category, tag);
-    }
-    navigate(`/vehicles?${params.toString()}`);
-  };
-
-  // Clear all filters
-  const handleClearAllFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    ['brand', 'boltPattern', 'centerBore', 'productionYears', 'hasGoodPic', 'hasBadPic', 'search'].forEach(key => {
+    ["brand", "boltPattern", "centerBore", "productionYears", "hasGoodPic", "hasBadPic", "search"].forEach((key) => {
       params.delete(key);
     });
-    navigate(`/vehicles?${params.toString()}`);
-  };
-
-  // Handle adding/removing search tags
-  const handleAddSearchTag = (tag: string) => {
-    if (!searchTags.includes(tag)) {
-      const params = new URLSearchParams(searchParams);
-      params.append('search', tag);
-      navigate(`/vehicles?${params.toString()}`);
+    Object.entries(nextFilters).forEach(([category, values]) => {
+      (values ?? []).forEach((value) => params.append(category, value));
+    });
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim());
     }
-  };
-
-  const handleRemoveSearchTag = (tag: string) => {
-    const params = new URLSearchParams(searchParams);
-    const allSearchValues = params.getAll('search');
-    params.delete('search');
-    allSearchValues.filter(v => v !== tag).forEach(v => params.append('search', v));
     navigate(`/vehicles?${params.toString()}`);
   };
 
@@ -343,26 +321,23 @@ const VehiclesPage = () => {
     if (!deleteControl.selectionMode) duplicateControl.clearSelection();
     await deleteControl.handleDeleteControl();
   };
+  const filterSidebarState = useCollectionSecondarySidebarState({
+    title: "Filters",
+    filterFields,
+    parsedFilters: parsedFilters as Record<string, string[] | undefined>,
+    onApply: ({ filters, searchQuery }) => applySidebarFilters(filters, searchQuery),
+    searchPlaceholder: "Search vehicles...",
+    searchValue: searchTags[0] ?? "",
+    totalResults: filteredVehicles.length,
+  });
 
   return (
     <DashboardLayout
       title="Vehicles"
       showFilterButton={false}
       secondaryTitle="Filters"
-      secondarySidebar={
-        <CollectionSecondarySidebar
-          title="Filters"
-          filterFields={filterFields}
-          parsedFilters={parsedFilters as Record<string, string[] | undefined>}
-          onTagClick={handleTagClick}
-          onClearAll={handleClearAllFilters}
-          searchPlaceholder="Search vehicles..."
-          searchTags={searchTags}
-          onAddSearchTag={handleAddSearchTag}
-          onRemoveSearchTag={handleRemoveSearchTag}
-          totalResults={filteredVehicles.length}
-        />
-      }
+      secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
+      secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
       sortTitle="Sort Vehicles"
       sortSidebar={
         <CollectionSortSidebar

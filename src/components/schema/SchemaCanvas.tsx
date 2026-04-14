@@ -314,6 +314,8 @@ export default function SchemaCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
+  const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null);
+  const [interactingSectionId, setInteractingSectionId] = useState<string | null>(null);
   const dragStateRef = useRef<
     | {
         type: "node";
@@ -829,17 +831,21 @@ export default function SchemaCanvas({
       }
     }
     dragStateRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    setInteractingSectionId(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   const handleGroupPointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLElement>,
     groupId: string,
     memberNames: string[],
     position: SchemaCanvasNodePosition,
   ) => {
     event.stopPropagation();
     onFocusSection(groupId);
+    setInteractingSectionId(groupId);
 
     const worldPoint = getWorldPoint(event.clientX, event.clientY);
     const memberStartPositions = Object.fromEntries(
@@ -871,6 +877,7 @@ export default function SchemaCanvas({
   ) => {
     event.stopPropagation();
     onFocusSection(bounds.groupId);
+    setInteractingSectionId(bounds.groupId);
 
     const worldPoint = getWorldPoint(event.clientX, event.clientY);
     const rect = event.currentTarget.getBoundingClientRect();
@@ -1149,19 +1156,22 @@ export default function SchemaCanvas({
                 ? TABLE_GROUP_ACCENTS[bounds.baseGroup ?? "system"]
                 : null;
             const stroke = customAccent?.stroke ?? systemAccent?.stroke ?? "rgba(161, 161, 170, 0.5)";
+            const isInteracting = interactingSectionId === bounds.groupId;
+            const isHovered = hoveredSectionId === bounds.groupId;
+            const isHighlighted = isInteracting || bounds.isActive || isHovered;
             const background = bounds.kind === "custom"
               ? (customAccent?.fill ?? "rgba(148, 163, 184, 0.08)")
-              : "rgba(255,255,255,0.01)";
+              : "rgba(255,255,255,0.02)";
             return (
               <div
                 key={bounds.groupId}
                 className={cn(
-                  "absolute rounded-[28px] border-2 border-dashed transition-opacity",
-                  bounds.kind === "custom"
-                    ? bounds.isActive
-                      ? "opacity-100"
-                      : "opacity-70 hover:opacity-90"
-                    : "opacity-45 hover:opacity-65",
+                  "absolute rounded-[28px] border-2 border-dashed transition-[opacity,box-shadow,border-color,background-color]",
+                  isHighlighted
+                    ? "opacity-100"
+                    : bounds.kind === "custom"
+                      ? "opacity-80"
+                      : "opacity-65",
                 )}
                 style={{
                   left: bounds.x,
@@ -1171,10 +1181,18 @@ export default function SchemaCanvas({
                   borderColor: stroke,
                   background,
                   boxShadow:
-                    bounds.kind === "custom" && bounds.isActive
-                      ? `0 0 0 1px ${stroke} inset, 0 0 0 1px rgba(255,255,255,0.06)`
-                      : `0 0 0 1px ${stroke} inset`,
+                    isInteracting
+                      ? `0 0 0 1px ${stroke} inset, 0 0 0 1px rgba(255,255,255,0.14), 0 0 26px ${stroke}`
+                      : isHighlighted
+                        ? `0 0 0 1px ${stroke} inset, 0 0 0 1px rgba(255,255,255,0.1), 0 0 16px ${stroke}`
+                        : `0 0 0 1px ${stroke} inset`,
                 }}
+                onPointerEnter={() => setHoveredSectionId(bounds.groupId)}
+                onPointerLeave={() =>
+                  setHoveredSectionId((current) =>
+                    current === bounds.groupId ? null : current,
+                  )
+                }
                 onPointerDown={
                   (event) => handleGroupResizePointerDown(event, bounds)
                 }
@@ -1205,13 +1223,20 @@ export default function SchemaCanvas({
                   bounds.kind === "custom" ? (
                     <button
                       type="button"
-                      className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-xl border px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur"
+                      className="absolute left-5 top-0 z-10 -translate-y-1/2 cursor-grab rounded-xl border px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur active:cursor-grabbing"
                       style={{
                         borderColor: stroke,
                         background: `linear-gradient(180deg, rgba(17,19,25,0.98), rgba(17,19,25,0.92)), ${background}`,
-                        boxShadow: `0 0 0 1px ${stroke} inset, 0 10px 30px rgba(0,0,0,0.28)`,
+                        boxShadow: isHighlighted
+                          ? `0 0 0 1px ${stroke} inset, 0 0 18px ${stroke}, 0 10px 30px rgba(0,0,0,0.28)`
+                          : `0 0 0 1px ${stroke} inset, 0 10px 30px rgba(0,0,0,0.28)`,
                       }}
-                      onPointerDown={(event) => event.stopPropagation()}
+                      onPointerDown={(event) =>
+                        handleGroupPointerDown(event, bounds.groupId, bounds.memberNames, {
+                          x: bounds.x,
+                          y: bounds.y,
+                        })
+                      }
                       onDoubleClick={(event) => {
                         event.stopPropagation();
                         startEditingGroup(bounds.groupId, bounds.name);
@@ -1221,17 +1246,26 @@ export default function SchemaCanvas({
                       {bounds.name}
                     </button>
                   ) : (
-                    <div
-                      className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-xl border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
+                    <button
+                      type="button"
+                      className="absolute left-5 top-0 z-10 -translate-y-1/2 cursor-grab rounded-xl border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] shadow-[0_10px_30px_rgba(0,0,0,0.2)] active:cursor-grabbing"
                       style={{
                         borderColor: stroke,
                         background: "rgba(14,16,20,0.92)",
                         color: "rgba(255,255,255,0.88)",
-                        boxShadow: `0 0 0 1px ${stroke} inset, 0 10px 30px rgba(0,0,0,0.2)`,
+                        boxShadow: isHighlighted
+                          ? `0 0 0 1px ${stroke} inset, 0 0 18px ${stroke}, 0 10px 30px rgba(0,0,0,0.2)`
+                          : `0 0 0 1px ${stroke} inset, 0 10px 30px rgba(0,0,0,0.2)`,
                       }}
+                      onPointerDown={(event) =>
+                        handleGroupPointerDown(event, bounds.groupId, bounds.memberNames, {
+                          x: bounds.x,
+                          y: bounds.y,
+                        })
+                      }
                     >
                       {bounds.name}
-                    </div>
+                    </button>
                   )
                 )}
                 {bounds.empty ? (
@@ -1291,7 +1325,7 @@ export default function SchemaCanvas({
                 onClick={() => onSelectTable(table.name)}
                 onPointerDown={(event) => handleNodePointerDown(event, table.name)}
                 className={cn(
-                  "absolute overflow-hidden rounded-2xl border p-0 text-left shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-shadow",
+                  "absolute overflow-hidden rounded-[24px] border p-0 text-left shadow-[0_12px_40px_rgba(0,0,0,0.28)] transition-shadow",
                   isSelected
                     ? "border-sky-400/75 bg-[#1a1e25]"
                     : isConnected

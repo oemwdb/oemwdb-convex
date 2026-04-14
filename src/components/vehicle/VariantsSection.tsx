@@ -27,6 +27,10 @@ const normalizeText = (value?: string | null) =>
 const escapeRegex = (value: string) =>
     value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const isHelperAllVariant = (variant: RawVariant) =>
+    normalizeText(variant.trim_level).toLowerCase() === "all" &&
+    normalizeText(variant.variant_title).toLowerCase() === "all";
+
 const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleName }) => {
     const variants = useQuery(api.queries.vehicleVariantsGetByVehicle, { vehicleId });
     const isLoading = variants === undefined;
@@ -79,6 +83,9 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
     const groupedVariants = (() => {
         if (!variants) return [];
 
+        const concreteVariants = variants.filter((variant) => !isHelperAllVariant(variant));
+        const visibleVariants = concreteVariants.length > 0 ? concreteVariants : variants;
+
         const groups = new Map<
             string,
             {
@@ -96,7 +103,7 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
             }
         >();
 
-        for (const variant of variants) {
+        for (const variant of visibleVariants) {
             const key = buildGroupKey(variant);
             const existing = groups.get(key);
             const label = resolveDisplayLabel(variant);

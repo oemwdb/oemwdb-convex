@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import WheelsGrid from "@/components/wheel/WheelsGrid";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
 import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
-import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+  useCollectionSecondarySidebarState,
+} from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import {
   Pagination,
@@ -178,47 +182,17 @@ const WheelsPage = () => {
     deleteControl.clearSelection();
   }, [currentPage, duplicateControl.clearSelection, deleteControl.clearSelection]);
 
-  // Handle tag click from filter sidebar
-  const handleTagClick = (tag: string, category: string) => {
+  const applySidebarFilters = (nextFilters: Record<string, string[] | undefined>, searchQuery: string) => {
     const params = new URLSearchParams(searchParams);
-    const existingValues = params.getAll(category);
-
-    if (existingValues.includes(tag)) {
-      params.delete(category);
-      existingValues.filter(v => v !== tag).forEach(v => params.append(category, v));
-    } else {
-      params.append(category, tag);
-    }
-    params.delete("page");
-    navigate(`/wheels?${params.toString()}`);
-  };
-
-  // Handle clearing all filters
-  const handleClearAllFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    ['brand', 'diameter', 'width', 'boltPattern', 'centerBore', 'tireSize', 'color', 'hasGoodPic', 'hasBadPic', 'search'].forEach(key => {
+    ["brand", "diameter", "width", "boltPattern", "centerBore", "tireSize", "color", "hasGoodPic", "hasBadPic", "search"].forEach((key) => {
       params.delete(key);
     });
-    params.delete("page");
-    navigate(`/wheels?${params.toString()}`);
-  };
-
-  // Handle adding a search tag
-  const handleAddSearchTag = (tag: string) => {
-    if (!searchTags.includes(tag)) {
-      const params = new URLSearchParams(searchParams);
-      params.append('search', tag);
-      params.delete("page");
-      navigate(`/wheels?${params.toString()}`);
+    Object.entries(nextFilters).forEach(([category, values]) => {
+      (values ?? []).forEach((value) => params.append(category, value));
+    });
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim());
     }
-  };
-
-  // Handle removing a search tag
-  const handleRemoveSearchTag = (tag: string) => {
-    const params = new URLSearchParams(searchParams);
-    const allSearchValues = params.getAll('search');
-    params.delete('search');
-    allSearchValues.filter(v => v !== tag).forEach(v => params.append('search', v));
     params.delete("page");
     navigate(`/wheels?${params.toString()}`);
   };
@@ -300,26 +274,23 @@ const WheelsPage = () => {
   const selectedWheelLabels = duplicateControl.selectedIds
     .map((selectedId) => wheels.find((wheel) => (wheel.convexId ?? wheel.id) === selectedId)?.wheel_name)
     .filter((value): value is string => Boolean(value));
+  const filterSidebarState = useCollectionSecondarySidebarState({
+    title: "Filters",
+    filterFields,
+    parsedFilters: parsedFilters as Record<string, string[] | undefined>,
+    onApply: ({ filters, searchQuery }) => applySidebarFilters(filters, searchQuery),
+    searchPlaceholder: "Search wheels...",
+    searchValue: searchTags[0] ?? "",
+    totalResults: totalCount,
+  });
 
   return (
     <DashboardLayout
       title="Wheels"
       showFilterButton={false}
       secondaryTitle="Filters"
-      secondarySidebar={
-        <CollectionSecondarySidebar
-          title="Filters"
-          filterFields={filterFields}
-          parsedFilters={parsedFilters as Record<string, string[] | undefined>}
-          onTagClick={handleTagClick}
-          onClearAll={handleClearAllFilters}
-          searchPlaceholder="Search wheels..."
-          searchTags={searchTags}
-          onAddSearchTag={handleAddSearchTag}
-          onRemoveSearchTag={handleRemoveSearchTag}
-          totalResults={totalCount}
-        />
-      }
+      secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
+      secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
       sortTitle="Sort Wheels"
       sortSidebar={
         <CollectionSortSidebar

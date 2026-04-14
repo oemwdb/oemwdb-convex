@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BrandsGrid from "@/components/brand/BrandsGrid";
-import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+  useCollectionSecondarySidebarState,
+} from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
 import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
@@ -114,44 +118,17 @@ const BrandsPage = () => {
     deleteControl.clearSelection();
   }, [searchTags, parsedFilters, itemsPerLoad, duplicateControl.clearSelection, deleteControl.clearSelection]);
 
-  // Handle tag click
-  const handleTagClick = (tag: string, category: string) => {
+  const applySidebarFilters = (nextFilters: Record<string, string[] | undefined>, searchQuery: string) => {
     const params = new URLSearchParams(searchParams);
-    const existingValues = params.getAll(category);
-
-    if (existingValues.includes(tag)) {
-      params.delete(category);
-      existingValues.filter(v => v !== tag).forEach(v => params.append(category, v));
-    } else {
-      params.delete(category); // For boolean filters, only allow one value
-      params.append(category, tag);
-    }
-    navigate(`/brands?${params.toString()}`);
-  };
-
-  // Clear all filters
-  const handleClearAllFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    ['hasWheels', 'hasImage', 'hasGoodPic', 'hasBadPic', 'search'].forEach((key) => {
+    ["hasWheels", "hasImage", "hasGoodPic", "hasBadPic", "search"].forEach((key) => {
       params.delete(key);
     });
-    navigate(`/brands?${params.toString()}`);
-  };
-
-  // Handle search tags
-  const handleAddSearchTag = (tag: string) => {
-    if (!searchTags.includes(tag)) {
-      const params = new URLSearchParams(searchParams);
-      params.append('search', tag);
-      navigate(`/brands?${params.toString()}`);
+    Object.entries(nextFilters).forEach(([category, values]) => {
+      (values ?? []).forEach((value) => params.append(category, value));
+    });
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim());
     }
-  };
-
-  const handleRemoveSearchTag = (tag: string) => {
-    const params = new URLSearchParams(searchParams);
-    const allSearchValues = params.getAll('search');
-    params.delete('search');
-    allSearchValues.filter(v => v !== tag).forEach(v => params.append('search', v));
     navigate(`/brands?${params.toString()}`);
   };
 
@@ -274,26 +251,23 @@ const BrandsPage = () => {
     if (!deleteControl.selectionMode) duplicateControl.clearSelection();
     await deleteControl.handleDeleteControl();
   };
+  const filterSidebarState = useCollectionSecondarySidebarState({
+    title: "Filters",
+    filterFields,
+    parsedFilters,
+    onApply: ({ filters, searchQuery }) => applySidebarFilters(filters, searchQuery),
+    searchPlaceholder: "Search brands...",
+    searchValue: searchTags[0] ?? "",
+    totalResults: filteredBrands.length,
+  });
 
   return (
     <DashboardLayout
       title="Brands"
       showFilterButton={false}
       secondaryTitle="Filters"
-      secondarySidebar={
-        <CollectionSecondarySidebar
-          title="Filters"
-          filterFields={filterFields}
-          parsedFilters={parsedFilters}
-          onTagClick={handleTagClick}
-          onClearAll={handleClearAllFilters}
-          searchPlaceholder="Search brands..."
-          searchTags={searchTags}
-          onAddSearchTag={handleAddSearchTag}
-          onRemoveSearchTag={handleRemoveSearchTag}
-          totalResults={filteredBrands.length}
-        />
-      }
+      secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
+      secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
       sortTitle="Sort Brands"
       sortSidebar={
         <CollectionSortSidebar

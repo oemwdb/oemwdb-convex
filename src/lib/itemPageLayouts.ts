@@ -13,7 +13,7 @@ import type {
 import { DEFAULT_WHEEL_HEADER_FIELD_LAYOUT } from "@/lib/wheelHeaderFields";
 
 export const DEFAULT_ITEM_PAGE_LAYOUT_SCOPE = "item_page_builder";
-export const ITEM_PAGE_LAYOUT_VERSION = 1;
+export const ITEM_PAGE_LAYOUT_VERSION = 2;
 
 export const ITEM_PAGE_TYPE_LABELS: Record<ItemPageType, string> = {
   vehicle_item: "Vehicle Page",
@@ -24,13 +24,14 @@ export const ITEM_PAGE_TYPE_LABELS: Record<ItemPageType, string> = {
 };
 
 export const ITEM_PAGE_BLOCK_LABELS: Record<ItemPageBlockKind, string> = {
-  hero: "Hero",
+  hero: "Header",
   brief: "Brief",
   facts: "Facts",
   variants: "Variants",
   vehicles_grid: "Vehicles Grid",
   wheels_grid: "Wheels Grid",
   engines_grid: "Engines Grid",
+  colors_grid: "Colors Grid",
   gallery: "Gallery",
   market: "Market",
   comments: "Comments",
@@ -40,11 +41,11 @@ export const ITEM_PAGE_BLOCK_LABELS: Record<ItemPageBlockKind, string> = {
 };
 
 export const ALLOWED_BLOCKS_BY_PAGE_TYPE: Record<ItemPageType, ItemPageBlockKind[]> = {
-  vehicle_item: ["hero", "brief", "facts", "variants", "engines_grid", "wheels_grid", "gallery", "market", "comments", "rich_text", "ad_slot"],
-  wheel_item: ["hero", "variants", "vehicles_grid", "gallery", "market", "comments", "fitment_table", "rich_text", "ad_slot"],
-  brand_item: ["hero", "vehicles_grid", "wheels_grid", "gallery", "market", "comments", "rich_text", "ad_slot"],
-  engine_item: ["hero", "variants", "vehicles_grid", "market", "comments", "rich_text", "ad_slot"],
-  color_item: ["hero", "variants", "vehicles_grid", "wheels_grid", "rich_text", "ad_slot"],
+  vehicle_item: ["brief", "facts", "variants", "engines_grid", "wheels_grid", "colors_grid", "market", "comments", "rich_text", "ad_slot"],
+  wheel_item: ["variants", "vehicles_grid", "gallery", "market", "comments", "fitment_table", "rich_text", "ad_slot"],
+  brand_item: ["vehicles_grid", "engines_grid", "wheels_grid", "colors_grid", "gallery", "market", "comments", "rich_text", "ad_slot"],
+  engine_item: ["variants", "vehicles_grid", "market", "comments", "rich_text", "ad_slot"],
+  color_item: ["variants", "vehicles_grid", "wheels_grid", "rich_text", "ad_slot"],
 };
 
 function createBlock(
@@ -86,16 +87,16 @@ export const FALLBACK_ITEM_PAGE_TEMPLATES: Record<ItemPageType, ItemPageLayoutTe
     titleTabLabelMode: "item_title",
     defaultActiveTab: "overview",
     containerStyle: { panelPadding: "default", blockGap: "lg" },
+    headerBlock: createBlock("vehicle-header", "hero"),
     tabs: [
-      createTab("overview", "Overview", [
-        createBlock("vehicle-hero", "hero"),
+      createTab("overview", "Brief", [
         createBlock("vehicle-brief", "brief"),
         createBlock("vehicle-variants", "variants"),
       ]),
       createTab("engines", "Engines", [createBlock("vehicle-engines-grid", "engines_grid")]),
       createTab("wheels", "Wheels", [createBlock("vehicle-wheels-grid", "wheels_grid")]),
+      createTab("colors", "Colors", [createBlock("vehicle-colors-grid", "colors_grid")]),
       createTab("market", "Market", [createBlock("vehicle-market", "market")]),
-      createTab("gallery", "Gallery", [createBlock("vehicle-gallery", "gallery")]),
       createTab("comments", "Comments", [createBlock("vehicle-comments", "comments")]),
     ],
   },
@@ -105,9 +106,9 @@ export const FALLBACK_ITEM_PAGE_TEMPLATES: Record<ItemPageType, ItemPageLayoutTe
     titleTabLabelMode: "item_title",
     defaultActiveTab: "fitment",
     containerStyle: { panelPadding: "default", blockGap: "lg" },
+    headerBlock: createBlock("wheel-header", "hero", 12, { fieldLayout: DEFAULT_WHEEL_HEADER_FIELD_LAYOUT }),
     tabs: [
-      createTab("fitment", "Fitment", [
-        createBlock("wheel-hero", "hero", 12, { fieldLayout: DEFAULT_WHEEL_HEADER_FIELD_LAYOUT }),
+      createTab("fitment", "Brief", [
         createBlock("wheel-variant-grid", "variants", 12, { variantScope: "wheel" }),
         createBlock("wheel-fitment-table", "fitment_table"),
       ]),
@@ -121,16 +122,15 @@ export const FALLBACK_ITEM_PAGE_TEMPLATES: Record<ItemPageType, ItemPageLayoutTe
     pageType: "brand_item",
     version: ITEM_PAGE_LAYOUT_VERSION,
     titleTabLabelMode: "item_title",
-    defaultActiveTab: "brand",
+    defaultActiveTab: "vehicles",
     containerStyle: { panelPadding: "default", blockGap: "lg" },
+    headerBlock: createBlock("brand-header", "hero"),
     tabs: [
-      createTab("brand", "Brand", [
-        createBlock("brand-hero", "hero"),
-        createBlock("brand-vehicles-grid", "vehicles_grid"),
-      ]),
+      createTab("vehicles", "Vehicles", [createBlock("brand-vehicles-grid", "vehicles_grid")]),
+      createTab("engines", "Engines", [createBlock("brand-engines-grid", "engines_grid")]),
       createTab("wheels", "Wheels", [createBlock("brand-wheels-grid", "wheels_grid")]),
+      createTab("colors", "Colors", [createBlock("brand-colors-grid", "colors_grid")]),
       createTab("market", "Market", [createBlock("brand-market", "market")]),
-      createTab("gallery", "Bad Pic", [createBlock("brand-gallery", "gallery")]),
       createTab("comments", "Comments", [createBlock("brand-comments", "comments")]),
     ],
   },
@@ -140,9 +140,9 @@ export const FALLBACK_ITEM_PAGE_TEMPLATES: Record<ItemPageType, ItemPageLayoutTe
     titleTabLabelMode: "item_title",
     defaultActiveTab: "specs",
     containerStyle: { panelPadding: "default", blockGap: "lg" },
+    headerBlock: createBlock("engine-header", "hero"),
     tabs: [
       createTab("specs", "Family", [
-        createBlock("engine-hero", "hero"),
         createBlock("engine-copy", "rich_text", 12, {
           body:
             "This page represents an engine family, not a single exact tune. Exact searchable sub-engines sit below the advertising slot, while linked vehicles stay attached at the family lane unless a stronger exact-engine source exists.",
@@ -161,9 +161,9 @@ export const FALLBACK_ITEM_PAGE_TEMPLATES: Record<ItemPageType, ItemPageLayoutTe
     titleTabLabelMode: "item_title",
     defaultActiveTab: "color",
     containerStyle: { panelPadding: "default", blockGap: "lg" },
+    headerBlock: createBlock("color-header", "hero"),
     tabs: [
       createTab("color", "Color", [
-        createBlock("color-hero", "hero"),
         createBlock("color-wheels-grid", "wheels_grid"),
       ]),
       createTab("wheelVariants", "Wheel Variants", [
@@ -190,6 +190,12 @@ function cloneTemplate(template: ItemPageLayoutTemplate): ItemPageLayoutTemplate
   return {
     ...template,
     containerStyle: { ...template.containerStyle },
+    headerBlock: template.headerBlock
+      ? {
+          ...template.headerBlock,
+          settings: template.headerBlock.settings ? { ...template.headerBlock.settings } : undefined,
+        }
+      : null,
     tabs: template.tabs.map((tab) => ({
       ...tab,
       blocks: tab.blocks.map((block) => ({
@@ -283,6 +289,76 @@ function normalizeBlock(
   };
 }
 
+function findLegacyHeroBlock(candidate: unknown): unknown {
+  if (!isObject(candidate) || !Array.isArray(candidate.tabs)) {
+    return null;
+  }
+
+  for (const rawTab of candidate.tabs) {
+    if (!isObject(rawTab) || !Array.isArray(rawTab.blocks)) continue;
+    const heroBlock = rawTab.blocks.find(
+      (block) => isObject(block) && block.kind === "hero",
+    );
+    if (heroBlock) return heroBlock;
+  }
+
+  return null;
+}
+
+function normalizeHeaderBlock(
+  candidate: unknown,
+  fallbackHeaderBlock: ItemPageBlockTemplate | null,
+): ItemPageBlockTemplate | null {
+  const source = isObject(candidate) ? candidate : fallbackHeaderBlock;
+  if (!source || !fallbackHeaderBlock) return null;
+
+  const id =
+    typeof source.id === "string" && source.id.trim()
+      ? source.id
+      : fallbackHeaderBlock.id;
+  const enabled =
+    typeof source.enabled === "boolean"
+      ? source.enabled
+      : fallbackHeaderBlock.enabled;
+  const settings = isObject(source.settings)
+    ? {
+        title:
+          typeof source.settings.title === "string"
+            ? source.settings.title
+            : fallbackHeaderBlock.settings?.title,
+        body:
+          typeof source.settings.body === "string"
+            ? source.settings.body
+            : fallbackHeaderBlock.settings?.body,
+        variantScope:
+          source.settings.variantScope === "wheel" ||
+          source.settings.variantScope === "vehicle" ||
+          source.settings.variantScope === "default"
+            ? source.settings.variantScope
+            : fallbackHeaderBlock.settings?.variantScope,
+        fieldLayout: Array.isArray(source.settings.fieldLayout)
+          ? source.settings.fieldLayout
+              .map((item, index) =>
+                normalizeFieldLayoutItem(
+                  item,
+                  fallbackHeaderBlock.settings?.fieldLayout?.[index],
+                ),
+              )
+              .filter((item): item is ItemPageFieldLayoutItem => Boolean(item))
+          : fallbackHeaderBlock.settings?.fieldLayout,
+      }
+    : fallbackHeaderBlock.settings
+      ? { ...fallbackHeaderBlock.settings }
+      : undefined;
+
+  return {
+    ...fallbackHeaderBlock,
+    id,
+    enabled,
+    settings,
+  };
+}
+
 function normalizeTab(
   value: unknown,
   fallbackTab: ItemPageTabTemplate | undefined,
@@ -324,10 +400,27 @@ export function normalizeItemPageTemplate(
     return cloneTemplate(fallback);
   }
 
+  const legacyHeroBlock = findLegacyHeroBlock(candidate);
+  const headerBlock = normalizeHeaderBlock(
+    isObject(candidate) && "headerBlock" in candidate ? candidate.headerBlock : legacyHeroBlock,
+    fallback.headerBlock,
+  );
   const rawTabs = Array.isArray(candidate.tabs) ? candidate.tabs : fallback.tabs;
   const tabs = orderSpecialTabs(
     rawTabs
-      .map((tab, index) => normalizeTab(tab, fallback.tabs[index], pageType, index))
+      .map((tab, index) => {
+        if (!isObject(tab)) {
+          return normalizeTab(tab, fallback.tabs[index], pageType, index);
+        }
+
+        const nextTab = {
+          ...tab,
+          blocks: Array.isArray(tab.blocks)
+            ? tab.blocks.filter((block) => !isObject(block) || block.kind !== "hero")
+            : tab.blocks,
+        };
+        return normalizeTab(nextTab, fallback.tabs[index], pageType, index);
+      })
       .filter((tab): tab is ItemPageTabTemplate => Boolean(tab)),
   );
 
@@ -366,6 +459,7 @@ export function normalizeItemPageTemplate(
     titleTabLabelMode,
     defaultActiveTab,
     containerStyle,
+    headerBlock,
     tabs: tabs.length > 0 ? tabs : cloneTemplate(fallback).tabs,
   };
 }

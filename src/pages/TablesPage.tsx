@@ -37,6 +37,7 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
+  Settings2,
   Trash2,
 } from "lucide-react";
 
@@ -49,6 +50,8 @@ const REF_QUERY_TABLES = [
   "oem_widths",
   "users",
 ] as const;
+const TABLE_SELECTION_RAIL_WIDTH = 48;
+const TAB_ROW_HEIGHT = 42;
 
 function mapRefRows<T extends { _id?: string; id?: string }>(
   rows: T[] | undefined,
@@ -112,6 +115,23 @@ function getColumnBoundaryMap(columns: TableColumn[], columnTabGroups: { columnI
   return boundaries;
 }
 
+function uniqueColumnIds(columnIds: string[]) {
+  return columnIds.filter((columnId, index) => columnIds.indexOf(columnId) === index);
+}
+
+function moveColumnBlock(orderedIds: string[], movingIds: string[], insertIndex: number) {
+  const movingSet = new Set(movingIds);
+  const block = orderedIds.filter((columnId) => movingSet.has(columnId));
+  const remaining = orderedIds.filter((columnId) => !movingSet.has(columnId));
+  const safeIndex = Math.max(0, Math.min(insertIndex, remaining.length));
+
+  return [
+    ...remaining.slice(0, safeIndex),
+    ...block,
+    ...remaining.slice(safeIndex),
+  ];
+}
+
 export default function TablesPage() {
   const [activeTable, setActiveTable] = useState<string>("oem_brands");
   const [refSearchQuery, setRefSearchQuery] = useState("");
@@ -120,6 +140,8 @@ export default function TablesPage() {
   const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
   const [showRenameGroupDialog, setShowRenameGroupDialog] = useState(false);
   const [groupNameDraft, setGroupNameDraft] = useState("");
+  const [assignmentGroupId, setAssignmentGroupId] = useState<string | null>(null);
+  const [tableHorizontalOffset, setTableHorizontalOffset] = useState(0);
   const selectorItems = useMemo(
     () =>
       SCHEMA_CATALOG.map((table) => ({
@@ -204,6 +226,7 @@ export default function TablesPage() {
     setColumnTabGroups,
     resetToDefault,
     reorderColumns,
+    setColumnOrder,
     setColumnWidth,
   } = useTableLayoutPreferences(activeTable, defaultColumns);
 
@@ -239,6 +262,7 @@ export default function TablesPage() {
   useEffect(() => {
     setSelectedColumns(new Set());
     setActiveColumnTab("all");
+    setAssignmentGroupId(null);
   }, [activeTable]);
 
   useEffect(() => {
@@ -253,16 +277,11 @@ export default function TablesPage() {
       ? null
       : columnTabGroups.find((group) => group.id === activeColumnTab) ?? null;
 
-  const visibleColumnsForActiveTab = activeColumnGroup
-    ? orderedColumns.filter((column) => activeColumnGroup.columnIds.includes(column.id))
-    : orderedColumns;
+  const visibleColumnsForActiveTab = orderedColumns;
 
   const columnBoundaryMap = useMemo(
-    () =>
-      activeColumnTab === "all"
-        ? getColumnBoundaryMap(visibleColumnsForActiveTab, columnTabGroups)
-        : {},
-    [activeColumnTab, columnTabGroups, visibleColumnsForActiveTab],
+    () => getColumnBoundaryMap(visibleColumnsForActiveTab, columnTabGroups),
+    [columnTabGroups, visibleColumnsForActiveTab],
   );
 
   const selectedColumnIds = orderedColumns
@@ -288,18 +307,24 @@ export default function TablesPage() {
 
   const handleCreateColumnGroup = () => {
     const nextName = groupNameDraft.trim() || `Tab ${columnTabGroups.length + 1}`;
-    if (!selectedColumnIds.length) {
-      toast.info("Select one or more columns first.");
-      return;
-    }
+    const exclusiveGroups = columnTabGroups.map((group) => ({
+      ...group,
+      columnIds: group.columnIds.filter((columnId) => !selectedColumnIds.includes(columnId)),
+    }));
 
     const nextGroup = {
       id: `tab-${Date.now()}`,
       name: nextName,
-      columnIds: selectedColumnIds,
+      columnIds: uniqueColumnIds(selectedColumnIds),
     };
 
-    setColumnTabGroups([...columnTabGroups, nextGroup]);
+    setColumnTabGroups([...exclusiveGroups, nextGroup]);
+    const orderedIds = orderedColumns.map((column) => column.id);
+    const selectedOrderedIds = orderedIds.filter((columnId) => selectedColumnIds.includes(columnId));
+    const firstSelectedIndex = orderedIds.findIndex((columnId) => selectedOrderedIds.includes(columnId));
+    if (selectedOrderedIds.length && firstSelectedIndex !== -1) {
+      setColumnOrder(moveColumnBlock(orderedIds, selectedOrderedIds, firstSelectedIndex));
+    }
     setActiveColumnTab(nextGroup.id);
     setGroupNameDraft("");
     setShowCreateGroupDialog(false);
@@ -329,11 +354,97 @@ export default function TablesPage() {
     }
 
     setColumnTabGroups(
-      columnTabGroups.map((group) =>
-        group.id === activeColumnGroup.id ? { ...group, columnIds: selectedColumnIds } : group,
+      columnTabGroups.map((group) => {
+        const withoutSelected = group.columnIds.filter((columnId) => !selectedColumnIds.includes(columnId));
+        return group.id === activeColumnGroup.id
+          ? { ...group, columnIds: uniqueColumnIds(selectedColumnIds) }
+          : { ...group, columnIds: withoutSelected };
+      }),
+    );
+    const orderedIds = orderedColumns.map((column) => column.id);
+    const selectedOrderedIds = orderedIds.filter((columnId) => selectedColumnIds.includes(columnId));
+    const activeGroupFirstColumnId = activeColumnGroup.columnIds[0] ?? selectedOrderedIds[0];
+    const remainingIds = orderedIds.filter((columnId) => !selectedOrderedIds.includes(columnId));
+    const insertIndex = activeGroupFirstColumnId
+      ? Math.max(0, remainingIds.indexOf(activeGroupFirstColumnId))
+      : 0;
+    if (selectedOrderedIds.length) {
+      setColumnOrder(moveColumnBlock(orderedIds, selectedOrderedIds, insertIndex === -1 ? remainingIds.length : insertIndex));
+    }
+    toast.success(`Updated ${activeColumnGroup.name}`);
+  };
+
+  const handleAssignColumnToGroup = (columnId: string, groupId: string | null) => {
+    const prunedGroups = columnTabGroups.map((group) => ({
+      ...group,
+      columnIds: group.columnIds.filter((id) => id !== columnId),
+    }));
+
+    if (!groupId) {
+      setColumnTabGroups(prunedGroups);
+      setActiveColumnTab("all");
+      return;
+    }
+
+    const targetGroupBefore = columnTabGroups.find((group) => group.id === groupId) ?? null;
+    const nextGroups = prunedGroups.map((group) =>
+      group.id === groupId
+        ? { ...group, columnIds: [...group.columnIds, columnId] }
+        : group,
+    );
+
+    setColumnTabGroups(nextGroups);
+    setActiveColumnTab(groupId);
+
+    const orderedIds = orderedColumns.map((column) => column.id);
+    if (!orderedIds.includes(columnId) || !targetGroupBefore?.columnIds.length) return;
+
+    const anchorColumnId = targetGroupBefore.columnIds[targetGroupBefore.columnIds.length - 1];
+    const remainingIds = orderedIds.filter((id) => id !== columnId);
+    const anchorIndex = remainingIds.indexOf(anchorColumnId);
+    const nextOrderedIds = moveColumnBlock(
+      orderedIds,
+      [columnId],
+      anchorIndex === -1 ? remainingIds.length : anchorIndex + 1,
+    );
+    setColumnOrder(nextOrderedIds);
+  };
+
+  const handleAssignSelectedColumnsToGroup = (groupId: string) => {
+    if (!selectedColumnIds.length) {
+      setAssignmentGroupId(null);
+      return;
+    }
+
+    const selectedOrderedIds = orderedColumns
+      .map((column) => column.id)
+      .filter((columnId) => selectedColumnIds.includes(columnId));
+    const targetGroup = columnTabGroups.find((group) => group.id === groupId) ?? null;
+
+    const nextGroups = columnTabGroups.map((group) => {
+      const withoutSelected = group.columnIds.filter((columnId) => !selectedColumnIds.includes(columnId));
+      return group.id === groupId
+        ? { ...group, columnIds: uniqueColumnIds([...withoutSelected, ...selectedOrderedIds]) }
+        : { ...group, columnIds: withoutSelected };
+    });
+
+    setColumnTabGroups(nextGroups);
+    setActiveColumnTab(groupId);
+    setAssignmentGroupId(null);
+    setSelectedColumns(new Set());
+
+    const orderedIds = orderedColumns.map((column) => column.id);
+    const remainingIds = orderedIds.filter((columnId) => !selectedOrderedIds.includes(columnId));
+    const targetAnchorId = targetGroup?.columnIds[0] ?? selectedOrderedIds[0];
+    const insertIndex = targetAnchorId ? remainingIds.indexOf(targetAnchorId) : remainingIds.length;
+    setColumnOrder(
+      moveColumnBlock(
+        orderedIds,
+        selectedOrderedIds,
+        insertIndex === -1 ? remainingIds.length : insertIndex,
       ),
     );
-    toast.success(`Updated ${activeColumnGroup.name}`);
+    toast.success(`Added ${selectedOrderedIds.length} column${selectedOrderedIds.length === 1 ? "" : "s"} to ${targetGroup?.name ?? "tab"}`);
   };
 
   const handleDeleteActiveColumnGroup = () => {
@@ -385,20 +496,176 @@ export default function TablesPage() {
     refetch();
   };
 
+  const groupLayouts = useMemo(() => {
+    const widths = orderedColumns.map((column) => column.width ?? 220);
+    const offsets = new Map<string, number>();
+    const widthMap = new Map<string, number>();
+    let runningOffset = 0;
+    let trailingLeft = TABLE_SELECTION_RAIL_WIDTH + 180;
+
+    orderedColumns.forEach((column, index) => {
+      offsets.set(column.id, runningOffset);
+      widthMap.set(column.id, widths[index]);
+      runningOffset += widths[index];
+    });
+
+    return columnTabGroups.map((group) => {
+      const orderedGroupIds = orderedColumns
+        .map((column) => column.id)
+        .filter((columnId) => group.columnIds.includes(columnId));
+      if (!orderedGroupIds.length) {
+        const nextLayout = {
+          id: group.id,
+          name: group.name,
+          left: trailingLeft,
+          width: 180,
+        };
+        trailingLeft += 170;
+        return nextLayout;
+      }
+
+      const firstId = orderedGroupIds[0];
+      const lastId = orderedGroupIds[orderedGroupIds.length - 1];
+      const start = offsets.get(firstId);
+      const end = offsets.get(lastId);
+      const lastWidth = widthMap.get(lastId);
+      if (start === undefined) {
+        const nextLayout = {
+          id: group.id,
+          name: group.name,
+          left: trailingLeft,
+          width: 180,
+        };
+        trailingLeft += 170;
+        return nextLayout;
+      }
+
+      const width = end !== undefined && lastWidth !== undefined
+        ? end + lastWidth - start
+        : 180;
+
+      trailingLeft = Math.max(trailingLeft, TABLE_SELECTION_RAIL_WIDTH + start + width);
+      return {
+        id: group.id,
+        name: group.name,
+        left: TABLE_SELECTION_RAIL_WIDTH + start,
+        width,
+      };
+    });
+  }, [columnTabGroups, orderedColumns]);
+
+  const tabTrackWidth = useMemo(
+    () =>
+      TABLE_SELECTION_RAIL_WIDTH +
+      orderedColumns.reduce((sum, column) => sum + (column.width ?? 220), 0) +
+      24,
+    [orderedColumns],
+  );
+
+  const columnTabsContent = (
+    <div className="flex items-end justify-between gap-3">
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <div
+          className="relative will-change-transform"
+          style={{
+            width: tabTrackWidth,
+            height: TAB_ROW_HEIGHT,
+            transform: `translateX(${-tableHorizontalOffset}px)`,
+          }}
+        >
+        <button
+          type="button"
+          onClick={() => setActiveColumnTab("all")}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const columnId = event.dataTransfer.getData("text/plain");
+            if (columnId) handleAssignColumnToGroup(columnId, null);
+          }}
+          className={`absolute bottom-0 rounded-t-xl border border-border/70 border-b-0 px-4 py-2 text-sm font-medium transition-colors ${
+            activeColumnTab === "all"
+              ? "bg-card text-foreground shadow-[0_-1px_0_rgba(255,255,255,0.08)]"
+              : "bg-black/20 text-muted-foreground hover:bg-black/30 hover:text-foreground"
+          }`}
+          style={{ left: TABLE_SELECTION_RAIL_WIDTH }}
+        >
+          All columns
+        </button>
+          {groupLayouts.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            onClick={() => setActiveColumnTab(group.id)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              const columnId = event.dataTransfer.getData("text/plain");
+              if (columnId) handleAssignColumnToGroup(columnId, group.id);
+            }}
+            className={`absolute bottom-0 inline-flex items-center gap-2 rounded-t-xl border border-border/70 border-b-0 px-4 py-2 text-sm font-medium transition-colors ${
+              activeColumnTab === group.id
+                ? "bg-card text-foreground shadow-[0_-1px_0_rgba(255,255,255,0.08)]"
+              : "bg-black/20 text-muted-foreground hover:bg-black/30 hover:text-foreground"
+          }`}
+            style={{ left: group.left, width: group.width }}
+          >
+            <span className="truncate">{group.name}</span>
+            <span
+              role="button"
+              aria-label={`Assign columns to ${group.name}`}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (assignmentGroupId === group.id) {
+                  handleAssignSelectedColumnsToGroup(group.id);
+                  return;
+                }
+                setAssignmentGroupId(group.id);
+                setSelectedColumns(new Set());
+                setActiveColumnTab(group.id);
+              }}
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+                assignmentGroupId === group.id
+                  ? "border-emerald-400/80 bg-emerald-500/20 text-emerald-300"
+                  : "border-border/70 text-muted-foreground hover:border-white/70 hover:text-foreground"
+              }`}
+            >
+              <Settings2 className="h-3 w-3" />
+            </span>
+          </button>
+        ))}
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="mb-2 h-8 gap-2 shrink-0"
+        onClick={() => {
+          setGroupNameDraft("");
+          setShowCreateGroupDialog(true);
+        }}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        New tab
+      </Button>
+    </div>
+  );
+
   return (
     <DashboardLayout
-      title="Database Tables"
+      title=""
       secondaryTitle="Tables"
       showSearch={false}
       showBreadcrumb={false}
       disableContentPadding
-      headerLeftContent={
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            {currentTable?.label ?? formatTableLabel(activeTable)}
-          </span>
-        </div>
+      leadingButtonContent={
+        <span className="text-sm font-semibold text-foreground">
+          {currentTable?.label ?? formatTableLabel(activeTable)}
+        </span>
       }
+      leadingButtonTitle="Open table selector"
       headerActions={
         <div className="flex items-center gap-2">
           <Button
@@ -443,36 +710,7 @@ export default function TablesPage() {
       <div className="flex h-full flex-col p-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           <div className="border-b border-border/70 px-3 pt-3">
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex flex-1 flex-wrap items-end gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveColumnTab("all")}
-                  className={`relative -mb-px rounded-t-xl border border-border/70 border-b-0 px-4 py-2 text-sm font-medium transition-colors ${
-                    activeColumnTab === "all"
-                      ? "bg-card text-foreground shadow-[0_-1px_0_rgba(255,255,255,0.08)]"
-                      : "bg-black/20 text-muted-foreground hover:bg-black/30 hover:text-foreground"
-                  }`}
-                >
-                  All columns
-                </button>
-                {columnTabGroups.map((group) => (
-                  <button
-                    key={group.id}
-                    type="button"
-                    onClick={() => setActiveColumnTab(group.id)}
-                    className={`relative -mb-px rounded-t-xl border border-border/70 border-b-0 px-4 py-2 text-sm font-medium transition-colors ${
-                      activeColumnTab === group.id
-                        ? "bg-card text-foreground shadow-[0_-1px_0_rgba(255,255,255,0.08)]"
-                        : "bg-black/20 text-muted-foreground hover:bg-black/30 hover:text-foreground"
-                    }`}
-                  >
-                    {group.name}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mb-2 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 pb-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button type="button" variant="outline" size="sm" className="h-8 gap-2">
@@ -511,21 +749,6 @@ export default function TablesPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-2"
-                  disabled={!selectedColumnIds.length}
-                  onClick={() => {
-                    setGroupNameDraft("");
-                    setShowCreateGroupDialog(true);
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  New tab
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
                   className="h-8"
                   disabled={!activeColumnGroup}
                   onClick={() => {
@@ -559,14 +782,13 @@ export default function TablesPage() {
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                   Delete
                 </Button>
-              </div>
             </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
             {isCoreTable ? (
               <AdvancedTableView
-                key={`${activeTable}:${activeColumnTab}`}
+                key={activeTable}
                 data={data}
                 columns={visibleColumnsForActiveTab}
                 selectedRows={advancedTable.selectedRows}
@@ -602,6 +824,14 @@ export default function TablesPage() {
                 onColumnResize={setColumnWidth}
                 showGroupBy={false}
                 columnBoundaryMap={columnBoundaryMap}
+                tableTabsContent={columnTabsContent}
+                focusColumnId={activeColumnGroup?.columnIds[0] ?? null}
+                multiSelectColumns={assignmentGroupId !== null}
+                onHorizontalScroll={setTableHorizontalOffset}
+                onColumnHeaderDragStart={(columnId, event) => {
+                  event.dataTransfer.setData("text/plain", columnId);
+                  event.dataTransfer.effectAllowed = "move";
+                }}
               />
             ) : (
               <FileListView
@@ -618,6 +848,13 @@ export default function TablesPage() {
                 searchQuery={searchQuery}
                 onColumnReorder={reorderColumns}
                 columnBoundaryMap={columnBoundaryMap}
+                tableTabsContent={columnTabsContent}
+                focusColumnId={activeColumnGroup?.columnIds[0] ?? null}
+                onHorizontalScroll={setTableHorizontalOffset}
+                onColumnHeaderDragStart={(columnId, event) => {
+                  event.dataTransfer.setData("text/plain", columnId);
+                  event.dataTransfer.effectAllowed = "move";
+                }}
               />
             )}
           </div>
@@ -629,7 +866,7 @@ export default function TablesPage() {
           <DialogHeader>
             <DialogTitle>Create column tab</DialogTitle>
             <DialogDescription>
-              Create a saved tab from the columns you currently have selected.
+              Create a tab group. Any currently selected columns will be added to it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

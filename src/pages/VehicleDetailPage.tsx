@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -10,8 +10,6 @@ import { MarketSurfacePanel } from "@/components/market/MarketSurfacePanel";
 // Import vehicle components
 import VehicleHeader from "@/components/vehicle/VehicleHeader";
 import VehicleBriefSection from "@/components/vehicle/VehicleBriefSection";
-import GallerySection from "@/components/vehicle/GallerySection";
-import WheelCard from "@/components/wheel/WheelCard";
 import EngineCard from "@/components/engine/EngineCard";
 import VariantsSection from "@/components/vehicle/VariantsSection";
 import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
@@ -21,15 +19,25 @@ import { ConvexBackendUnavailableCard } from "@/components/convex/ConvexBackendU
 import { getConvexErrorMessage } from "@/lib/convexErrors";
 import { buildFamilyEngineLabel } from "@/lib/vehicleVariantEngines";
 import type { OemEngineFamilyBrowseRow } from "@/types/oem";
+import { useAuth } from "@/contexts/AuthContext";
 import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
+import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
 import { ItemPageAdSlot, ItemPageEmptyState, ItemPageGrid, ItemPageRichText } from "@/components/item-page/ItemPageCommonBlocks";
+import VehicleAssetsPanel from "@/components/vehicle/VehicleAssetsPanel";
+import WheelsGrid from "@/components/wheel/WheelsGrid";
+import { useEngineGridColumns, useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
+import { toOemWheelCard } from "@/lib/wheelCards";
 
 const VehicleDetailPage = () => {
   const { vehicleName: vehicleRouteId } = useParams<{ vehicleName: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const { isAdmin } = useAuth();
+  const showAdminAssets = isAdmin;
+  const engineColumns = useEngineGridColumns();
+  const wheelColumns = useWheelsGridColumns();
 
   const vehicleData = useQuery(
     api.queries.vehiclesGetByIdFull,
@@ -43,6 +51,95 @@ const VehicleDetailPage = () => {
     args: vehicleData?._id ? { vehicleId: vehicleData._id } : "skip",
   });
   const { template } = useResolvedItemPageLayoutTemplate("vehicle_item");
+  const vehicleTemplate = useMemo(() => {
+    const order = ["overview", "engines", "wheels", "colors", "market", "comments"];
+    const defaults: Record<
+      string,
+      {
+        label: string;
+        kind: "brief" | "variants" | "engines_grid" | "wheels_grid" | "colors_grid" | "market" | "comments";
+        adminOnly?: boolean;
+      }
+    > = {
+      overview: { label: "Brief", kind: "brief" },
+      engines: { label: "Engines", kind: "engines_grid", adminOnly: true },
+      wheels: { label: "Wheels", kind: "wheels_grid" },
+      colors: { label: "Colors", kind: "colors_grid", adminOnly: true },
+      market: { label: "Market", kind: "market", adminOnly: true },
+      comments: { label: "Comments", kind: "comments" },
+    };
+
+    const byId = new Map(template.tabs.map((tab) => [tab.id, tab]));
+    const tabs = order
+      .filter((id) => !defaults[id].adminOnly || isAdmin)
+      .map((id) => {
+        const existing = byId.get(id);
+        const triggerClassName =
+          defaults[id].adminOnly
+            ? "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground"
+            : undefined;
+        if (existing) {
+          const normalizedBlocks =
+            existing.blocks.length > 0
+              ? existing.blocks.filter((block) => block.kind !== "gallery")
+              : [
+                  {
+                    id: `${id}-block`,
+                    kind: defaults[id].kind,
+                    span: 12,
+                    enabled: true,
+                  },
+                ];
+
+          return {
+            ...existing,
+            label: defaults[id].label,
+            triggerClassName,
+            enabled: true,
+            blocks:
+              id === "overview"
+                ? normalizedBlocks.filter((block) => block.kind !== "gallery")
+                : normalizedBlocks.length > 0
+                  ? normalizedBlocks
+                  : [
+                      {
+                        id: `${id}-block`,
+                        kind: defaults[id].kind,
+                        span: 12,
+                        enabled: true,
+                      },
+                    ],
+          };
+        }
+
+        return {
+          id,
+          label: defaults[id].label,
+          triggerClassName,
+          enabled: true,
+          blocks:
+            id === "overview"
+              ? [
+                  { id: "vehicle-brief", kind: "brief", span: 12, enabled: true },
+                  { id: "vehicle-variants", kind: "variants", span: 12, enabled: true },
+                ]
+              : [
+                  {
+                    id: `${id}-block`,
+                    kind: defaults[id].kind,
+                    span: 12,
+                    enabled: true,
+                  },
+                ],
+        };
+      });
+
+    return {
+      ...template,
+      defaultActiveTab: "overview",
+      tabs,
+    };
+  }, [isAdmin, template]);
 
   const toggleCardFlip = (id: string) => {
     setFlippedCards((prev) => ({
@@ -52,11 +149,13 @@ const VehicleDetailPage = () => {
   };
 
   useEffect(() => {
-    const enabledTabIds = template.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    const enabledTabIds = vehicleTemplate.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    if (isAdmin && vehicleData?._id) enabledTabIds.push("private-blurb");
+    if (showAdminAssets && vehicleData?._id) enabledTabIds.push("assets");
     if (!enabledTabIds.includes(activeTab)) {
-      setActiveTab(template.defaultActiveTab);
+      setActiveTab(vehicleTemplate.defaultActiveTab);
     }
-  }, [activeTab, template]);
+  }, [activeTab, isAdmin, showAdminAssets, vehicleTemplate, vehicleData?._id]);
 
   if (isLoading) {
     return (
@@ -78,28 +177,9 @@ const VehicleDetailPage = () => {
 
   const vehicleDisplayName = vehicleData.vehicle_title || vehicleData.model_name || vehicleData.generation || "Unknown";
 
-  const formattedWheels = (vehicleData.wheels || []).map((wheel: Record<string, unknown>) => {
-    const diameter = (wheel.text_diameters ?? wheel.diameter ?? "") as string;
-    const width = (wheel.text_widths ?? wheel.width ?? "") as string;
-    const boltPattern = (wheel.text_bolt_patterns ?? wheel.bolt_pattern ?? "") as string;
-    const centerBore = (wheel.text_center_bores ?? wheel.center_bore ?? "") as string;
-    const specs: string[] = [];
-    if (diameter) specs.push(`Diameter: ${diameter}`);
-    if (width) specs.push(`Width: ${width}`);
-    if (boltPattern) specs.push(`Bolt Pattern: ${boltPattern}`);
-    if (centerBore) specs.push(`Center Bore: ${centerBore}`);
-    if (wheel.wheel_offset) specs.push(`Offset: ${wheel.wheel_offset}`);
-    if (wheel.color) specs.push(`Color: ${wheel.color}`);
-
-    return {
-      id: String(wheel._id ?? wheel.id ?? ""),
-      name: (wheel.wheel_title ?? wheel.wheel_name ?? "Unknown") as string,
-      diameter: diameter || "N/A",
-      boltPattern: boltPattern || "N/A",
-      specs,
-      imageUrl: (wheel.good_pic_url ?? wheel.bad_pic_url ?? "/placeholder.svg") as string,
-    };
-  });
+  const vehicleWheelCards = (vehicleData.wheels || []).map((wheel: Record<string, unknown>) =>
+    toOemWheelCard(wheel)
+  );
 
   // Helper to extract values from JSONB ref arrays
   const extractRefValues = (refArray: any[]): string[] => {
@@ -220,37 +300,78 @@ const VehicleDetailPage = () => {
     };
   });
 
+  const persistentHeaderContent = (
+    <VehicleHeader
+      name={vehicleDisplayName || "Unknown Vehicle"}
+      generation={vehicleData.generation || "Unknown Generation"}
+      years={vehicleData.production_years || ""}
+      engines={familyEngines}
+      drive={vehicleData.drive_type || "-"}
+      segment={vehicleData.segment || "-"}
+      description={vehicleData.special_notes || ""}
+      msrp={vehicleData.production_stats || ""}
+      image={(vehicleData as any).vehicle_image || (vehicleData as any).good_pic_url || undefined}
+      itemId={String(vehicleData._id)}
+      convexId={vehicleData._id}
+      specs={{
+        bolt_pattern_ref: pickSpecValues((vehicleData as any).bolt_pattern_ref, (vehicleData as any).text_bolt_patterns),
+        center_bore_ref: pickSpecValues((vehicleData as any).center_bore_ref, (vehicleData as any).text_center_bores),
+        wheel_diameter_ref: pickSpecValues((vehicleData as any).diameter_ref, (vehicleData as any).text_diameters),
+        wheel_width_ref: pickSpecValues((vehicleData as any).width_ref, (vehicleData as any).text_widths),
+      }}
+    />
+  );
+
   return (
     <ItemPageTabsShell
       titleTabLabel={vehicleDisplayName}
-      template={template}
+      template={vehicleTemplate}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onBack={() => navigate(-1)}
+      tabPlacement="content"
+      useItemTitleForFirstTab={false}
+      persistentHeaderContent={persistentHeaderContent}
+      additionalTabs={
+        isAdmin && vehicleData?._id
+          ? [
+              {
+                id: "private-blurb",
+                label: "Private blurb",
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                content: (
+                  <AdminPrivateBlurbTab
+                    itemType="vehicle"
+                    convexId={vehicleData._id}
+                    value={vehicleData.private_blurb ?? ""}
+                  />
+                ),
+              },
+              ...(showAdminAssets
+                ? [
+                    {
+                      id: "assets",
+                      label: "Assets",
+                      triggerClassName:
+                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      content: (
+                        <VehicleAssetsPanel
+                          vehicleId={vehicleData._id}
+                          vehicleTitle={vehicleDisplayName}
+                          vehicleImage={(vehicleData as any).vehicle_image ?? null}
+                          goodPicUrl={(vehicleData as any).good_pic_url ?? null}
+                          badPicUrl={(vehicleData as any).bad_pic_url ?? null}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            ]
+          : []
+      }
       renderBlock={(block) => {
         switch (block.kind) {
-          case "hero":
-            return (
-              <VehicleHeader
-                name={vehicleDisplayName || "Unknown Vehicle"}
-                generation={vehicleData.generation || "Unknown Generation"}
-                years={vehicleData.production_years || ""}
-                engines={familyEngines}
-                drive={vehicleData.drive_type || "-"}
-                segment={vehicleData.segment || "-"}
-                description={vehicleData.special_notes || ""}
-                msrp={vehicleData.production_stats || ""}
-                image={(vehicleData as any).vehicle_image || (vehicleData as any).good_pic_url || undefined}
-                itemId={String(vehicleData._id)}
-                convexId={vehicleData._id}
-                specs={{
-                  bolt_pattern_ref: pickSpecValues((vehicleData as any).bolt_pattern_ref, (vehicleData as any).text_bolt_patterns),
-                  center_bore_ref: pickSpecValues((vehicleData as any).center_bore_ref, (vehicleData as any).text_center_bores),
-                  wheel_diameter_ref: pickSpecValues((vehicleData as any).diameter_ref, (vehicleData as any).text_diameters),
-                  wheel_width_ref: pickSpecValues((vehicleData as any).width_ref, (vehicleData as any).text_widths),
-                }}
-              />
-            );
           case "brief":
           case "facts":
             return (
@@ -278,7 +399,10 @@ const VehicleDetailPage = () => {
             );
           case "engines_grid":
             return linkedEngineCards.length > 0 ? (
-              <ItemPageGrid columnsClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <ItemPageGrid
+                columnsClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+                insertAdEvery={engineColumns * 3}
+              >
                 {linkedEngineCards.map((engine) => {
                   const flipId = `engine-${engine.id}`;
                   return (
@@ -303,33 +427,23 @@ const VehicleDetailPage = () => {
             );
           case "wheels_grid":
             return (vehicleData.wheels || []).length > 0 ? (
-              <ItemPageGrid columnsClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {(vehicleData.wheels || []).map((wheel: any) => {
-                  const wheelId = String(wheel.id ?? wheel._id ?? "");
-                  const wheelName = (wheel.wheel_name ?? wheel.wheel_title ?? wheel.name ?? "Unknown Wheel") as string;
-
-                  return (
-                    <WheelCard
-                      key={wheelId}
-                      wheel={{
-                        id: wheelId,
-                        name: wheelName,
-                        imageUrl: wheel.good_pic_url || wheel.bad_pic_url,
-                        diameter_ref: wheel.diameter ? [{ value: wheel.diameter }] : [],
-                        width_ref: wheel.width ? [{ value: wheel.width }] : [],
-                        bolt_pattern_ref: wheel.bolt_pattern ? [{ value: wheel.bolt_pattern }] : [],
-                        center_bore_ref: wheel.center_bore ? [{ value: wheel.center_bore }] : [],
-                      }}
-                      isFlipped={flippedCards[wheelId] || false}
-                      onFlip={() => toggleCardFlip(wheelId)}
-                    />
-                  );
-                })}
-              </ItemPageGrid>
+              <WheelsGrid
+                wheels={vehicleWheelCards}
+                flippedCards={flippedCards}
+                onFlip={toggleCardFlip}
+                insertAdEvery={wheelColumns * 3}
+              />
             ) : (
               <ItemPageEmptyState
                 title="No linked wheels yet"
                 description="No wheel fitments are linked to this vehicle on the active backend."
+              />
+            );
+          case "colors_grid":
+            return (
+              <ItemPageEmptyState
+                title="No linked colors yet"
+                description="Vehicle color relationships are not wired into this page on the active backend yet."
               />
             );
           case "market":
@@ -355,21 +469,6 @@ const VehicleDetailPage = () => {
                 externalLinks={marketSurfaceResource.data?.externalLinks ?? []}
                 emptyTitle="No linked listings yet"
                 emptyDescription="Nothing is linked to this vehicle right now."
-              />
-            );
-          case "gallery":
-            return (
-              <GallerySection
-                vehicleName={vehicleDisplayName || "Unknown Vehicle"}
-                images={[
-                  {
-                    id: 1,
-                    url: vehicleData.hero_image_url || `https://source.unsplash.com/800x600/?${vehicleDisplayName?.replace(/[()-]/g, "")},car,exterior`,
-                    alt: `${vehicleDisplayName} exterior`,
-                    user: "PhotoPro",
-                    date: "3 days ago",
-                  },
-                ]}
               />
             );
           case "comments":

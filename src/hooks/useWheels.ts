@@ -1,81 +1,7 @@
 import { useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { OemWheel } from "@/types/oem";
-
-function parseSpecifications(specifications_json: string | undefined | null) {
-  if (!specifications_json) return null;
-  try {
-    return JSON.parse(specifications_json) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-function mapToOemWheel(raw: Record<string, unknown>): OemWheel {
-  const brand_name =
-    (raw.brand_name as string | undefined) ??
-    (raw.jnc_brands as string | undefined) ??
-    (raw.text_brands as string | undefined) ??
-    null;
-  const diameter =
-    (raw.diameter as string | undefined) ??
-    (raw.text_diameters as string | undefined) ??
-    null;
-  const width =
-    (raw.width as string | undefined) ??
-    (raw.text_widths as string | undefined) ??
-    null;
-  const bolt_pattern =
-    (raw.bolt_pattern as string | undefined) ??
-    (raw.text_bolt_patterns as string | undefined) ??
-    null;
-  const center_bore =
-    (raw.center_bore as string | undefined) ??
-    (raw.text_center_bores as string | undefined) ??
-    null;
-  const tire_size =
-    (raw.tire_size as string | undefined) ??
-    (raw.text_tire_sizes as string | undefined) ??
-    null;
-
-  return {
-    id: (raw.id as string | undefined) ?? (raw._id as string),
-    convexId: raw._id as string | undefined,
-    wheel_name: (raw.wheel_title as string | undefined) ?? "",
-    brand_name,
-    jnc_brands:
-      (raw.jnc_brands as string | undefined) ??
-      (raw.text_brands as string | undefined) ??
-      null,
-    diameter,
-    width,
-    bolt_pattern,
-    center_bore,
-    tire_size,
-    wheel_offset: (raw.wheel_offset as string | undefined) ?? null,
-    color: (raw.color as string | undefined) ?? (raw.text_colors as string | undefined) ?? null,
-    good_pic_url: (raw.good_pic_url as string | undefined) ?? null,
-    bad_pic_url: (raw.bad_pic_url as string | undefined) ?? null,
-    status: (raw.status as string | undefined) ?? null,
-    image_source: (raw.image_source as string | undefined) ?? null,
-    specifications: parseSpecifications(
-      raw.specifications_json as string | undefined | null
-    ),
-    diameter_ref: [],
-    width_ref: [],
-    bolt_pattern_ref: [],
-    center_bore_ref: [],
-    color_ref: [],
-    tire_size_ref: [],
-    vehicle_ref: [],
-    brand_ref: [],
-    design_style_ref: (raw.design_style_tags as string[] | undefined) ?? [],
-    created_at: (raw.created_at as string | undefined) ?? null,
-    updated_at: (raw.updated_at as string | undefined) ?? null,
-    slug: (raw.slug as string | undefined) ?? null,
-    style_number: (raw.style_number as string | undefined) ?? null,
-  };
-}
+import { toOemWheelCard } from "@/lib/wheelCards";
 
 const FILTER_PARAM_KEYS = ["brand", "diameter", "width", "boltPattern", "centerBore", "tireSize", "color", "search"] as const;
 
@@ -92,7 +18,7 @@ export function useWheels(options?: { enabled?: boolean }) {
     enabled ? {} : "skip"
   );
 
-  const wheels: OemWheel[] = (data ?? []).map((raw) => mapToOemWheel(raw as Record<string, unknown>));
+  const wheels: OemWheel[] = (data ?? []).map((raw) => toOemWheelCard(raw as Record<string, unknown>));
 
   return {
     data: wheels,
@@ -192,7 +118,7 @@ export function useWheelsPage(
     api.queries.wheelsListOnePageFiltered,
     pageSize > 0 ? { page: pageNumber, pageSize, ...filterArgs } : "skip"
   );
-  const wheels: OemWheel[] = (data?.page ?? []).map((raw) => mapToOemWheel(raw as Record<string, unknown>));
+  const wheels: OemWheel[] = (data?.page ?? []).map((raw) => toOemWheelCard(raw as Record<string, unknown>));
   return {
     data: wheels,
     pageNumber: (data as { pageNumber?: number } | undefined)?.pageNumber ?? pageNumber,
@@ -212,7 +138,7 @@ export function usePaginatedWheels(initialNumItems: number) {
     {},
     { initialNumItems }
   );
-  const wheels: OemWheel[] = (results ?? []).map((raw) => mapToOemWheel(raw as Record<string, unknown>));
+  const wheels: OemWheel[] = (results ?? []).map((raw) => toOemWheelCard(raw as Record<string, unknown>));
   return {
     data: wheels,
     isLoading: isLoading || status === "LoadingFirstPage",

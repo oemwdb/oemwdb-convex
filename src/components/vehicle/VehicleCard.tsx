@@ -9,6 +9,7 @@ import { CardBackSlot } from "@/components/cards/CardBackSlot";
 import VehicleCardButtons from "./VehicleCardButtons";
 import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 import { getVehicleRoutePath } from "@/lib/vehicleRoutes";
+import { collectCardBackValues } from "@/lib/cardBackValues";
 
 interface VehicleCardProps {
   vehicle: {
@@ -209,41 +210,15 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
                 style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               >
                 {(() => {
-                  // Helper to extract values from JSONB array
-                  const extractValues = (jsonb: any): string[] => {
-                    if (!jsonb) return [];
-                    if (typeof jsonb === 'string') {
-                      try {
-                        jsonb = JSON.parse(jsonb);
-                      } catch {
-                        return [jsonb]; // Return as-is if not parseable
-                      }
-                    }
-                    if (Array.isArray(jsonb)) {
-                      return jsonb.map(item => {
-                        if (typeof item === 'string') return item;
-                        // Handle JSONB objects with various formats
-                        if (typeof item === 'object' && item !== null) {
-                          if (item.value) return String(item.value);
-                          if (item.raw) return String(item.raw);
-                          if (item.title) return String(item.title);
-                          if (item.name) return String(item.name);
-                        }
-                        return null;
-                      }).filter(Boolean) as string[];
-                    }
-                    return [];
-                  };
-
                   // Add any vehicle ref fields here - adapt from wheel card structure
                   const vehicleData: any = vehicle;
 
                   // Define fields to display with labels
                   const fields = [
-                    { label: 'Bolt Pattern', values: extractValues(vehicleData.bolt_pattern_ref) },
-                    { label: 'Center Bore', values: extractValues(vehicleData.center_bore_ref) },
-                    { label: 'Wheel Diameter', values: extractValues(vehicleData.wheel_diameter_ref) },
-                    { label: 'Wheel Width', values: extractValues(vehicleData.wheel_width_ref) },
+                    { label: 'Bolt Pattern', values: collectCardBackValues(vehicleData.bolt_pattern_ref) },
+                    { label: 'Center Bore', values: collectCardBackValues(vehicleData.center_bore_ref) },
+                    { label: 'Wheel Diameter', values: collectCardBackValues(vehicleData.wheel_diameter_ref) },
+                    { label: 'Wheel Width', values: collectCardBackValues(vehicleData.wheel_width_ref) },
                   ];
 
                   return fields.map((field, idx) => (

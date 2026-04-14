@@ -8,13 +8,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getConvexErrorMessage } from "@/lib/convexErrors";
 import { CircleSlash2, Loader2, Palette } from "lucide-react";
-import WheelCard from "@/components/vehicle/WheelCard";
-import VehicleCard from "@/components/vehicle/VehicleCard";
 import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
 import { buildTireRackUrl } from "@/lib/tireRack";
+import { useAuth } from "@/contexts/AuthContext";
 import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
+import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
+import ItemPageHeaderCard from "@/components/item-page/ItemPageHeaderCard";
 import { ItemPageEmptyState, ItemPageGrid, ItemPagePanel, ItemPageRichText } from "@/components/item-page/ItemPageCommonBlocks";
+import ColorAssetsPanel from "@/components/color/ColorAssetsPanel";
+import WheelsGrid from "@/components/wheel/WheelsGrid";
+import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
+import { useVehicleGridColumns, useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
+import { toOemWheelCard } from "@/lib/wheelCards";
 
 const splitSummaryValues = (value?: string | null) =>
   String(value ?? "")
@@ -37,6 +43,10 @@ const ColorItemPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("color");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const { isAdmin } = useAuth();
+  const showAdminAssets = isAdmin;
+  const vehicleColumns = useVehicleGridColumns();
+  const wheelColumns = useWheelsGridColumns();
   const detailResource = useConvexResourceQuery<any>({
     queryKey: ["colors", "detail", colorId ?? "missing"],
     queryRef: api.colors.detailGet,
@@ -57,10 +67,12 @@ const ColorItemPage = () => {
 
   React.useEffect(() => {
     const enabledTabIds = template.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    if (isAdmin && resolvedDetail?.color?._id) enabledTabIds.push("private-blurb");
+    if (showAdminAssets && resolvedDetail?.color?._id) enabledTabIds.push("assets");
     if (!enabledTabIds.includes(activeTab)) {
       setActiveTab(template.defaultActiveTab);
     }
-  }, [activeTab, template]);
+  }, [activeTab, isAdmin, showAdminAssets, resolvedDetail?.color?._id, template]);
 
   if (detailResource.isInitialLoading) {
     return (
@@ -173,6 +185,48 @@ const ColorItemPage = () => {
       ),
   };
 
+  const persistentHeaderContent = (
+    <ItemPageHeaderCard
+      title={color.color_title}
+      editableTitleType="color"
+      subtitle={[color.brand_title, color.family_title].filter(Boolean).join(" • ") || undefined}
+      convexId={color._id}
+      media={
+        <div
+          className="h-full w-full"
+          style={{
+            background: `radial-gradient(circle at 50% 25%, rgba(255,255,255,0.22), transparent 42%), linear-gradient(135deg, ${color.swatch_hex} 0%, color-mix(in srgb, ${color.swatch_hex} 56%, #121212 44%) 100%)`,
+          }}
+        />
+      }
+      rows={[
+        color.finish ? { label: "Finish", values: [{ label: color.finish }] } : null,
+        color.swatch_hex
+          ? { label: "Hex", values: [{ label: color.swatch_hex.toUpperCase() }] }
+          : null,
+        color.manufacturer_code
+          ? { label: "Code", values: [{ label: color.manufacturer_code }] }
+          : null,
+        {
+          label: "Wheels",
+          values: [{ label: String((color.wheelCount ?? 0) + (color.wheelVariantCount ?? 0)) }],
+        },
+        {
+          label: "Vehicles",
+          values: [{ label: String((color.vehicleCount ?? 0) + (color.vehicleVariantCount ?? 0)) }],
+        },
+        {
+          label: "Variants",
+          values: [{ label: String((color.wheelVariantCount ?? 0) + (color.vehicleVariantCount ?? 0)) }],
+        },
+        {
+          label: "Total Links",
+          values: [{ label: String(totalLinked) }],
+        },
+      ].filter(Boolean) as Array<{ label: string; values: Array<{ label: string }> }>}
+    />
+  );
+
   return (
     <ItemPageTabsShell
       titleTabLabel={color.color_title}
@@ -180,79 +234,71 @@ const ColorItemPage = () => {
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onBack={() => navigate(-1)}
-      renderBlock={(block) => {
-        switch (block.kind) {
-          case "hero":
-            return (
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex flex-col gap-6 md:flex-row">
-                    <div
-                      className="h-40 w-full rounded-2xl border border-border/60 md:w-56"
-                      style={{
-                        background: `radial-gradient(circle at 50% 25%, rgba(255,255,255,0.22), transparent 42%), linear-gradient(135deg, ${color.swatch_hex} 0%, color-mix(in srgb, ${color.swatch_hex} 56%, #121212 44%) 100%)`,
-                      }}
-                    />
-                    <div className="min-w-0 flex-1 space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Palette className="h-5 w-5 text-muted-foreground" />
-                          <h1 className="text-2xl font-bold text-foreground">{color.color_title}</h1>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {color.family_title ? <Badge variant="outline">{color.family_title}</Badge> : null}
-                          {color.brand_title ? <Badge variant="outline">{color.brand_title}</Badge> : null}
-                          {color.finish ? <Badge variant="outline">{color.finish}</Badge> : null}
-                          {color.swatch_hex ? <Badge variant="outline" className="font-mono uppercase">{color.swatch_hex}</Badge> : null}
-                          {color.manufacturer_code ? <Badge variant="outline">{color.manufacturer_code}</Badge> : null}
-                        </div>
-                      </div>
-                      {color.notes ? <p className="max-w-4xl text-sm text-muted-foreground">{color.notes}</p> : null}
-                      <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                        <div className="rounded-xl border border-border/60 bg-black/20 px-3 py-3">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Wheels</p>
-                          <p className="mt-1 text-lg font-semibold text-foreground">{(color.wheelCount ?? 0) + (color.wheelVariantCount ?? 0)}</p>
-                        </div>
-                        <div className="rounded-xl border border-border/60 bg-black/20 px-3 py-3">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Vehicles</p>
-                          <p className="mt-1 text-lg font-semibold text-foreground">{(color.vehicleCount ?? 0) + (color.vehicleVariantCount ?? 0)}</p>
-                        </div>
-                        <div className="rounded-xl border border-border/60 bg-black/20 px-3 py-3">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Variants</p>
-                          <p className="mt-1 text-lg font-semibold text-foreground">{(color.wheelVariantCount ?? 0) + (color.vehicleVariantCount ?? 0)}</p>
-                        </div>
-                        <div className="rounded-xl border border-border/60 bg-black/20 px-3 py-3">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Links</p>
-                          <p className="mt-1 text-lg font-semibold text-foreground">{totalLinked}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          case "wheels_grid":
-            return wheels.length > 0 ? (
-              <ItemPageGrid>
-                {wheels.map((wheel: any) => (
-                  <WheelCard
-                    key={wheel.id}
-                    wheel={{
-                      ...wheel,
-                      diameter_ref: wheel.diameter ? [wheel.diameter] : [],
-                      width_ref: wheel.width ? [wheel.width] : [],
-                      bolt_pattern_ref: wheel.bolt_pattern ? [wheel.bolt_pattern] : [],
-                      center_bore_ref: wheel.center_bore ? [wheel.center_bore] : [],
-                      color_ref: wheel.color ? [wheel.color] : [],
-                      tire_size_ref: wheel.tire_size ? [wheel.tire_size] : [],
-                      brand_ref: wheel.brand_name ? [wheel.brand_name] : [],
-                    }}
-                    isFlipped={flippedCards[wheel.id] || false}
-                    onFlip={toggleWheelFlip}
-                    linkToDetail={true}
+      tabPlacement="content"
+      useItemTitleForFirstTab={false}
+      persistentHeaderContent={persistentHeaderContent}
+      additionalTabs={
+        isAdmin && color._id
+          ? [
+              {
+                id: "private-blurb",
+                label: "Private blurb",
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                content: (
+                  <AdminPrivateBlurbTab
+                    itemType="color"
+                    convexId={color._id}
+                    value={color.private_blurb ?? ""}
                   />
-                ))}
-              </ItemPageGrid>
+                ),
+              },
+              ...(showAdminAssets
+                ? [
+                    {
+                      id: "assets",
+                      label: "Assets",
+                      triggerClassName:
+                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      content: (
+                        <ColorAssetsPanel
+                          colorId={color._id}
+                          colorTitle={color.color_title}
+                          goodPicUrl={(color as any).good_pic_url ?? null}
+                          badPicUrl={(color as any).bad_pic_url ?? null}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            ]
+          : []
+      }
+      renderBlock={(block) => {
+        const colorWheelCards = wheels.map((wheel: any) => toOemWheelCard(wheel));
+        const colorVehicleCards = vehicles.map((vehicle: any) => ({
+          id: String(vehicle.id ?? vehicle._id ?? ""),
+          routeId: String(vehicle.slug ?? vehicle.id ?? vehicle._id ?? ""),
+          slug: typeof vehicle.slug === "string" ? vehicle.slug : undefined,
+          name: vehicle.vehicle_title || vehicle.model_name || vehicle.generation || "Unknown Vehicle",
+          brand: vehicle.brand_title || vehicle.brand_name || "Unknown",
+          wheels: 0,
+          image: vehicle.vehicle_image || vehicle.hero_image_url || undefined,
+          bolt_pattern_ref: vehicle.bolt_pattern ?? vehicle.bolt_pattern_ref,
+          center_bore_ref: vehicle.center_bore ?? vehicle.center_bore_ref,
+          wheel_diameter_ref: vehicle.text_diameters ?? vehicle.wheel_diameter_ref,
+          wheel_width_ref: vehicle.text_widths ?? vehicle.wheel_width_ref,
+        }));
+
+        switch (block.kind) {
+          case "wheels_grid":
+            return colorWheelCards.length > 0 ? (
+              <WheelsGrid
+                wheels={colorWheelCards}
+                flippedCards={flippedCards}
+                onFlip={toggleWheelFlip}
+                insertAdEvery={wheelColumns * 3}
+              />
             ) : (
               <ItemPageEmptyState
                 title="No wheels linked yet"
@@ -260,17 +306,13 @@ const ColorItemPage = () => {
               />
             );
           case "vehicles_grid":
-            return vehicles.length > 0 ? (
-              <ItemPageGrid>
-                {vehicles.map((vehicle: any) => (
-                  <VehicleCard
-                    key={vehicle.id}
-                    vehicle={vehicle}
-                    isFlipped={flippedCards[vehicle.id] || false}
-                    onFlip={toggleWheelFlip}
-                  />
-                ))}
-              </ItemPageGrid>
+            return colorVehicleCards.length > 0 ? (
+              <VehiclesGrid
+                vehicles={colorVehicleCards}
+                flippedCards={flippedCards}
+                onFlip={toggleWheelFlip}
+                insertAdEvery={vehicleColumns * 3}
+              />
             ) : (
               <ItemPageEmptyState
                 title="No vehicles linked yet"

@@ -23,8 +23,8 @@ import AccountPage from "./pages/AccountPage";
 import ProfilePage from "./pages/ProfilePage";
 import BrandDetailPage from "./pages/BrandDetailPage";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
-import WheelDetailPage from "./pages/WheelDetailPage";
 import WheelItemPage from "./pages/WheelItemPage";
+import WheelLegacyRedirect from "./pages/WheelLegacyRedirect";
 import EnginesPage from "./pages/EnginesPage";
 import EngineItemPage from "./pages/EngineItemPage";
 import ColorsPage from "./pages/ColorsPage";
@@ -71,7 +71,7 @@ const App = () => (
                 <Route path="/vehicles" element={<VehiclesPage />} />
                 <Route path="/vehicles/:vehicleName" element={<VehicleDetailPage />} />
                 <Route path="/wheels" element={<WheelsPageErrorBoundary><WheelsPage /></WheelsPageErrorBoundary>} />
-                <Route path="/wheels/:wheelName" element={<WheelDetailPage />} />
+                <Route path="/wheels/:wheelName" element={<WheelLegacyRedirect />} />
                 <Route path="/wheel/:wheelId" element={<WheelItemPage />} />
                 <Route path="/colors" element={<ColorsPage />} />
                 <Route path="/colors/:colorId" element={<ColorItemPage />} />

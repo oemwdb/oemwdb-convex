@@ -330,6 +330,10 @@ export function useTableLayoutPreferences(tableName: string, defaultColumns: Tab
     }));
   }, []);
 
+  const setColumnOrder = useCallback((nextKeys: string[]) => {
+    setOrderedKeys(rehydrateOrderedKeys(nextKeys, defaultColumns));
+  }, [defaultColumns]);
+
   const resetToDefault = useCallback(() => {
     setOrderedKeys(defaultColumnKeys);
     setHiddenColumnIds([]);
@@ -349,6 +353,7 @@ export function useTableLayoutPreferences(tableName: string, defaultColumns: Tab
     hiddenTableNames,
     setHiddenTableNames,
     reorderColumns,
+    setColumnOrder,
     setColumnWidth,
     resetToDefault,
     isHydrated,

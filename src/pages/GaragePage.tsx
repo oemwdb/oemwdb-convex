@@ -150,7 +150,7 @@ const GaragePage: React.FC = () => {
                     <div className="flex gap-2 text-xs">
                       <Link to={getVehicleRoutePath({ id: i.vehicleId, name: i.vehicleName })} className="underline">View vehicle</Link>
                       <span>•</span>
-                      <Link to={`/wheels/${encodeURIComponent(i.wheelName)}`} className="underline">View wheel</Link>
+                      <Link to={`/wheel/${encodeURIComponent(i.wheelName)}`} className="underline">View wheel</Link>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => removeCombo(i.id)} aria-label="Remove">
                       <Trash2 className="h-4 w-4" />

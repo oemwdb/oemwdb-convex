@@ -13,6 +13,7 @@ export type ItemPageBlockKind =
   | "vehicles_grid"
   | "wheels_grid"
   | "engines_grid"
+  | "colors_grid"
   | "gallery"
   | "market"
   | "comments"
@@ -57,6 +58,7 @@ export interface ItemPageTabTemplate {
   id: string;
   label: string;
   enabled: boolean;
+  triggerClassName?: string;
   blocks: ItemPageBlockTemplate[];
 }
 
@@ -66,6 +68,7 @@ export interface ItemPageLayoutTemplate {
   titleTabLabelMode: ItemPageTitleTabLabelMode;
   defaultActiveTab: string;
   containerStyle: ItemPageContainerStyle;
+  headerBlock: ItemPageBlockTemplate | null;
   tabs: ItemPageTabTemplate[];
 }
 

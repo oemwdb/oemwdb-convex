@@ -36,6 +36,7 @@ interface HeaderProps {
   sortActionIcon?: React.ReactNode;
   leftActions?: React.ReactNode;
   leadingButtonIcon?: React.ReactNode;
+  leadingButtonContent?: React.ReactNode;
   onLeadingButtonClick?: () => void;
   leadingButtonTitle?: string;
 }
@@ -67,6 +68,7 @@ const Header = ({
   sortActionIcon,
   leftActions,
   leadingButtonIcon,
+  leadingButtonContent,
   onLeadingButtonClick,
   leadingButtonTitle,
 }: HeaderProps) => {
@@ -154,12 +156,15 @@ const Header = ({
       {(hasPrimaryLeadingButton || hasFilterLeadingButton) && (
         <Button
           variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10 -ml-2"
+          size={leadingButtonContent ? "sm" : "icon"}
+          className={cn(
+            "rounded-full border border-border bg-sidebar hover:bg-white/10",
+            leadingButtonContent ? "h-8 px-3 -ml-1" : "h-8 w-8 -ml-2",
+          )}
           onClick={onLeadingButtonClick || onSidebarToggle || onFilterClick}
           title={leadingButtonTitle}
         >
-          {leadingButtonIcon || actionIcon || <Search className="h-4 w-4 text-white" />}
+          {leadingButtonContent || leadingButtonIcon || actionIcon || <Search className="h-4 w-4 text-white" />}
         </Button>
       )}
 

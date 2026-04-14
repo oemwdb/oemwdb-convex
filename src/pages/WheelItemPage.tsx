@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useWheelByName } from "@/hooks/useWheels";
-import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "../../convex/_generated/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -23,8 +22,12 @@ import { ConvexBackendUnavailableCard } from "@/components/convex/ConvexBackendU
 import { getConvexErrorMessage } from "@/lib/convexErrors";
 import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
+import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
 import { ItemPageEmptyState, ItemPageGrid, ItemPagePanel, ItemPageRichText } from "@/components/item-page/ItemPageCommonBlocks";
 
+function buildEbaySearchUrl(query: string) {
+  return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sacat=6000`;
+}
 
 function splitSpecValues(value: unknown): string[] {
   if (typeof value !== "string") return [];
@@ -41,9 +44,8 @@ const WheelItemPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("fitment");
   const { updateCurrentLabel } = useNavigation();
-  const { isDevMode } = useDevMode();
   const { isAdmin } = useAuth();
-  const showAdminAssets = isAdmin && isDevMode;
+  const showAdminAssets = isAdmin;
 
   // Fetch wheel with related vehicles from Convex
   const { data: wheel, isLoading, error } = useWheelByName(wheelId || "");
@@ -54,6 +56,24 @@ const WheelItemPage = () => {
     enabled: Boolean(wheel?._id),
   });
   const { template } = useResolvedItemPageLayoutTemplate("wheel_item");
+  const wheelTemplate = useMemo(
+    () => ({
+      ...template,
+      tabs: template.tabs.map((tab) =>
+        tab.id === "fitment"
+          ? { ...tab, label: "Brief" }
+          : tab.id === "gallery" || tab.id === "market"
+            ? {
+                ...tab,
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+              }
+            : tab
+      ),
+    }),
+    [template]
+  );
+  const headerBlock = template.headerBlock;
 
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {
@@ -63,12 +83,13 @@ const WheelItemPage = () => {
   }, [wheel?.wheel_name, updateCurrentLabel]);
 
   useEffect(() => {
-    const enabledTabIds = template.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    const enabledTabIds = wheelTemplate.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    if (isAdmin && wheel?._id) enabledTabIds.push("private-blurb");
     if (showAdminAssets) enabledTabIds.push("assets");
     if (!enabledTabIds.includes(activeTab)) {
-      setActiveTab(template.defaultActiveTab);
+      setActiveTab(wheelTemplate.defaultActiveTab);
     }
-  }, [activeTab, showAdminAssets, template]);
+  }, [activeTab, isAdmin, showAdminAssets, wheelTemplate, wheel?._id]);
 
   // If loading, show loading state
   if (isLoading) {
@@ -169,16 +190,49 @@ const WheelItemPage = () => {
   return (
     <ItemPageTabsShell
       titleTabLabel={pageTitle}
-      template={template}
+      template={wheelTemplate}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onBack={() => navigate(-1)}
+      tabPlacement="content"
+      useItemTitleForFirstTab={false}
+      persistentHeaderContent={
+        <WheelHeader
+          name={wheel.wheel_name}
+          brand={wheel.brand_name || "Unknown Brand"}
+          price="$249.99"
+          description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
+          goodPicUrl={wheel.good_pic_url}
+          badPicUrl={wheel.bad_pic_url}
+          specs={wheelSpecs}
+          itemId={wheel.id}
+          convexId={wheel._id}
+          fieldLayout={headerBlock?.settings?.fieldLayout}
+        />
+      }
       additionalTabs={
-        showAdminAssets
+        isAdmin && wheel?._id
           ? [
+              {
+                id: "private-blurb",
+                label: "Private blurb",
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                content: (
+                  <AdminPrivateBlurbTab
+                    itemType="wheel"
+                    convexId={wheel._id}
+                    value={wheel.private_blurb ?? ""}
+                  />
+                ),
+              },
+              ...(showAdminAssets
+                ? [
               {
                 id: "assets",
                 label: "Assets",
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
                 content: (
                   <WheelAssetsPanel
                     wheelId={wheel._id}
@@ -189,25 +243,12 @@ const WheelItemPage = () => {
                 ),
               },
             ]
+                : []),
+            ]
           : []
       }
       renderBlock={(block) => {
         switch (block.kind) {
-          case "hero":
-            return (
-              <WheelHeader
-                name={wheel.wheel_name}
-                brand={wheel.brand_name || "Unknown Brand"}
-                price="$249.99"
-                description={wheel.notes || `High-quality ${wheel.metal_type || "alloy"} wheel with exceptional performance and style.`}
-                goodPicUrl={wheel.good_pic_url}
-                badPicUrl={wheel.bad_pic_url}
-                specs={wheelSpecs}
-                itemId={wheel.id}
-                convexId={wheel._id}
-                fieldLayout={block.settings?.fieldLayout}
-              />
-            );
           case "variants": {
             const variants: any[] = [];
             const colors = wheel.color ? wheel.color.split(",").map((c: string) => c.trim()) : ["Standard"];
@@ -260,6 +301,22 @@ const WheelItemPage = () => {
                             <span className="text-muted-foreground">P/N:</span>{" "}
                             <span className="font-mono text-xs text-blue-500">{variant.partNumber}</span>
                           </p>
+                        </div>
+                        <div className="pt-1">
+                          <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-3 text-[11px] font-medium transition-colors hover:border-white/90 hover:bg-transparent hover:text-foreground">
+                            <a
+                              href={buildEbaySearchUrl(
+                                [wheel.wheel_name, variant.partNumber]
+                                  .filter(Boolean)
+                                  .join(" ")
+                              )}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Search this wheel variant on eBay"
+                            >
+                              eBay
+                            </a>
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

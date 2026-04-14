@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "convex/react";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Car, ChevronLeft, CircleSlash2, Gauge, Loader2, ShoppingBag, Zap } from "lucide-react";
-import VehicleCard from "@/components/vehicle/VehicleCard";
 import ItemCommentsPanel from "@/components/comments/ItemCommentsPanel";
 import type { OemEngineFamilyBrowseRow } from "@/types/oem";
 import {
@@ -20,9 +19,15 @@ import {
   getEngineVariantSubtitle,
   getEngineVariantTitle,
 } from "@/lib/engineDisplay";
+import { useAuth } from "@/contexts/AuthContext";
 import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
+import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
+import ItemPageHeaderCard from "@/components/item-page/ItemPageHeaderCard";
 import { ItemPageAdSlot, ItemPageEmptyState, ItemPageGrid, ItemPagePanel, ItemPageRichText } from "@/components/item-page/ItemPageCommonBlocks";
+import EngineAssetsPanel from "@/components/engine/EngineAssetsPanel";
+import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
+import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
 
 const normalizeText = (value?: string | null) => value?.trim() || null;
 
@@ -31,7 +36,9 @@ const EngineItemPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("specs");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const { isAdmin } = useAuth();
+  const showAdminAssets = isAdmin;
+  const vehicleColumns = useVehicleGridColumns();
   const { template } = useResolvedItemPageLayoutTemplate("engine_item");
 
   const engine = useQuery(
@@ -59,17 +66,13 @@ const EngineItemPage = () => {
   };
 
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return;
-    scrollContainer.scrollTo({ top: 0, behavior: "auto" });
-  }, [activeTab]);
-
-  useEffect(() => {
     const enabledTabIds = template.tabs.filter((tab) => tab.enabled).map((tab) => tab.id);
+    if (isAdmin && engine?.family_row_id) enabledTabIds.push("private-blurb");
+    if (showAdminAssets && engine?.family_row_id) enabledTabIds.push("assets");
     if (!enabledTabIds.includes(activeTab)) {
       setActiveTab(template.defaultActiveTab);
     }
-  }, [activeTab, template]);
+  }, [activeTab, engine?.family_row_id, isAdmin, showAdminAssets, template]);
 
   const loading = engineId ? engine === undefined : false;
 
@@ -191,65 +194,103 @@ const EngineItemPage = () => {
     );
   };
 
+  const persistentHeaderContent = (
+    <ItemPageHeaderCard
+      title={familyTitle}
+      editableTitleType="engine"
+      convexId={engine.family_row_id ?? engine._id ?? undefined}
+      subtitle={familyDescriptor ?? undefined}
+      media={
+        <div
+          className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${getConfigColor()}`}
+        >
+          {isElectric ? (
+            <Zap className="h-16 w-16 text-blue-400" />
+          ) : (
+            <Gauge className="h-16 w-16 text-muted-foreground" />
+          )}
+        </div>
+      }
+      rows={[
+        familyCode ? { label: "Family Code", values: [{ label: familyCode }] } : null,
+        ...detailFacts.map((fact) => ({
+          label: fact.label,
+          values: [{ label: fact.value }],
+        })),
+        {
+          label: "Exact Variants",
+          values: [{ label: String(engine.variant_count) }],
+        },
+        {
+          label: "Linked Vehicles",
+          values: [{ label: String(engine.linked_vehicle_count) }],
+        },
+        engine.family_engine_count > 1
+          ? {
+              label: "Grouped Families",
+              values: [{ label: String(engine.family_engine_count) }],
+            }
+          : null,
+        familyMeta.length > 0
+          ? {
+              label: "Meta",
+              span: "full" as const,
+              values: familyMeta.map((value) => ({ label: value })),
+            }
+          : null,
+      ].filter(Boolean) as Array<{ label: string; values: Array<{ label: string }>; span?: "single" | "full" }>}
+    />
+  );
+
   return (
-    <div ref={scrollContainerRef} className="h-full min-h-0">
-      <ItemPageTabsShell
-        titleTabLabel={familyTitle}
-        template={template}
-        activeTab={activeTab}
-        onActiveTabChange={setActiveTab}
-        onBack={() => navigate(-1)}
-        renderBlock={(block) => {
-          switch (block.kind) {
-            case "hero":
-              return (
-                <Card>
-                  <CardContent className="pt-5">
-                    <div className="flex flex-col gap-5 md:flex-row md:items-start">
-                      <div
-                        className={`flex h-48 w-48 flex-shrink-0 items-center justify-center rounded-[28px] border border-border/70 bg-gradient-to-br ${getConfigColor()}`}
-                      >
-                        {isElectric ? (
-                          <Zap className="h-16 w-16 text-blue-400" />
-                        ) : (
-                          <Gauge className="h-16 w-16 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <h1 className="text-2xl font-bold">{familyTitle}</h1>
-                          {familyCode && <Badge variant="outline">{familyCode}</Badge>}
-                        </div>
-                        {familyDescriptor && <p className="mb-3 text-muted-foreground">{familyDescriptor}</p>}
-                        {familyMeta.length > 0 && (
-                          <div className="mb-4 flex flex-wrap gap-2">
-                            {familyMeta.map((value) => (
-                              <Badge key={value} variant="secondary">
-                                {value}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div className="mb-5 flex flex-wrap gap-2">
-                          <Badge variant="secondary">{engine.variant_count} exact variants</Badge>
-                          <Badge variant="secondary">{engine.linked_vehicle_count} linked vehicles</Badge>
-                          {engine.family_engine_count > 1 ? (
-                            <Badge variant="outline">{engine.family_engine_count} grouped</Badge>
-                          ) : null}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                          {detailFacts.map((fact) => (
-                            <div key={fact.label}>
-                              <p className="text-sm text-muted-foreground">{fact.label}</p>
-                              <p className="font-semibold text-foreground">{fact.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
+    <ItemPageTabsShell
+      titleTabLabel={familyTitle}
+      template={template}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      onBack={() => navigate(-1)}
+      tabPlacement="content"
+      useItemTitleForFirstTab={false}
+      persistentHeaderContent={persistentHeaderContent}
+      additionalTabs={
+        isAdmin && engine.family_row_id
+          ? [
+              {
+                id: "private-blurb",
+                label: "Private blurb",
+                triggerClassName:
+                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                content: (
+                  <AdminPrivateBlurbTab
+                    itemType="engine"
+                    convexId={engine.family_row_id}
+                    value={engine.private_blurb ?? ""}
+                  />
+                ),
+              },
+              ...(showAdminAssets
+                ? [
+                    {
+                      id: "assets",
+                      label: "Assets",
+                      triggerClassName:
+                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      content: (
+                        <EngineAssetsPanel
+                          engineId={engine.family_row_id}
+                          engineTitle={familyTitle}
+                          goodPicUrl={engine.good_pic_url ?? null}
+                          badPicUrl={engine.bad_pic_url ?? null}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            ]
+          : []
+      }
+      renderBlock={(block) => {
+        switch (block.kind) {
             case "variants":
               return (
                 <ItemPagePanel
@@ -260,23 +301,19 @@ const EngineItemPage = () => {
                 </ItemPagePanel>
               );
             case "vehicles_grid":
-              return vehicles.length === 0 ? (
+            return vehicles.length === 0 ? (
                 <ItemPageEmptyState
                   title="No vehicles linked yet"
                   description="No vehicles are attached to this engine family on the current backend."
                   icon={<Car className="mx-auto h-12 w-12 text-muted-foreground/50" />}
                 />
               ) : (
-                <ItemPageGrid columnsClassName="grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {vehicles.map((vehicle, index) => (
-                    <VehicleCard
-                      key={vehicle.id ?? `${vehicle.name}-${index}`}
-                      vehicle={vehicle}
-                      isFlipped={flippedCards[vehicle.id ?? vehicle.routeId ?? vehicle.name] || false}
-                      onFlip={toggleCardFlip}
-                    />
-                  ))}
-                </ItemPageGrid>
+                <VehiclesGrid
+                  vehicles={vehicles}
+                  flippedCards={flippedCards}
+                  onFlip={toggleCardFlip}
+                  insertAdEvery={vehicleColumns * 3}
+                />
               );
             case "comments":
               return engineCommentId ? (
@@ -320,8 +357,7 @@ const EngineItemPage = () => {
               return null;
           }
         }}
-      />
-    </div>
+    />
   );
 };
 

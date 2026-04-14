@@ -493,6 +493,7 @@ function PreviewBlockCard({
     case "vehicles_grid":
     case "wheels_grid":
     case "engines_grid":
+    case "colors_grid":
       body = (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {sample.cards.map((card) => (
@@ -606,46 +607,61 @@ function BuilderPreviewShell({
   sample: PreviewSample;
 }) {
   const enabledTabs = template.tabs.filter((tab) => tab.enabled);
+  const headerBlock = template.headerBlock?.enabled ? template.headerBlock : null;
 
   return (
     <Tabs value={activeTab} onValueChange={onActiveTabChange} className="flex h-full flex-col">
-      <div className="border-b border-border/70 px-5 pt-4">
-        <TabsList className="inline-flex h-auto w-auto justify-start gap-1 rounded-none border-0 bg-transparent p-0 shadow-none">
-          {enabledTabs.map((tab, index) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className="min-w-fit rounded-md border border-transparent !bg-transparent px-2.5 py-1 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-white/10 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none"
-            >
-              {index === 0 && template.titleTabLabelMode === "item_title" ? sample.title : tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+      <div className="h-full overflow-y-auto px-2 pb-2 pt-0">
+        <div className="space-y-2">
+          {headerBlock ? (
+            <PreviewBlockCard
+              block={headerBlock}
+              pageType={pageType}
+              sample={sample}
+              selected={selectedBlockId === headerBlock.id}
+              onSelect={() => onSelectBlock(headerBlock.id)}
+            />
+          ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        <div className={cn("grid grid-cols-1 md:grid-cols-12", getItemPageGapClass(template.containerStyle.blockGap))}>
-          {enabledTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id} className="col-span-full mt-0 hidden data-[state=active]:block">
-              <div className={cn("grid grid-cols-1 md:grid-cols-12", getItemPageGapClass(template.containerStyle.blockGap))}>
-                {tab.blocks.filter((block) => block.enabled).map((block) => (
-                  <div
-                    key={block.id}
-                    className={getItemPageSpanClass(block.span)}
-                    style={block.minHeight ? { minHeight: `${block.minHeight}px` } : undefined}
+          <div className="overflow-hidden rounded-[24px] border border-border bg-card">
+            <div className="px-4 pt-3">
+              <TabsList className="inline-flex h-auto w-auto justify-start gap-2 rounded-none border-0 bg-transparent p-0 shadow-none">
+                {enabledTabs.map((tab, index) => (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="min-w-fit rounded-full border border-white/12 !bg-transparent px-4 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-white/18 hover:text-foreground data-[state=active]:border-white/20 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none"
                   >
-                    <PreviewBlockCard
-                      block={block}
-                      pageType={pageType}
-                      sample={sample}
-                      selected={selectedBlockId === block.id}
-                      onSelect={() => onSelectBlock(block.id)}
-                    />
-                  </div>
+                    {index === 0 && template.titleTabLabelMode === "item_title" ? sample.title : tab.label}
+                  </TabsTrigger>
                 ))}
-              </div>
-            </TabsContent>
-          ))}
+              </TabsList>
+            </div>
+
+            <div className={cn(getItemPagePaddingClass(template.containerStyle.panelPadding), "pt-4")}>
+              {enabledTabs.map((tab) => (
+                <TabsContent key={tab.id} value={tab.id} className="mt-0 hidden data-[state=active]:block">
+                  <div className={cn("grid grid-cols-1 md:grid-cols-12", getItemPageGapClass(template.containerStyle.blockGap))}>
+                    {tab.blocks.filter((block) => block.enabled).map((block) => (
+                      <div
+                        key={block.id}
+                        className={getItemPageSpanClass(block.span)}
+                        style={block.minHeight ? { minHeight: `${block.minHeight}px` } : undefined}
+                      >
+                        <PreviewBlockCard
+                          block={block}
+                          pageType={pageType}
+                          sample={sample}
+                          selected={selectedBlockId === block.id}
+                          onSelect={() => onSelectBlock(block.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </Tabs>
@@ -681,20 +697,27 @@ export default function PageTemplatesPage() {
   );
 
   const enabledTabs = useMemo(() => draftTemplate.tabs.filter((tab) => tab.enabled), [draftTemplate.tabs]);
+  const headerBlock = draftTemplate.headerBlock;
   const selectedTab = useMemo(
     () => draftTemplate.tabs.find((tab) => tab.id === selectedTabId) ?? draftTemplate.tabs[0] ?? null,
     [draftTemplate.tabs, selectedTabId],
   );
   const selectedBlock = useMemo(
-    () => selectedTab?.blocks.find((block) => block.id === selectedBlockId) ?? selectedTab?.blocks[0] ?? null,
-    [selectedBlockId, selectedTab],
+    () =>
+      (headerBlock?.id === selectedBlockId ? headerBlock : null) ??
+      selectedTab?.blocks.find((block) => block.id === selectedBlockId) ??
+      selectedTab?.blocks[0] ??
+      headerBlock ??
+      null,
+    [headerBlock, selectedBlockId, selectedTab],
   );
+  const selectedHeaderBlock = selectedBlock?.id === headerBlock?.id ? selectedBlock : null;
   const selectedWheelHeroFieldLayout = useMemo(
     () =>
-      pageType === "wheel_item" && selectedBlock?.kind === "hero"
-        ? normalizeWheelHeaderFieldLayout(selectedBlock.settings?.fieldLayout)
+      pageType === "wheel_item" && selectedHeaderBlock?.kind === "hero"
+        ? normalizeWheelHeaderFieldLayout(selectedHeaderBlock.settings?.fieldLayout)
         : [],
-    [pageType, selectedBlock],
+    [pageType, selectedHeaderBlock],
   );
 
   useEffect(() => {
@@ -708,11 +731,15 @@ export default function PageTemplatesPage() {
   }, [draftTemplate.defaultActiveTab, draftTemplate.tabs, enabledTabs, previewTabId, selectedTabId]);
 
   useEffect(() => {
-    const fallbackBlockId = selectedTab?.blocks[0]?.id ?? null;
-    if (!selectedBlockId || !selectedTab?.blocks.some((block) => block.id === selectedBlockId)) {
+    const availableBlockIds = new Set([
+      ...(headerBlock ? [headerBlock.id] : []),
+      ...(selectedTab?.blocks.map((block) => block.id) ?? []),
+    ]);
+    const fallbackBlockId = selectedTab?.blocks[0]?.id ?? headerBlock?.id ?? null;
+    if (!selectedBlockId || !availableBlockIds.has(selectedBlockId)) {
       setSelectedBlockId(fallbackBlockId);
     }
-  }, [selectedBlockId, selectedTab]);
+  }, [headerBlock, selectedBlockId, selectedTab]);
 
   const updateTemplate = (mutator: (template: ItemPageLayoutTemplate) => void) => {
     setDraftTemplate((current) => {
@@ -773,14 +800,33 @@ export default function PageTemplatesPage() {
   const updateSelectedBlockFieldLayout = (nextLayout: ItemPageFieldLayoutItem[]) => {
     if (!selectedBlock) return;
     updateTemplate((template) => {
-      const block = template.tabs
-        .flatMap((tab) => tab.blocks)
-        .find((item) => item.id === selectedBlock.id);
+      const block =
+        template.headerBlock?.id === selectedBlock.id
+          ? template.headerBlock
+          : template.tabs
+              .flatMap((tab) => tab.blocks)
+              .find((item) => item.id === selectedBlock.id);
       if (!block) return;
       block.settings = {
         ...block.settings,
         fieldLayout: nextLayout,
       };
+    });
+  };
+
+  const updateBlockById = (
+    blockId: string,
+    mutator: (block: ItemPageBlockTemplate) => void,
+  ) => {
+    updateTemplate((template) => {
+      const block =
+        template.headerBlock?.id === blockId
+          ? template.headerBlock
+          : template.tabs
+              .flatMap((tab) => tab.blocks)
+              .find((item) => item.id === blockId);
+      if (!block) return;
+      mutator(block);
     });
   };
 
@@ -863,6 +909,46 @@ export default function PageTemplatesPage() {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Persistent header</Label>
+                  <Badge variant="outline">{draftTemplate.headerBlock?.enabled ? "Visible" : "Hidden"}</Badge>
+                </div>
+                {draftTemplate.headerBlock ? (
+                  <div className="rounded-xl border border-border/70 bg-background/80">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground">
+                        <LayoutPanelTop className="h-4 w-4" />
+                      </div>
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 text-left"
+                        onClick={() => setSelectedBlockId(draftTemplate.headerBlock?.id ?? null)}
+                      >
+                        <p className="truncate text-sm font-medium text-foreground">Header</p>
+                        <p className="text-xs text-muted-foreground">
+                          {draftTemplate.headerBlock.enabled ? "Visible" : "Hidden"} • persistent top card
+                        </p>
+                      </button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          updateBlockById(draftTemplate.headerBlock!.id, (block) => {
+                            block.enabled = !block.enabled;
+                          })
+                        }
+                      >
+                        {draftTemplate.headerBlock.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <Separator />
@@ -1217,60 +1303,60 @@ export default function PageTemplatesPage() {
 
                   {selectedBlock ? (
                     <section className="space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Selected block</h3>
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {selectedHeaderBlock ? "Persistent header" : "Selected block"}
+                      </h3>
                       <div className="rounded-xl border border-border/70 px-3 py-3">
-                        <p className="text-sm font-medium text-foreground">{ITEM_PAGE_BLOCK_LABELS[selectedBlock.kind]}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {selectedHeaderBlock ? "Header" : ITEM_PAGE_BLOCK_LABELS[selectedBlock.kind]}
+                        </p>
                         <p className="text-xs text-muted-foreground">{selectedBlock.id}</p>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Width span</Label>
-                        <Select
-                          value={String(selectedBlock.span)}
-                          onValueChange={(value) =>
-                            updateTemplate((template) => {
-                              const block = template.tabs
-                                .flatMap((tab) => tab.blocks)
-                                .find((item) => item.id === selectedBlock.id);
-                              if (!block) return;
-                              block.span = Number(value);
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({ length: 12 }).map((_, index) => {
-                              const span = index + 1;
-                              return (
-                                <SelectItem key={span} value={String(span)}>
-                                  {span}/12
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">{getItemPageSpanClass(selectedBlock.span)}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Minimum height (px)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={10}
-                          value={selectedBlock.minHeight ?? ""}
-                          onChange={(event) =>
-                            updateTemplate((template) => {
-                              const block = template.tabs
-                                .flatMap((tab) => tab.blocks)
-                                .find((item) => item.id === selectedBlock.id);
-                              if (!block) return;
-                              const raw = Number(event.target.value);
-                              block.minHeight = Number.isFinite(raw) && raw > 0 ? raw : undefined;
-                            })
-                          }
-                        />
-                      </div>
+                      {!selectedHeaderBlock ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Width span</Label>
+                            <Select
+                              value={String(selectedBlock.span)}
+                              onValueChange={(value) =>
+                                updateBlockById(selectedBlock.id, (block) => {
+                                  block.span = Number(value);
+                                })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 12 }).map((_, index) => {
+                                  const span = index + 1;
+                                  return (
+                                    <SelectItem key={span} value={String(span)}>
+                                      {span}/12
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">{getItemPageSpanClass(selectedBlock.span)}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Minimum height (px)</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={10}
+                              value={selectedBlock.minHeight ?? ""}
+                              onChange={(event) =>
+                                updateBlockById(selectedBlock.id, (block) => {
+                                  const raw = Number(event.target.value);
+                                  block.minHeight = Number.isFinite(raw) && raw > 0 ? raw : undefined;
+                                })
+                              }
+                            />
+                          </div>
+                        </>
+                      ) : null}
                       <div className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
                         <div>
                           <p className="text-sm font-medium text-foreground">Visible</p>
@@ -1279,11 +1365,7 @@ export default function PageTemplatesPage() {
                         <Switch
                           checked={selectedBlock.enabled}
                           onCheckedChange={(checked) =>
-                            updateTemplate((template) => {
-                              const block = template.tabs
-                                .flatMap((tab) => tab.blocks)
-                                .find((item) => item.id === selectedBlock.id);
-                              if (!block) return;
+                            updateBlockById(selectedBlock.id, (block) => {
                               block.enabled = checked;
                             })
                           }
@@ -1296,11 +1378,7 @@ export default function PageTemplatesPage() {
                           <Select
                             value={selectedBlock.settings?.variantScope ?? "default"}
                             onValueChange={(value) =>
-                              updateTemplate((template) => {
-                                const block = template.tabs
-                                  .flatMap((tab) => tab.blocks)
-                                  .find((item) => item.id === selectedBlock.id);
-                                if (!block) return;
+                              updateBlockById(selectedBlock.id, (block) => {
                                 block.settings = {
                                   ...block.settings,
                                   variantScope: value as ItemPageBlockTemplate["settings"]["variantScope"],
@@ -1320,11 +1398,11 @@ export default function PageTemplatesPage() {
                         </div>
                       ) : null}
 
-                      {pageType === "wheel_item" && selectedBlock.kind === "hero" ? (
+                      {pageType === "wheel_item" && selectedHeaderBlock?.kind === "hero" ? (
                         <div className="space-y-3">
                           <Separator />
                           <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-foreground">Hero fields</h4>
+                            <h4 className="text-sm font-semibold text-foreground">Header fields</h4>
                             <p className="text-xs text-muted-foreground">
                               These rows stay inside the existing wheel header. Add built-in fields or placeholder rows you can wire later.
                             </p>
@@ -1493,38 +1571,30 @@ export default function PageTemplatesPage() {
                         <>
                           <div className="space-y-2">
                             <Label>Title</Label>
-                            <Input
-                              value={selectedBlock.settings?.title ?? ""}
-                              onChange={(event) =>
-                                updateTemplate((template) => {
-                                  const block = template.tabs
-                                    .flatMap((tab) => tab.blocks)
-                                    .find((item) => item.id === selectedBlock.id);
-                                  if (!block) return;
-                                  block.settings = {
-                                    ...block.settings,
-                                    title: event.target.value,
-                                  };
-                                })
-                              }
+                          <Input
+                            value={selectedBlock.settings?.title ?? ""}
+                            onChange={(event) =>
+                              updateBlockById(selectedBlock.id, (block) => {
+                                block.settings = {
+                                  ...block.settings,
+                                  title: event.target.value,
+                                };
+                              })
+                            }
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>Body</Label>
-                            <Textarea
-                              value={selectedBlock.settings?.body ?? ""}
-                              onChange={(event) =>
-                                updateTemplate((template) => {
-                                  const block = template.tabs
-                                    .flatMap((tab) => tab.blocks)
-                                    .find((item) => item.id === selectedBlock.id);
-                                  if (!block) return;
-                                  block.settings = {
-                                    ...block.settings,
-                                    body: event.target.value,
-                                  };
-                                })
-                              }
+                          <Textarea
+                            value={selectedBlock.settings?.body ?? ""}
+                            onChange={(event) =>
+                              updateBlockById(selectedBlock.id, (block) => {
+                                block.settings = {
+                                  ...block.settings,
+                                  body: event.target.value,
+                                };
+                              })
+                            }
                               rows={6}
                             />
                           </div>
@@ -1562,7 +1632,7 @@ export default function PageTemplatesPage() {
                     <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-3">
                       <p className="text-xs text-muted-foreground">Public fallback still exists.</p>
                       <p className="mt-2 text-sm text-foreground">
-                        {resolvedTemplate.tabs.filter((tab) => tab.enabled).length} enabled tabs • {resolvedTemplate.tabs.flatMap((tab) => tab.blocks).filter((block) => block.enabled).length} enabled blocks
+                        {resolvedTemplate.tabs.filter((tab) => tab.enabled).length} enabled tabs • {(resolvedTemplate.headerBlock?.enabled ? 1 : 0) + resolvedTemplate.tabs.flatMap((tab) => tab.blocks).filter((block) => block.enabled).length} enabled regions
                       </p>
                     </div>
                   </section>

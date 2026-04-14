@@ -23,7 +23,12 @@ interface WheelVariantsTableProps {
     vehicles?: VehicleInfo[];
 }
 
+function buildEbaySearchUrl(query: string) {
+    return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sacat=6000`;
+}
+
 const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
+    wheelName,
     diameter,
     width,
     offset,
@@ -42,6 +47,9 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
     const tireVal = tireSize || '—';
     const partNum = partNumbers?.split(/[,;\n]/)[0]?.trim() || '???';
     const hasTireSize = Boolean(tireSize && tireSize.trim() && tireSize.trim() !== "—");
+    const ebaySearchLabel = [wheelName, partNum !== "???" ? partNum : null]
+        .filter(Boolean)
+        .join(" ");
 
     // Since all vehicles share the same wheel specs, group them into a single row
     // Each vehicle becomes a clickable tag
@@ -105,7 +113,7 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-7 rounded-full px-3 text-[11px] font-medium"
+                                    className="h-7 rounded-full px-3 text-[11px] font-medium transition-colors hover:border-white/90 hover:bg-transparent hover:text-foreground"
                                     onClick={(event) => {
                                         event.preventDefault();
                                     }}
@@ -115,7 +123,21 @@ const WheelVariantsTable: React.FC<WheelVariantsTableProps> = ({
                             ) : null}
                         </div>
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#ccc' }}>{partNum}</td>
+                    <td style={{ padding: '8px 12px', color: '#ccc' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>{partNum}</span>
+                            <Button asChild type="button" variant="outline" size="sm" className="h-7 rounded-full px-3 text-[11px] font-medium transition-colors hover:border-white/90 hover:bg-transparent hover:text-foreground">
+                                <a
+                                    href={buildEbaySearchUrl(ebaySearchLabel)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title="Search this wheel variant on eBay"
+                                >
+                                    eBay
+                                </a>
+                            </Button>
+                        </div>
+                    </td>
                 </tr>
             </tbody>
         </table>

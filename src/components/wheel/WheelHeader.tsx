@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { AdminEditableItemTitle } from "@/components/item-page/AdminEditableItemTitle";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,7 @@ function normalizeSpecState(specs: WheelHeaderProps["specs"]): WheelSpecState {
 const WheelHeader = ({
   name,
   brand,
+  description,
   goodPicUrl,
   badPicUrl,
   image,
@@ -98,19 +100,14 @@ const WheelHeader = ({
   const wheelsUpdate = useMutation(api.mutations.wheelsUpdate);
   const [imageError, setImageError] = useState(false);
   const [candidateIndex, setCandidateIndex] = useState(0);
-  const [localName, setLocalName] = useState(name);
   const [localSpecs, setLocalSpecs] = useState<WheelSpecState>(() => normalizeSpecState(specs));
-  const [openEditorField, setOpenEditorField] = useState<SpecFieldKey | null>(null);
+  const [openEditorField, setOpenEditorField] = useState<WheelHeaderFieldKey | null>(null);
   const [tagSearch, setTagSearch] = useState("");
 
   const filterOptions = useQuery(
     api.queries.wheelsFilterOptions,
     showAdminControls ? {} : "skip"
   ) ?? DEFAULT_FILTER_OPTIONS;
-
-  useEffect(() => {
-    setLocalName(name);
-  }, [name]);
 
   useEffect(() => {
     setLocalSpecs(normalizeSpecState(specs));
@@ -156,27 +153,6 @@ const WheelHeader = ({
     }
   };
 
-  const handleWheelTitleEdit = async (event: React.MouseEvent) => {
-    if (!showAdminControls || !convexId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const nextValue = window.prompt("Edit wheel title", localName);
-    if (nextValue == null) return;
-    const cleanedValue = nextValue.trim();
-    if (!cleanedValue || cleanedValue === localName) return;
-    const previous = localName;
-    setLocalName(cleanedValue);
-    try {
-      await wheelsUpdate({
-        id: convexId as Id<"oem_wheels">,
-        wheel_title: cleanedValue,
-      });
-    } catch (error) {
-      setLocalName(previous);
-      toast.error(error instanceof Error ? error.message : "Failed to update wheel title.");
-    }
-  };
-
   const handleTagEdit = async (field: WheelHeaderFieldKey, index: number) => {
     const currentValue = localSpecs[field][index];
     const nextValue = window.prompt(`Edit ${WHEEL_HEADER_FIELD_CONFIG[field].label.toLowerCase()}`, currentValue);
@@ -215,36 +191,20 @@ const WheelHeader = ({
   const specRows = normalizeWheelHeaderFieldLayout(fieldLayout);
 
   return (
-    <Card className="overflow-hidden animate-fade-in">
-      <CardContent className="p-4">
-        <div className="flex gap-4 items-start">
-          <div className="flex-shrink-0 w-48 md:w-56">
-            <AspectRatio ratio={1} className="relative overflow-hidden rounded-lg bg-muted group">
-              {finalImageUrl ? (
-                <img
-                  src={finalImageUrl}
-                  alt={localName}
-                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                  onError={handleImageError}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-muted-foreground text-center text-xs px-2">No image available</span>
-                </div>
-              )}
-            </AspectRatio>
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="mb-3">
+    <Card className="overflow-hidden rounded-[24px] animate-fade-in">
+      <CardContent className="p-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="min-w-0">
+            <div className="mb-5">
               <div className="flex items-start gap-2">
-                <h1
-                  className={showAdminControls ? "cursor-text text-2xl md:text-3xl font-bold leading-tight" : "text-2xl md:text-3xl font-bold leading-tight"}
-                  onDoubleClick={handleWheelTitleEdit}
-                  title={showAdminControls ? "Double-click to edit title" : undefined}
-                >
-                  {localName}
-                </h1>
+                <AdminEditableItemTitle
+                  title={name}
+                  itemType="wheel"
+                  convexId={convexId}
+                  className="text-2xl font-bold leading-tight md:text-3xl"
+                  inputClassName="h-11 rounded-xl border-white/15 bg-black/30 text-2xl font-bold leading-tight md:text-3xl"
+                  placeholder="Untitled wheel"
+                />
                 {itemId && convexId ? (
                   <SaveButton
                     itemId={itemId}
@@ -255,19 +215,19 @@ const WheelHeader = ({
                   />
                 ) : null}
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">{brand}</p>
+              <p className="mt-1 text-base text-muted-foreground">{brand}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
               {specRows.map((row) => {
                 if (row.kind === "placeholder") {
                   return (
-                    <div key={row.key} className="flex items-start gap-2">
-                      <span className="font-medium text-muted-foreground min-w-[90px]">
+                    <div key={row.key} className="flex items-start gap-2 border-b border-border/60 pb-3">
+                      <span className="min-w-[110px] font-medium text-muted-foreground">
                         {row.label || "Placeholder"}:
                       </span>
                       <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="opacity-50 text-xs py-0 h-8">
+                        <Badge variant="outline" className="h-7 rounded-full px-2.5 py-0 text-[11px] opacity-50 transition-colors hover:border-white/70">
                           {row.emptyLabel || "Not wired yet"}
                         </Badge>
                       </div>
@@ -289,8 +249,8 @@ const WheelHeader = ({
                 });
 
                 return (
-                  <div key={field} className={`flex items-start gap-2 ${config.className ?? ""}`}>
-                    <span className="font-medium text-muted-foreground min-w-[90px]">{config.label}:</span>
+                  <div key={field} className={`flex items-start gap-2 border-b border-border/60 pb-3 ${config.className ?? ""}`}>
+                    <span className="min-w-[110px] font-medium text-muted-foreground">{config.label}:</span>
                     {showAdminControls && (
                       <Popover
                         open={openEditorField === field}
@@ -302,10 +262,10 @@ const WheelHeader = ({
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-orange-400/60 bg-orange-500/15 text-orange-300 transition-colors hover:bg-orange-500/25"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-orange-400/60 bg-orange-500/15 text-orange-300 transition-colors hover:bg-orange-500/25"
                             title={`Add ${config.label.toLowerCase()}`}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </button>
                         </PopoverTrigger>
                         <PopoverContent align="start" className="w-[250px] p-0">
@@ -348,7 +308,7 @@ const WheelHeader = ({
                           showAdminControls ? (
                             <div
                               key={`${field}-${value}-${index}`}
-                              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs h-8"
+                              className="inline-flex h-7 items-center gap-1 rounded-full border border-border px-2.5 py-0 text-[11px] transition-colors hover:border-white/90"
                             >
                               <button
                                 type="button"
@@ -369,14 +329,14 @@ const WheelHeader = ({
                             </div>
                           ) : (
                             <Link key={`${field}-${value}-${index}`} to={`/wheels?${config.queryParam}=${encodeURIComponent(value)}`}>
-                              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors text-xs py-0 h-8">
+                              <Badge variant="outline" className="h-7 cursor-pointer rounded-full px-2.5 py-0 text-[11px] transition-colors hover:border-white/90">
                                 {value}
                               </Badge>
                             </Link>
                           )
                         )
                       ) : (
-                        <Badge variant="outline" className="opacity-50 text-xs py-0 h-8">
+                        <Badge variant="outline" className="h-7 rounded-full px-2.5 py-0 text-[11px] opacity-50 transition-colors hover:border-white/70">
                           {config.emptyLabel}
                         </Badge>
                       )}
@@ -385,6 +345,24 @@ const WheelHeader = ({
                 );
               })}
             </div>
+
+          </div>
+
+          <div className="w-full">
+            <AspectRatio ratio={1} className="relative overflow-hidden rounded-[24px] border border-border/60 bg-muted group">
+              {finalImageUrl ? (
+                <img
+                  src={finalImageUrl}
+                  alt={name}
+                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                  onError={handleImageError}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-muted-foreground text-center text-xs px-2">No image available</span>
+                </div>
+              )}
+            </AspectRatio>
           </div>
         </div>
       </CardContent>

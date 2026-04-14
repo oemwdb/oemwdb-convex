@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type DragEvent, type ReactNode } from "react";
 import { CellSelectableTable } from "./CellSelectableTable";
 import { StatusBar } from "./StatusBar";
 import { BulkActionsBar } from "./BulkActionsBar";
@@ -24,6 +24,13 @@ interface FileListViewProps {
   searchQuery: string;
   onColumnReorder: (oldIndex: number, newIndex: number) => void;
   columnBoundaryMap?: Record<string, { left?: boolean; right?: boolean }>;
+  tableTabsContent?: ReactNode;
+  focusColumnId?: string | null;
+  onHorizontalScroll?: (scrollLeft: number) => void;
+  onColumnHeaderDragStart?: (
+    columnId: string,
+    event: DragEvent<HTMLTableHeaderCellElement>,
+  ) => void;
 }
 
 export function FileListView({
@@ -39,6 +46,10 @@ export function FileListView({
   searchQuery,
   onColumnReorder,
   columnBoundaryMap = {},
+  tableTabsContent,
+  focusColumnId,
+  onHorizontalScroll,
+  onColumnHeaderDragStart,
 }: FileListViewProps) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set()); // Format: "rowId:columnId"
   const [lastSelectedCell, setLastSelectedCell] = useState<{ rowId: string; columnId: string } | null>(null);
@@ -312,10 +323,17 @@ export function FileListView({
       )}
 
       <div className="flex flex-col flex-1 overflow-hidden border border-border rounded-xl shadow-sm bg-card">
+        {tableTabsContent ? (
+          <div className="border-b border-border/70 bg-card px-3 pt-2">
+            {tableTabsContent}
+          </div>
+        ) : null}
         <CellSelectableTable
           data={sortedData}
           columns={columns}
           columnBoundaryMap={columnBoundaryMap}
+          focusColumnId={focusColumnId}
+          onHorizontalScroll={onHorizontalScroll}
           selectedCells={selectedCells}
           onCellClick={handleCellClick}
           onSelectAll={handleSelectAll}
@@ -324,6 +342,7 @@ export function FileListView({
           sortDirection={sortDirection}
           onColumnReorder={onColumnReorder}
           onCellEdit={onCellEdit}
+          onColumnHeaderDragStart={onColumnHeaderDragStart}
         />
         <StatusBar
           totalCount={data.length}

@@ -7,7 +7,11 @@ import { ConvexBackendUnavailableCard } from "@/components/convex/ConvexBackendU
 import { useConvexResourceQuery } from "@/hooks/useConvexResourceQuery";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ColorCard from "@/components/color/ColorCard";
-import CollectionSecondarySidebar from "@/components/collection/CollectionSecondarySidebar";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+  useCollectionSecondarySidebarState,
+} from "@/components/collection/CollectionSecondarySidebar";
 import CollectionSortSidebar from "@/components/collection/CollectionSortSidebar";
 import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
@@ -21,8 +25,96 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getConvexErrorMessage } from "@/lib/convexErrors";
 import { CircleSlash2, GitMerge, Loader2 } from "lucide-react";
 
+const sortText = (left: string, right: string) =>
+  left.localeCompare(right, undefined, { sensitivity: "base" });
+
+const uniqueText = (values: Array<string | null | undefined>) =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean)
+    )
+  ).sort(sortText);
+
+const normalizeColorsCollection = (payload: any) => {
+  const rows = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.items)
+      ? payload.items
+      : [];
+
+  const grouped = new Map<string, any>();
+
+  for (const row of rows) {
+    const canonicalId = String(row?.color_id ?? row?._id ?? "");
+    if (!canonicalId) continue;
+
+    const current = grouped.get(canonicalId) ?? {
+      _id: canonicalId,
+      slug: canonicalId,
+      color_title: String(row?.color_title ?? row?.color ?? "Untitled Color").trim() || "Untitled Color",
+      family_title: row?.family_title ?? null,
+      swatch_hex: row?.swatch_hex ?? null,
+      brand_titles: [] as string[],
+      source_labels: [] as string[],
+      paint_codes: [] as string[],
+      notes_list: [] as string[],
+      manufacturer_code: row?.manufacturer_code ?? null,
+      finish: row?.finish ?? null,
+      wheelCount: Number(row?.wheelCount ?? 0),
+      wheelVariantCount: Number(row?.wheelVariantCount ?? 0),
+      vehicleCount: Number(row?.vehicleCount ?? 0),
+      vehicleVariantCount: Number(row?.vehicleVariantCount ?? 0),
+    };
+
+    current.color_title =
+      String(row?.color_title ?? row?.color ?? current.color_title ?? "Untitled Color").trim() || current.color_title;
+    current.family_title = current.family_title ?? row?.family_title ?? null;
+    current.swatch_hex = current.swatch_hex ?? row?.swatch_hex ?? null;
+    current.manufacturer_code = current.manufacturer_code ?? row?.manufacturer_code ?? null;
+    current.finish = current.finish ?? row?.finish ?? null;
+    current.wheelCount = Math.max(current.wheelCount, Number(row?.wheelCount ?? 0));
+    current.wheelVariantCount = Math.max(current.wheelVariantCount, Number(row?.wheelVariantCount ?? 0));
+    current.vehicleCount = Math.max(current.vehicleCount, Number(row?.vehicleCount ?? 0));
+    current.vehicleVariantCount = Math.max(current.vehicleVariantCount, Number(row?.vehicleVariantCount ?? 0));
+
+    current.brand_titles = uniqueText([
+      ...current.brand_titles,
+      row?.brand_title,
+      ...(Array.isArray(row?.brand_titles) ? row.brand_titles : []),
+    ]);
+    current.source_labels = uniqueText([
+      ...current.source_labels,
+      row?.source_label,
+      ...(Array.isArray(row?.source_labels) ? row.source_labels : []),
+    ]);
+    current.paint_codes = uniqueText([
+      ...current.paint_codes,
+      ...(Array.isArray(row?.paint_codes) ? row.paint_codes : []),
+    ]);
+    current.notes_list = uniqueText([...current.notes_list, row?.notes]);
+
+    grouped.set(canonicalId, current);
+  }
+
+  return Array.from(grouped.values())
+    .map((row) => ({
+      ...row,
+      brand_title:
+        row.brand_titles.length <= 1
+          ? row.brand_titles[0] ?? null
+          : `${row.brand_titles.length} brands`,
+      notes: row.notes_list[0] ?? null,
+      manufacturer_code:
+        row.manufacturer_code ??
+        (row.paint_codes.length === 1 ? row.paint_codes[0] : null),
+    }))
+    .sort((left, right) => sortText(left.color_title, right.color_title));
+};
+
 const ColorsPage = () => {
-  const colorsResource = useConvexResourceQuery<any[]>({
+  const colorsResource = useConvexResourceQuery<any>({
     queryKey: ["colors", "collection"],
     queryRef: api.colors.collectionGet,
     args: {},
@@ -55,14 +147,14 @@ const ColorsPage = () => {
   });
 
   const colors = useMemo(
-    () => (Array.isArray(colorsResource.data) ? colorsResource.data : []),
+    () => normalizeColorsCollection(colorsResource.data),
     [colorsResource.data]
   );
 
   useEffect(() => {
     setSearchTags(searchParams.getAll("search"));
     const next: Record<string, string[] | undefined> = {};
-    ["family", "brand", "finish", "hasHex"].forEach((key) => {
+    ["brand", "source", "hasPaintCodes"].forEach((key) => {
       const values = searchParams.getAll(key);
       if (values.length > 0) next[key] = values;
     });
@@ -73,38 +165,15 @@ const ColorsPage = () => {
     setFlippedCards({});
   }, [searchTags, parsedFilters, sortBy]);
 
-  const handleTagClick = (tag: string, category: string) => {
+  const applySidebarFilters = (nextFilters: Record<string, string[] | undefined>, searchQuery: string) => {
     const params = new URLSearchParams(searchParams);
-    const existing = params.getAll(category);
-    if (existing.includes(tag)) {
-      params.delete(category);
-      existing.filter((value) => value !== tag).forEach((value) => params.append(category, value));
-    } else {
-      params.delete(category);
-      existing.forEach((value) => params.append(category, value));
-      params.append(category, tag);
+    ["brand", "source", "hasPaintCodes", "search"].forEach((key) => params.delete(key));
+    Object.entries(nextFilters).forEach(([category, values]) => {
+      (values ?? []).forEach((value) => params.append(category, value));
+    });
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim());
     }
-    navigate(`/colors?${params.toString()}`);
-  };
-
-  const handleClearAllFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    ["family", "brand", "finish", "hasHex", "search"].forEach((key) => params.delete(key));
-    navigate(`/colors?${params.toString()}`);
-  };
-
-  const handleAddSearchTag = (tag: string) => {
-    if (searchTags.includes(tag)) return;
-    const params = new URLSearchParams(searchParams);
-    params.append("search", tag);
-    navigate(`/colors?${params.toString()}`);
-  };
-
-  const handleRemoveSearchTag = (tag: string) => {
-    const params = new URLSearchParams(searchParams);
-    const allSearch = params.getAll("search");
-    params.delete("search");
-    allSearch.filter((value) => value !== tag).forEach((value) => params.append("search", value));
     navigate(`/colors?${params.toString()}`);
   };
 
@@ -117,6 +186,9 @@ const ColorsPage = () => {
           color.color_title,
           color.family_title,
           color.brand_title,
+          ...(Array.isArray(color.brand_titles) ? color.brand_titles : []),
+          ...(Array.isArray(color.source_labels) ? color.source_labels : []),
+          ...(Array.isArray(color.paint_codes) ? color.paint_codes : []),
           color.finish,
           color.manufacturer_code,
           color.notes,
@@ -125,56 +197,54 @@ const ColorsPage = () => {
       });
     })
     .filter((color: any) => {
-      if (parsedFilters.family?.length && !parsedFilters.family.includes(color.family_title || "")) return false;
-      if (parsedFilters.brand?.length && !parsedFilters.brand.includes(color.brand_title || "")) return false;
-      if (parsedFilters.finish?.length && !parsedFilters.finish.includes(color.finish || "")) return false;
-      if (parsedFilters.hasHex?.includes("Yes") && !color.swatch_hex) return false;
-      if (parsedFilters.hasHex?.includes("No") && color.swatch_hex) return false;
+      if (
+        parsedFilters.brand?.length &&
+        !parsedFilters.brand.some((value) =>
+          (Array.isArray(color.brand_titles) ? color.brand_titles : [color.brand_title]).includes(value)
+        )
+      ) {
+        return false;
+      }
+      if (
+        parsedFilters.source?.length &&
+        !parsedFilters.source.some((value) =>
+          (Array.isArray(color.source_labels) ? color.source_labels : []).includes(value)
+        )
+      ) {
+        return false;
+      }
+      if (parsedFilters.hasPaintCodes?.includes("Yes") && !(Array.isArray(color.paint_codes) && color.paint_codes.length > 0)) return false;
+      if (parsedFilters.hasPaintCodes?.includes("No") && Array.isArray(color.paint_codes) && color.paint_codes.length > 0) return false;
       return true;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
         case "nameDesc":
           return b.color_title.localeCompare(a.color_title);
-        case "familyAsc":
-          return (a.family_title || "").localeCompare(b.family_title || "") || a.color_title.localeCompare(b.color_title);
-        case "familyDesc":
-          return (b.family_title || "").localeCompare(a.family_title || "") || a.color_title.localeCompare(b.color_title);
-        case "mostWheels":
-          return ((b.wheelCount ?? 0) + (b.wheelVariantCount ?? 0)) - ((a.wheelCount ?? 0) + (a.wheelVariantCount ?? 0)) || a.color_title.localeCompare(b.color_title);
-        case "mostVehicles":
-          return ((b.vehicleCount ?? 0) + (b.vehicleVariantCount ?? 0)) - ((a.vehicleCount ?? 0) + (a.vehicleVariantCount ?? 0)) || a.color_title.localeCompare(b.color_title);
+        case "mostBrands":
+          return ((b.brand_titles?.length ?? 0) - (a.brand_titles?.length ?? 0)) || a.color_title.localeCompare(b.color_title);
+        case "mostPaintCodes":
+          return ((b.paint_codes?.length ?? 0) - (a.paint_codes?.length ?? 0)) || a.color_title.localeCompare(b.color_title);
         case "nameAsc":
         default:
           return a.color_title.localeCompare(b.color_title);
       }
     });
 
-  const buildCountedValues = (values: string[]) =>
-    Array.from(
-      values.reduce((map, value) => {
-        if (!value) return map;
-        map.set(value, (map.get(value) ?? 0) + 1);
-        return map;
-      }, new Map<string, number>())
-    )
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([value, count]) => ({ value, count }));
+  const buildFilterValues = (values: string[]) =>
+    Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
   const filterFields = [
-    { label: "Family", category: "family", values: buildCountedValues(colors.map((color: any) => color.family_title).filter(Boolean)) },
-    { label: "Brand", category: "brand", values: buildCountedValues(colors.map((color: any) => color.brand_title).filter(Boolean)) },
-    { label: "Finish", category: "finish", values: buildCountedValues(colors.map((color: any) => color.finish).filter(Boolean)) },
-    { label: "Has Hex", category: "hasHex", values: ["Yes", "No"] },
+    { label: "Brand", category: "brand", values: buildFilterValues(colors.flatMap((color: any) => color.brand_titles ?? [])) },
+    { label: "Source", category: "source", values: buildFilterValues(colors.flatMap((color: any) => color.source_labels ?? [])) },
+    { label: "Has Paint Codes", category: "hasPaintCodes", values: ["Yes", "No"] },
   ];
 
   const sortOptions = [
     { label: "Name A-Z", value: "nameAsc" },
     { label: "Name Z-A", value: "nameDesc" },
-    { label: "Family A-Z", value: "familyAsc" },
-    { label: "Family Z-A", value: "familyDesc" },
-    { label: "Most Wheels", value: "mostWheels" },
-    { label: "Most Vehicles", value: "mostVehicles" },
+    { label: "Most Brands", value: "mostBrands" },
+    { label: "Most Paint Codes", value: "mostPaintCodes" },
   ];
 
   const selectedColorLabels = duplicateControl.selectedIds
@@ -190,6 +260,15 @@ const ColorsPage = () => {
     if (!deleteControl.selectionMode) duplicateControl.clearSelection();
     await deleteControl.handleDeleteControl();
   };
+  const filterSidebarState = useCollectionSecondarySidebarState({
+    title: "Color Filters",
+    filterFields,
+    parsedFilters,
+    onApply: ({ filters, searchQuery }) => applySidebarFilters(filters, searchQuery),
+    searchPlaceholder: "Search colors...",
+    searchValue: searchTags[0] ?? "",
+    totalResults: filteredColors.length,
+  });
 
   if (colorsResource.isInitialLoading) {
     return (
@@ -234,20 +313,8 @@ const ColorsPage = () => {
   return (
     <DashboardLayout
       title="Colors"
-      secondarySidebar={
-        <CollectionSecondarySidebar
-          title="Color Filters"
-          filterFields={filterFields}
-          parsedFilters={parsedFilters}
-          onTagClick={handleTagClick}
-          onClearAll={handleClearAllFilters}
-          searchPlaceholder="Search colors..."
-          searchTags={searchTags}
-          onAddSearchTag={handleAddSearchTag}
-          onRemoveSearchTag={handleRemoveSearchTag}
-          totalResults={filteredColors.length}
-        />
-      }
+      secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
+      secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
       sortSidebar={
         <CollectionSortSidebar
           title="Sort Colors"

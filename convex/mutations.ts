@@ -141,6 +141,9 @@ export const colorsUpdate = mutation({
     hex: optionalString,
     finish: optionalString,
     notes: optionalString,
+    private_blurb: optionalString,
+    good_pic_url: optionalString,
+    bad_pic_url: optionalString,
     brand_id: v.optional(v.id("oem_brands")),
   },
   handler: async (ctx, args) => {
@@ -241,6 +244,7 @@ export const brandsUpdate = mutation({
     slug: optionalString,
     brand_title: optionalString,
     brand_description: optionalString,
+    private_blurb: optionalString,
     brand_image_url: optionalString,
     brand_page: optionalString,
     subsidiaries: optionalString,
@@ -301,6 +305,7 @@ export const vehiclesUpdate = mutation({
     text_brands: optionalString,
     model_name: optionalString,
     vehicle_title: optionalString,
+    private_blurb: optionalString,
     generation: optionalString,
     body_type: optionalString,
     platform: optionalString,
@@ -588,6 +593,7 @@ export const wheelsUpdate = mutation({
     id: v.id("oem_wheels"),
     slug: optionalString,
     wheel_title: optionalString,
+    private_blurb: optionalString,
     weight: optionalString,
     metal_type: optionalString,
     part_numbers: optionalString,
@@ -736,6 +742,171 @@ export const wheelsDelete = mutation({
   args: { id: v.id("oem_wheels") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+    return args.id;
+  },
+});
+
+export const adminCollectionItemTitleUpdate = mutation({
+  args: {
+    itemType: v.union(
+      v.literal("brand"),
+      v.literal("vehicle"),
+      v.literal("wheel"),
+      v.literal("engine"),
+      v.literal("color"),
+    ),
+    id: v.union(
+      v.id("oem_brands"),
+      v.id("oem_vehicles"),
+      v.id("oem_wheels"),
+      v.id("oem_engines"),
+      v.id("oem_colors"),
+    ),
+    title: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const title = args.title.trim();
+    if (!title) {
+      throw new Error("Title is required.");
+    }
+
+    const updated_at = new Date().toISOString();
+
+    switch (args.itemType) {
+      case "brand":
+        await ctx.db.patch(args.id, { brand_title: title, updated_at });
+        return args.id;
+      case "vehicle":
+        await ctx.db.patch(args.id, { vehicle_title: title, updated_at });
+        return args.id;
+      case "wheel":
+        await ctx.db.patch(args.id, { wheel_title: title, updated_at });
+        return args.id;
+      case "engine":
+        await ctx.db.patch(args.id, { engine_title: title, updated_at });
+        return args.id;
+      case "color":
+        await ctx.db.patch(args.id, { color_title: title, updated_at });
+        return args.id;
+      default:
+        throw new Error("Unsupported item type.");
+    }
+  },
+});
+
+export const adminCollectionItemPrivateBlurbUpdate = mutation({
+  args: {
+    itemType: v.union(
+      v.literal("brand"),
+      v.literal("vehicle"),
+      v.literal("wheel"),
+      v.literal("engine"),
+      v.literal("color"),
+    ),
+    id: v.union(
+      v.id("oem_brands"),
+      v.id("oem_vehicles"),
+      v.id("oem_wheels"),
+      v.id("oem_engines"),
+      v.id("oem_colors"),
+    ),
+    privateBlurb: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const updated_at = new Date().toISOString();
+    const private_blurb = args.privateBlurb;
+
+    switch (args.itemType) {
+      case "brand":
+      case "vehicle":
+      case "wheel":
+      case "engine":
+      case "color":
+        await ctx.db.patch(args.id, { private_blurb, updated_at });
+        return args.id;
+      default:
+        throw new Error("Unsupported item type.");
+    }
+  },
+});
+
+export const adminCollectionItemAssetUrlUpdate = mutation({
+  args: {
+    itemType: v.union(
+      v.literal("brand"),
+      v.literal("vehicle"),
+      v.literal("wheel"),
+      v.literal("engine"),
+      v.literal("color"),
+    ),
+    id: v.union(
+      v.id("oem_brands"),
+      v.id("oem_vehicles"),
+      v.id("oem_wheels"),
+      v.id("oem_engines"),
+      v.id("oem_colors"),
+    ),
+    field: v.union(
+      v.literal("brand_image_url"),
+      v.literal("vehicle_image"),
+      v.literal("good_pic_url"),
+      v.literal("bad_pic_url"),
+    ),
+    mediaUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const updated_at = new Date().toISOString();
+
+    switch (args.itemType) {
+      case "brand":
+        if (!["brand_image_url", "good_pic_url", "bad_pic_url"].includes(args.field)) {
+          throw new Error("Unsupported brand asset field.");
+        }
+        await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
+        return args.id;
+      case "vehicle":
+        if (!["vehicle_image", "good_pic_url", "bad_pic_url"].includes(args.field)) {
+          throw new Error("Unsupported vehicle asset field.");
+        }
+        await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
+        return args.id;
+      case "wheel":
+        if (!["good_pic_url", "bad_pic_url"].includes(args.field)) {
+          throw new Error("Unsupported wheel asset field.");
+        }
+        await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
+        return args.id;
+      case "engine":
+      case "color":
+        if (!["good_pic_url", "bad_pic_url"].includes(args.field)) {
+          throw new Error("Unsupported asset field.");
+        }
+        await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
+        return args.id;
+      default:
+        throw new Error("Unsupported item type.");
+    }
+  },
+});
+
+export const adminBrandDescriptionUpdate = mutation({
+  args: {
+    id: v.id("oem_brands"),
+    description: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    await ctx.db.patch(args.id, {
+      brand_description: args.description,
+      updated_at: new Date().toISOString(),
+    });
     return args.id;
   },
 });

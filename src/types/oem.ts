@@ -7,6 +7,7 @@ export interface OemBrand {
   id: string;
   brand_title?: string | null;
   brand_description?: string | null;
+  private_blurb?: string | null;
   brand_image_url?: string | null;
   [key: string]: unknown;
 }
@@ -15,6 +16,7 @@ export interface OemVehicle {
   id: string;
   model_name?: string | null;
   vehicle_title?: string | null;
+  private_blurb?: string | null;
   vehicle_image?: string | null;
   brand_name?: string | null;
   production_years?: string | null;
@@ -25,6 +27,7 @@ export interface OemEngineFamily {
   id: string;
   engine_title?: string | null;
   engine_code?: string | null;
+  private_blurb?: string | null;
   fuel_type?: string | null;
   aspiration?: string | null;
   displacement_l?: number | null;
@@ -65,6 +68,9 @@ export interface OemEngineFamilyBrowseRow {
   id: string;
   family_key: string;
   family_row_id?: string | null;
+  private_blurb?: string | null;
+  good_pic_url?: string | null;
+  bad_pic_url?: string | null;
   family_title: string;
   family_code?: string | null;
   engine_family_name?: string | null;
@@ -142,6 +148,7 @@ export interface OemWheel {
   id: string;
   convexId?: string;
   wheel_name: string;
+  private_blurb?: string | null;
   brand_name?: string | null;
   /** Comma-separated wheel brands mirrored from j_wheel_brand. */
   jnc_brands?: string | null;

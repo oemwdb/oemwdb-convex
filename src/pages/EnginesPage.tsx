@@ -8,7 +8,11 @@ import { api } from "../../convex/_generated/api";
 import { SelectableCollectionCard } from "@/components/collection/SelectableCollectionCard";
 import { CollectionAdminSidebar } from "@/components/collection/CollectionAdminSidebar";
 import { CollectionDeleteHeaderButton } from "@/components/collection/CollectionDeleteHeaderButton";
-import { CollectionSecondarySidebar } from "@/components/collection/CollectionSecondarySidebar";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+  useCollectionSecondarySidebarState,
+} from "@/components/collection/CollectionSecondarySidebar";
 import { CollectionSortSidebar } from "@/components/collection/CollectionSortSidebar";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
 import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
@@ -21,6 +25,7 @@ import { getEngineFamilyCode, getEngineFamilyTitle } from "@/lib/engineDisplay";
 const EnginesPage = () => {
     const [selectionIds, setSelectionIds] = useState<string[]>([]);
     const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+    const [searchTags, setSearchTags] = useState<string[]>([]);
     const [parsedFilters, setParsedFilters] = useState<Record<string, string[] | undefined>>({});
     const [sortBy, setSortBy] = useState("familyAsc");
     const { isDevMode } = useDevMode();
@@ -32,6 +37,20 @@ const EnginesPage = () => {
     const engineFamilies = useMemo(() => {
       const rows = (rawEngineFamilies ?? []) as OemEngineFamilyBrowseRow[];
       const filtered = rows.filter((engine) => {
+        const activeSearch = searchTags[0]?.trim().toLowerCase();
+        if (activeSearch) {
+          const matchesSearch = [
+            getEngineFamilyTitle(engine),
+            getEngineFamilyCode(engine),
+            engine.brand_ref,
+            engine.configuration,
+            engine.engine_layout,
+            engine.fuel_summary,
+            engine.aspiration_summary,
+          ].some((value) => String(value ?? "").toLowerCase().includes(activeSearch));
+          if (!matchesSearch) return false;
+        }
+
         const matchesBrand =
           !parsedFilters.brand?.length ||
           parsedFilters.brand.some((value) => (engine.brand_ref ?? "").toLowerCase().includes(value.toLowerCase()));
@@ -67,7 +86,7 @@ const EnginesPage = () => {
         }
         return getEngineFamilyTitle(a).localeCompare(getEngineFamilyTitle(b), undefined, { sensitivity: "base" });
       });
-    }, [parsedFilters, rawEngineFamilies, sortBy]);
+    }, [parsedFilters, rawEngineFamilies, searchTags, sortBy]);
 
     const oneValuePerTag = (vals: string[]) =>
       [...new Set(vals.flatMap((v) => v.split(",").map((s) => s.trim()).filter(Boolean)))];
@@ -103,21 +122,9 @@ const EnginesPage = () => {
       { label: "Most linked vehicles", value: "vehiclesDesc" },
     ];
 
-    const handleTagClick = (tag: string, category: string) => {
-      setParsedFilters((current) => {
-        const currentValues = current[category] ?? [];
-        const nextValues = currentValues.includes(tag)
-          ? currentValues.filter((value) => value !== tag)
-          : [...currentValues, tag];
-        return {
-          ...current,
-          [category]: nextValues.length > 0 ? nextValues : undefined,
-        };
-      });
-    };
-
-    const handleClearAllFilters = () => {
-      setParsedFilters({});
+    const applySidebarFilters = (filters: Record<string, string[] | undefined>, searchQuery: string) => {
+      setParsedFilters(filters);
+      setSearchTags(searchQuery.trim() ? [searchQuery.trim()] : []);
     };
     const duplicateControl = useCollectionDuplicateControl({
       itemLabel: "engines",
@@ -133,6 +140,15 @@ const EnginesPage = () => {
     });
     const controlsDisabled = true;
     const disabledReason = "Engine merge/delete backend wiring is still missing.";
+    const filterSidebarState = useCollectionSecondarySidebarState({
+      title: "Filters",
+      filterFields,
+      parsedFilters,
+      onApply: ({ filters, searchQuery }) => applySidebarFilters(filters, searchQuery),
+      searchPlaceholder: "Search engines...",
+      searchValue: searchTags[0] ?? "",
+      totalResults: engineFamilies.length,
+    });
 
     if (isLoading) {
         return (
@@ -163,16 +179,8 @@ const EnginesPage = () => {
           title="OEM Engines"
           showFilterButton={false}
           secondaryTitle="Filters"
-          secondarySidebar={
-            <CollectionSecondarySidebar
-              title="Filters"
-              filterFields={filterFields}
-              parsedFilters={parsedFilters}
-              onTagClick={handleTagClick}
-              onClearAll={handleClearAllFilters}
-              totalResults={engineFamilies.length}
-            />
-          }
+          secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
+          secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
           sortTitle="Sort Engines"
           sortSidebar={
             <CollectionSortSidebar

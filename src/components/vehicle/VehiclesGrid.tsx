@@ -7,6 +7,12 @@ import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 const GRID_CLASSES =
   "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2";
 
+const getVehicleFlipKey = (vehicle: Vehicle) =>
+  vehicle.id ||
+  (vehicle as Vehicle & { slug?: string }).slug ||
+  (vehicle as Vehicle & { routeId?: string }).routeId ||
+  vehicle.name;
+
 interface VehiclesGridProps {
   vehicles: Vehicle[];
   flippedCards: Record<string, boolean>;
@@ -44,6 +50,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
       const chunk = vehicles.slice(i, i + insertAdEvery);
       chunk.forEach((vehicle) => {
         const selectionId = vehicle.id ?? vehicle.name;
+        const flipKey = getVehicleFlipKey(vehicle);
         const selectedOrder = (selectedIds ?? []).indexOf(selectionId) + 1 || undefined;
         children.push(
           <SelectableCollectionCard
@@ -57,6 +64,8 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             <VehicleCard
               vehicle={{
                 id: (vehicle as { id?: string }).id,
+                slug: (vehicle as { slug?: string }).slug,
+                routeId: (vehicle as { routeId?: string }).routeId,
                 name: vehicle.name,
                 brand: vehicle.brand,
                 wheels: vehicle.wheels,
@@ -66,7 +75,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
                 wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
                 wheel_width_ref: (vehicle as any).wheel_width_ref,
               }}
-              isFlipped={flippedCards[vehicle.name] || false}
+              isFlipped={flippedCards[flipKey] || false}
               onFlip={onFlip}
             />
           </SelectableCollectionCard>
@@ -93,6 +102,8 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
           <VehicleCard
             vehicle={{
               id: (vehicle as { id?: string }).id,
+              slug: (vehicle as { slug?: string }).slug,
+              routeId: (vehicle as { routeId?: string }).routeId,
               name: vehicle.name,
               brand: vehicle.brand,
               wheels: vehicle.wheels,
@@ -102,7 +113,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
               wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
               wheel_width_ref: (vehicle as any).wheel_width_ref,
             }}
-            isFlipped={flippedCards[vehicle.name] || false}
+            isFlipped={flippedCards[getVehicleFlipKey(vehicle)] || false}
             onFlip={onFlip}
           />
         </SelectableCollectionCard>

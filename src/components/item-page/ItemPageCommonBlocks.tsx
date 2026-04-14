@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdBar } from "@/components/AdBar";
 
 export function ItemPageAdSlot({ label = "Advertising slot" }: { label?: string }) {
   return (
@@ -53,11 +54,31 @@ export function ItemPageEmptyState({
 export function ItemPageGrid({
   children,
   columnsClassName = "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+  insertAdEvery,
 }: {
   children: ReactNode;
   columnsClassName?: string;
+  insertAdEvery?: number;
 }) {
-  return <div className={`grid gap-4 ${columnsClassName}`}>{children}</div>;
+  const items = Children.toArray(children);
+  const content =
+    insertAdEvery != null && insertAdEvery > 0
+      ? items.flatMap((child, index) => {
+          const next: ReactNode[] = [child];
+          const isChunkEnd = (index + 1) % insertAdEvery === 0;
+          const hasMore = index < items.length - 1;
+          if (isChunkEnd && hasMore) {
+            next.push(
+              <div key={`item-page-grid-ad-${index}`} className="col-span-full">
+                <AdBar />
+              </div>
+            );
+          }
+          return next;
+        })
+      : items;
+
+  return <div className={`grid gap-4 ${columnsClassName}`}>{content}</div>;
 }
 
 export function ItemPagePanel({

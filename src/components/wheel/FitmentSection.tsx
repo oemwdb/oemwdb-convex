@@ -1,6 +1,6 @@
-
 import React, { useState } from "react";
-import VehicleCard from "@/components/vehicle/VehicleCard";
+import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
+import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
 
 interface VehicleItem {
   id?: string;
@@ -21,6 +21,7 @@ interface FitmentSectionProps {
 
 const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const vehicleColumns = useVehicleGridColumns();
 
   // Toggle card flip
   const toggleCardFlip = (name: string) => {
@@ -35,30 +36,25 @@ const FitmentSection = ({ wheelName, compatibleVehicles }: FitmentSectionProps) 
       {compatibleVehicles.length === 0 ? (
         <p className="text-slate-500 p-4 bg-slate-100 rounded-md">No compatible vehicles found for this wheel.</p>
       ) : (
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {compatibleVehicles.map((vehicle, index) => (
-            <VehicleCard
-              key={`${vehicle.name}-${index}`}
-              vehicle={{
-                id: vehicle.id,
-                name: vehicle.name,
-                brand: vehicle.brand || "Unknown",
-                wheels: vehicle.wheels || 0,
-                image: vehicle.image,
-                bolt_pattern_ref: vehicle.bolt_pattern_ref,
-                center_bore_ref: vehicle.center_bore_ref,
-                wheel_diameter_ref: vehicle.wheel_diameter_ref,
-                wheel_width_ref: vehicle.wheel_width_ref,
-              }}
-              isFlipped={flippedCards[vehicle.name] || false}
-              onFlip={toggleCardFlip}
-            />
-          ))}
-        </div>
+        <VehiclesGrid
+          vehicles={compatibleVehicles.map((vehicle) => ({
+            id: vehicle.id,
+            name: vehicle.name,
+            brand: vehicle.brand || "Unknown",
+            wheels: vehicle.wheels || 0,
+            image: vehicle.image,
+            bolt_pattern_ref: vehicle.bolt_pattern_ref,
+            center_bore_ref: vehicle.center_bore_ref,
+            wheel_diameter_ref: vehicle.wheel_diameter_ref,
+            wheel_width_ref: vehicle.wheel_width_ref,
+          }))}
+          flippedCards={flippedCards}
+          onFlip={toggleCardFlip}
+          insertAdEvery={vehicleColumns * 3}
+        />
       )}
     </div>
   );
 };
 
 export default FitmentSection;
-

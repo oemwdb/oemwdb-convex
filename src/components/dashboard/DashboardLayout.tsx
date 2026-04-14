@@ -33,6 +33,7 @@ interface DashboardLayoutProps {
   customSidebar?: React.ReactNode;
 
   secondaryTitle?: string;
+  secondaryHeaderContent?: React.ReactNode;
   sortTitle?: string;
   customTitle?: string;
   secondaryActionIcon?: React.ReactNode;
@@ -44,6 +45,7 @@ interface DashboardLayoutProps {
   headerActions?: React.ReactNode;
   headerLeftContent?: React.ReactNode;
   leadingButtonIcon?: React.ReactNode;
+  leadingButtonContent?: React.ReactNode;
   onLeadingButtonClick?: () => void;
   leadingButtonTitle?: string;
   showSearch?: boolean;
@@ -76,6 +78,7 @@ const DashboardLayout = ({
   customSidebar,
 
   secondaryTitle,
+  secondaryHeaderContent,
   sortTitle,
   customTitle,
   secondaryActionIcon,
@@ -85,6 +88,7 @@ const DashboardLayout = ({
   headerActions,
   headerLeftContent,
   leadingButtonIcon,
+  leadingButtonContent,
   onLeadingButtonClick,
   leadingButtonTitle,
   showSearch = false,
@@ -123,6 +127,10 @@ const DashboardLayout = ({
       : activePanel === "custom"
         ? (customTitle || "Panel")
         : (secondaryTitle || "Filters");
+  const activeHeaderContent =
+    activePanel === "filter" && secondaryHeaderContent
+      ? secondaryHeaderContent
+      : null;
   const customSidebarButton = customSidebar ? (
     <Button
       variant="ghost"
@@ -178,6 +186,7 @@ const DashboardLayout = ({
             showSearch={showSearch}
             showBreadcrumb={showBreadcrumb}
             leadingButtonIcon={leadingButtonIcon}
+            leadingButtonContent={leadingButtonContent}
             onLeadingButtonClick={onLeadingButtonClick}
             leadingButtonTitle={leadingButtonTitle}
             leftActions={
@@ -223,12 +232,16 @@ const DashboardLayout = ({
               {/* Secondary Header with search pill (replaces plain 'Filters' text) */}
               <div className="h-11 flex items-center justify-between border-b border-border px-3 gap-2 shrink-0 rounded-t-2xl">
                 <div className="flex-1 flex items-center">
-                  <div className="flex items-center h-8 w-full rounded-full border border-border/70 bg-black px-2 text-xs text-muted-foreground">
-                    <Search className="h-3.5 w-3.5 mr-2 opacity-70" />
-                    <span className="truncate">
-                      {activePanelTitle || "Search wheels, brands, specs…"}
-                    </span>
-                  </div>
+                  {activeHeaderContent ? (
+                    activeHeaderContent
+                  ) : (
+                    <div className="flex items-center h-8 w-full rounded-full border border-border/70 bg-black px-2 text-xs text-muted-foreground">
+                      <Search className="h-3.5 w-3.5 mr-2 opacity-70" />
+                      <span className="truncate">
+                        {activePanelTitle || "Search wheels, brands, specs…"}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
