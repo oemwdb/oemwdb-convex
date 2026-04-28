@@ -15,6 +15,7 @@ import { useDevMode } from "@/contexts/DevModeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { SaveButton } from "@/components/SaveButton";
 import { getMediaUrlCandidates } from "@/lib/mediaUrls";
+import { useWheelRotation } from "@/hooks/useWheelRotation";
 import { Plus, X } from "lucide-react";
 import type { ItemPageFieldLayoutItem } from "@/types/itemPageLayout";
 import {
@@ -97,6 +98,7 @@ const WheelHeader = ({
   const { isDevMode } = useDevMode();
   const { isAdmin } = useAuth();
   const showAdminControls = isAdmin && isDevMode && Boolean(convexId);
+  const { handleMouseEnter: handleWheelMouseEnter, handleMouseLeave: handleWheelMouseLeave, wheelImageRef } = useWheelRotation();
   const wheelsUpdate = useMutation(api.mutations.wheelsUpdate);
   const [imageError, setImageError] = useState(false);
   const [candidateIndex, setCandidateIndex] = useState(0);
@@ -113,12 +115,11 @@ const WheelHeader = ({
     setLocalSpecs(normalizeSpecState(specs));
   }, [specs]);
 
-  const candidates =
-    getMediaUrlCandidates(goodPicUrl, "oemwdb images").length > 0
-      ? getMediaUrlCandidates(goodPicUrl, "oemwdb images")
-      : isDevMode && getMediaUrlCandidates(badPicUrl, "BADPICS").length > 0
-        ? getMediaUrlCandidates(badPicUrl, "BADPICS")
-        : getMediaUrlCandidates(image, "oemwdb images");
+  const candidates = [
+    ...getMediaUrlCandidates(goodPicUrl, "oemwdb images"),
+    ...getMediaUrlCandidates(badPicUrl, "BADPICS"),
+    ...getMediaUrlCandidates(image, "oemwdb images"),
+  ].filter((candidate, index, all) => all.indexOf(candidate) === index);
 
   const handleImageError = () => {
     const nextIndex = candidateIndex + 1;
@@ -349,14 +350,19 @@ const WheelHeader = ({
           </div>
 
           <div className="w-full">
-            <AspectRatio ratio={1} className="relative overflow-hidden rounded-[24px] border border-border/60 bg-muted group">
+            <AspectRatio ratio={1} className="relative overflow-hidden rounded-[24px] group">
               {finalImageUrl ? (
-                <img
-                  src={finalImageUrl}
-                  alt={name}
-                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                  onError={handleImageError}
-                />
+                <div className="flex h-full w-full items-center justify-center pt-[5%]">
+                  <img
+                    ref={wheelImageRef}
+                    src={finalImageUrl}
+                    alt={name}
+                    className="max-h-[105%] max-w-[105%] object-contain will-change-transform"
+                    onError={handleImageError}
+                    onMouseEnter={handleWheelMouseEnter}
+                    onMouseLeave={handleWheelMouseLeave}
+                  />
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="text-muted-foreground text-center text-xs px-2">No image available</span>

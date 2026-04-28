@@ -39,7 +39,7 @@ export function useSavedVehicles() {
       name: v.vehicle_title || v.model_name || v.generation || "Unknown",
       brand: "Unknown",
       wheels: 0,
-      image: v.vehicle_image ?? null,
+      image: v.good_pic_url ?? v.bad_pic_url ?? null,
       bolt_pattern_ref: undefined,
       center_bore_ref: undefined,
       wheel_diameter_ref: undefined,

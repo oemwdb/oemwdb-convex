@@ -28,6 +28,11 @@ import { ItemPageAdSlot, ItemPageEmptyState, ItemPageGrid, ItemPagePanel, ItemPa
 import EngineAssetsPanel from "@/components/engine/EngineAssetsPanel";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { useVehicleGridColumns } from "@/hooks/useWheelsGridColumns";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+} from "@/components/collection/CollectionSecondarySidebar";
+import { usePersistedCollectionSidebarState } from "@/hooks/usePersistedCollectionSidebar";
 
 const normalizeText = (value?: string | null) => value?.trim() || null;
 
@@ -40,6 +45,7 @@ const EngineItemPage = () => {
   const showAdminAssets = isAdmin;
   const vehicleColumns = useVehicleGridColumns();
   const { template } = useResolvedItemPageLayoutTemplate("engine_item");
+  const collectionSidebar = usePersistedCollectionSidebarState("engines");
 
   const engine = useQuery(
     api.queries.engineFamiliesGetById,
@@ -56,7 +62,9 @@ const EngineItemPage = () => {
         year: vehicle.production_years ?? "",
         brand: vehicle.brand_title ?? "",
         wheels: 0,
-        image: vehicle.vehicle_image ?? undefined,
+        image: undefined,
+        good_pic_url: vehicle.good_pic_url ?? null,
+        bad_pic_url: vehicle.bad_pic_url ?? null,
       })),
     [engine?.linked_vehicles],
   );
@@ -251,6 +259,13 @@ const EngineItemPage = () => {
       onBack={() => navigate(-1)}
       tabPlacement="content"
       useItemTitleForFirstTab={false}
+      secondaryHeaderContent={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarHeader state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebar={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarBody state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebarContextKey={collectionSidebar.isAvailable ? "engines" : undefined}
       persistentHeaderContent={persistentHeaderContent}
       additionalTabs={
         isAdmin && engine.family_row_id
@@ -258,8 +273,7 @@ const EngineItemPage = () => {
               {
                 id: "private-blurb",
                 label: "Private blurb",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <AdminPrivateBlurbTab
                     itemType="engine"
@@ -273,8 +287,7 @@ const EngineItemPage = () => {
                     {
                       id: "assets",
                       label: "Assets",
-                      triggerClassName:
-                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      triggerTone: "admin",
                       content: (
                         <EngineAssetsPanel
                           engineId={engine.family_row_id}

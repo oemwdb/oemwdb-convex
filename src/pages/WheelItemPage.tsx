@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useWheelByName } from "@/hooks/useWheels";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "../../convex/_generated/api";
+import { useQuery } from "convex/react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,12 @@ import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemp
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
 import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
 import { ItemPageEmptyState, ItemPageGrid, ItemPagePanel, ItemPageRichText } from "@/components/item-page/ItemPageCommonBlocks";
+import { getWheelVariantRoutePath } from "@/lib/variantRoutes";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+} from "@/components/collection/CollectionSecondarySidebar";
+import { usePersistedCollectionSidebarState } from "@/hooks/usePersistedCollectionSidebar";
 
 function buildEbaySearchUrl(query: string) {
   return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sacat=6000`;
@@ -56,24 +63,25 @@ const WheelItemPage = () => {
     enabled: Boolean(wheel?._id),
   });
   const { template } = useResolvedItemPageLayoutTemplate("wheel_item");
+  const wheelVariants = useQuery(
+    api.queries.wheelVariantsGetByWheel,
+    wheel?._id ? { wheelId: wheel._id } : "skip"
+  ) ?? [];
   const wheelTemplate = useMemo(
     () => ({
       ...template,
       tabs: template.tabs.map((tab) =>
         tab.id === "fitment"
-          ? { ...tab, label: "Brief" }
+          ? { ...tab, label: "Brief", triggerClassName: undefined, triggerTone: "default" }
           : tab.id === "gallery" || tab.id === "market"
-            ? {
-                ...tab,
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
-              }
+            ? { ...tab, triggerClassName: undefined, triggerTone: "default" }
             : tab
       ),
     }),
     [template]
   );
   const headerBlock = template.headerBlock;
+  const collectionSidebar = usePersistedCollectionSidebarState("wheels");
 
   // Update breadcrumb label when wheel data is loaded
   useEffect(() => {
@@ -125,35 +133,23 @@ const WheelItemPage = () => {
   // Use wheel name for the dashboard title
   const pageTitle = wheel.wheel_name || `Wheel #${wheelId}`;
 
-  // Format compatible vehicles from vehicle_refs
   const fitmentVehicles = wheel.vehicles ?? [];
 
-  const compatibleVehicles = fitmentVehicles.map(v => {
-    // Build name in "FXX: ModelName" format
-    const chassisCode = v.chassis_code || '';
-    const modelName = v.model_name || v.vehicle_title || '';
-    let displayName = '';
-
-    if (chassisCode && modelName) {
-      displayName = `${chassisCode}: ${modelName}`;
-    } else if (chassisCode) {
-      displayName = chassisCode;
-    } else {
-      displayName = modelName || 'Unknown';
-    }
-
-    return {
-      id: v.id,
-      name: displayName,
-      brand: v.brand_name || "Unknown",
-      wheels: 0,
-      image: v.hero_image_url,
-      bolt_pattern_ref: v.bolt_pattern_ref,
-      center_bore_ref: v.center_bore_ref,
-      wheel_diameter_ref: v.wheel_diameter_ref,
-      wheel_width_ref: v.wheel_width_ref,
-    };
-  });
+  const compatibleVehicles = fitmentVehicles.map((vehicle) => ({
+    id: String(vehicle._id ?? vehicle.id ?? ""),
+    slug: typeof vehicle.slug === "string" ? vehicle.slug : undefined,
+    routeId: String(vehicle.slug ?? vehicle.id ?? vehicle._id ?? ""),
+    name: vehicle.vehicle_title || vehicle.model_name || vehicle.generation || "Unknown",
+    brand: vehicle.brand_name || "Unknown",
+    wheels: 0,
+    image: undefined,
+    good_pic_url: vehicle.good_pic_url || null,
+    bad_pic_url: vehicle.bad_pic_url || null,
+    bolt_pattern_ref: vehicle.bolt_pattern_ref ?? vehicle.bolt_pattern ?? vehicle.text_bolt_patterns,
+    center_bore_ref: vehicle.center_bore_ref ?? vehicle.center_bore ?? vehicle.text_center_bores,
+    wheel_diameter_ref: vehicle.wheel_diameter_ref ?? vehicle.diameter_ref ?? vehicle.text_diameters,
+    wheel_width_ref: vehicle.wheel_width_ref ?? vehicle.width_ref ?? vehicle.text_widths,
+  }));
 
   // Sample gallery images
   const galleryImages = wheel.good_pic_url ? [{
@@ -196,6 +192,13 @@ const WheelItemPage = () => {
       onBack={() => navigate(-1)}
       tabPlacement="content"
       useItemTitleForFirstTab={false}
+      secondaryHeaderContent={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarHeader state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebar={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarBody state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebarContextKey={collectionSidebar.isAvailable ? "wheels" : undefined}
       persistentHeaderContent={
         <WheelHeader
           name={wheel.wheel_name}
@@ -216,8 +219,7 @@ const WheelItemPage = () => {
               {
                 id: "private-blurb",
                 label: "Private blurb",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <AdminPrivateBlurbTab
                     itemType="wheel"
@@ -231,8 +233,7 @@ const WheelItemPage = () => {
               {
                 id: "assets",
                 label: "Assets",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <WheelAssetsPanel
                     wheelId={wheel._id}
@@ -250,35 +251,25 @@ const WheelItemPage = () => {
       renderBlock={(block) => {
         switch (block.kind) {
           case "variants": {
-            const variants: any[] = [];
-            const colors = wheel.color ? wheel.color.split(",").map((c: string) => c.trim()) : ["Standard"];
-            const diameters = (wheel.diameter_refs || []) as any[];
-            const widths = (wheel.width_ref || []) as any[];
-            const boltPatterns = (wheel.bolt_pattern_refs || []) as any[];
-            const partNumbers = String(wheel.part_numbers || "")
-              .split(/[,;]/)
-              .map((part: string) => part.trim())
-              .filter(Boolean);
-
-            colors.slice(0, 4).forEach((color: string, idx: number) => {
-              const diameter = diameters[0]?.raw || diameters[0]?.value || '21"';
-              const width = widths[idx] || widths[0];
-              const widthStr = width?.raw || (width?.value ? `${width.value}J` : "8.5J");
-              const boltPattern = boltPatterns[0]?.value || "5x120";
-              const partNumber = partNumbers[idx] || partNumbers[0] || wheel.wheel_name?.replace(/\s+/g, "");
-
-              variants.push({
-                color,
-                size: `${widthStr} x ${diameter}`,
-                pcd: boltPattern,
-                partNumber: partNumber.substring(0, 30),
-                offset: wheel.wheel_offset || "ET35",
-              });
-            });
-
-            const normalizedVariants = variants.length > 0
-              ? variants
+            const normalizedVariants = wheelVariants.length > 0
+              ? wheelVariants.map((variant) => ({
+                  id: String(variant._id),
+                  slug: typeof variant.slug === "string" ? variant.slug : undefined,
+                  color: variant.color?.trim() || variant.finish?.trim() || variant.variant_title?.trim() || "Standard",
+                  size:
+                    [variant.width?.trim(), variant.diameter?.trim()]
+                      .filter(Boolean)
+                      .join(" x ") || `${wheel.width || "N/A"} x ${wheel.diameter || "N/A"}`,
+                  pcd: variant.bolt_pattern?.trim() || wheel.bolt_pattern || "N/A",
+                  partNumber:
+                    variant.part_numbers
+                      ?.split(/[,;\n]/)
+                      .map((part) => part.trim())
+                      .find(Boolean) || "N/A",
+                  offset: variant.offset?.trim() || wheel.wheel_offset || "N/A",
+                }))
               : [{
+                  id: null,
                   color: "Standard",
                   size: `${wheel.diameter || "N/A"} x ${wheel.width || "N/A"}`,
                   pcd: wheel.bolt_pattern || "N/A",
@@ -290,7 +281,22 @@ const WheelItemPage = () => {
               <ItemPagePanel title="Variants">
                 <ItemPageGrid columnsClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {normalizedVariants.map((variant: any, idx: number) => (
-                    <Card key={`${variant.partNumber}-${idx}`} className="flex flex-col transition-shadow hover:shadow-md">
+                    <Card
+                      key={`${variant.id ?? variant.partNumber}-${idx}`}
+                      className="flex flex-col transition-shadow hover:shadow-md"
+                      onClick={(event) => {
+                        if (!isAdmin || !variant.id) return;
+                        const target = event.target as HTMLElement | null;
+                        if (target?.closest("a,button")) return;
+                        navigate(
+                          getWheelVariantRoutePath({
+                            id: variant.id,
+                            slug: variant.slug,
+                            name: [wheel.wheel_name, variant.color].filter(Boolean).join(" - "),
+                          })
+                        );
+                      }}
+                    >
                       <CardContent className="flex flex-col gap-2 p-4">
                         <h4 className="text-base font-semibold text-foreground">{variant.color}</h4>
                         <div className="space-y-1 text-sm">

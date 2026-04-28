@@ -4,7 +4,13 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeConvexQuery } from "@/hooks/useSafeConvexQuery";
 
-export type CommentableItemType = "brand" | "vehicle" | "wheel" | "engine";
+export type CommentableItemType =
+  | "brand"
+  | "vehicle"
+  | "wheel"
+  | "engine"
+  | "vehicle_variant"
+  | "wheel_variant";
 
 export interface ItemComment {
   id: string;
@@ -37,7 +43,15 @@ function getUserDisplayName(user: unknown): string {
 
 export function useItemComments(
   itemType: CommentableItemType,
-  itemId: Id<"oem_brands"> | Id<"oem_vehicles"> | Id<"oem_wheels"> | Id<"oem_engines"> | null | undefined
+  itemId:
+    | Id<"oem_brands">
+    | Id<"oem_vehicles">
+    | Id<"oem_wheels">
+    | Id<"oem_engines">
+    | Id<"oem_vehicle_variants">
+    | Id<"oem_wheel_variants">
+    | null
+    | undefined
 ) {
   const { user, isAuthenticated } = useAuth();
 
@@ -65,17 +79,35 @@ export function useItemComments(
       ? { engineId: itemId as Id<"oem_engines"> }
       : "skip"
   );
+  const vehicleVariantCommentsState = useSafeConvexQuery<any[]>(
+    api.queries.vehicleVariantCommentsGetByVehicleVariant,
+    itemType === "vehicle_variant" && itemId
+      ? { vehicleVariantId: itemId as Id<"oem_vehicle_variants"> }
+      : "skip"
+  );
+  const wheelVariantCommentsState = useSafeConvexQuery<any[]>(
+    api.queries.wheelVariantCommentsGetByWheelVariant,
+    itemType === "wheel_variant" && itemId
+      ? { wheelVariantId: itemId as Id<"oem_wheel_variants"> }
+      : "skip"
+  );
 
   const insertVehicleComment = useMutation(api.mutations.vehicleCommentInsert);
   const insertEngineComment = useMutation(api.mutations.engineCommentInsert);
   const insertWheelComment = useMutation(api.mutations.wheelCommentInsert);
   const insertBrandComment = useMutation(api.mutations.brandCommentInsert);
+  const insertVehicleVariantComment = useMutation(api.mutations.vehicleVariantCommentInsert);
+  const insertWheelVariantComment = useMutation(api.mutations.wheelVariantCommentInsert);
 
   const commentsState =
     itemType === "vehicle"
       ? vehicleCommentsState
       : itemType === "engine"
         ? engineCommentsState
+      : itemType === "vehicle_variant"
+        ? vehicleVariantCommentsState
+      : itemType === "wheel_variant"
+        ? wheelVariantCommentsState
       : itemType === "wheel"
         ? wheelCommentsState
         : brandCommentsState;
@@ -133,6 +165,26 @@ export function useItemComments(
     if (itemType === "wheel") {
       await insertWheelComment({
         wheelId: itemId as Id<"oem_wheels">,
+        userId: user.id,
+        userName,
+        comment_text: trimmed,
+      });
+      return;
+    }
+
+    if (itemType === "vehicle_variant") {
+      await insertVehicleVariantComment({
+        vehicleVariantId: itemId as Id<"oem_vehicle_variants">,
+        userId: user.id,
+        userName,
+        comment_text: trimmed,
+      });
+      return;
+    }
+
+    if (itemType === "wheel_variant") {
+      await insertWheelVariantComment({
+        wheelVariantId: itemId as Id<"oem_wheel_variants">,
         userId: user.id,
         userName,
         comment_text: trimmed,

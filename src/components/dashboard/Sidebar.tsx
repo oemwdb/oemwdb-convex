@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Building2,
   Car,
+  Cog,
   CircleDot,
   Gauge,
   Palette,
@@ -96,6 +97,7 @@ const Sidebar = ({
   const navigationItems = [
     { icon: Building2, label: "Brands", path: "/brands", adminOnly: false },
     { icon: Car, label: "Vehicles", path: "/vehicles", adminOnly: false },
+    { icon: Cog, label: "Builds", path: "/builds", adminOnly: false },
     { icon: CircleDot, label: "Wheels", path: "/wheels", adminOnly: false },
     { icon: Palette, label: "Colors", path: "/colors", adminOnly: false },
     { icon: Gauge, label: "Engines", path: "/engines", adminOnly: false },

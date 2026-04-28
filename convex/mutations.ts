@@ -286,7 +286,8 @@ export const vehiclesInsert = mutation({
     special_notes: optionalString,
     production_years: optionalString,
     production_stats: optionalString,
-    vehicle_image: optionalString,
+    good_pic_url: optionalString,
+    bad_pic_url: optionalString,
   },
   handler: async (ctx, args) => {
     const now = new Date().toISOString();
@@ -316,7 +317,8 @@ export const vehiclesUpdate = mutation({
     special_notes: optionalString,
     production_years: optionalString,
     production_stats: optionalString,
-    vehicle_image: optionalString,
+    good_pic_url: optionalString,
+    bad_pic_url: optionalString,
     text_widths: optionalString,
     text_diameters: optionalString,
     text_bolt_patterns: optionalString,
@@ -804,6 +806,8 @@ export const adminCollectionItemPrivateBlurbUpdate = mutation({
       v.literal("wheel"),
       v.literal("engine"),
       v.literal("color"),
+      v.literal("vehicle_variant"),
+      v.literal("wheel_variant"),
     ),
     id: v.union(
       v.id("oem_brands"),
@@ -811,6 +815,8 @@ export const adminCollectionItemPrivateBlurbUpdate = mutation({
       v.id("oem_wheels"),
       v.id("oem_engines"),
       v.id("oem_colors"),
+      v.id("oem_vehicle_variants"),
+      v.id("oem_wheel_variants"),
     ),
     privateBlurb: v.string(),
   },
@@ -826,6 +832,8 @@ export const adminCollectionItemPrivateBlurbUpdate = mutation({
       case "wheel":
       case "engine":
       case "color":
+      case "vehicle_variant":
+      case "wheel_variant":
         await ctx.db.patch(args.id, { private_blurb, updated_at });
         return args.id;
       default:
@@ -842,6 +850,8 @@ export const adminCollectionItemAssetUrlUpdate = mutation({
       v.literal("wheel"),
       v.literal("engine"),
       v.literal("color"),
+      v.literal("vehicle_variant"),
+      v.literal("wheel_variant"),
     ),
     id: v.union(
       v.id("oem_brands"),
@@ -849,10 +859,11 @@ export const adminCollectionItemAssetUrlUpdate = mutation({
       v.id("oem_wheels"),
       v.id("oem_engines"),
       v.id("oem_colors"),
+      v.id("oem_vehicle_variants"),
+      v.id("oem_wheel_variants"),
     ),
     field: v.union(
       v.literal("brand_image_url"),
-      v.literal("vehicle_image"),
       v.literal("good_pic_url"),
       v.literal("bad_pic_url"),
     ),
@@ -871,7 +882,7 @@ export const adminCollectionItemAssetUrlUpdate = mutation({
         await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
         return args.id;
       case "vehicle":
-        if (!["vehicle_image", "good_pic_url", "bad_pic_url"].includes(args.field)) {
+        if (!["good_pic_url", "bad_pic_url"].includes(args.field)) {
           throw new Error("Unsupported vehicle asset field.");
         }
         await ctx.db.patch(args.id, { [args.field]: args.mediaUrl, updated_at });
@@ -884,6 +895,8 @@ export const adminCollectionItemAssetUrlUpdate = mutation({
         return args.id;
       case "engine":
       case "color":
+      case "vehicle_variant":
+      case "wheel_variant":
         if (!["good_pic_url", "bad_pic_url"].includes(args.field)) {
           throw new Error("Unsupported asset field.");
         }
@@ -1491,6 +1504,46 @@ export const wheelCommentInsert = mutation({
     const now = new Date().toISOString();
     return await ctx.db.insert("wheel_comments", {
       wheel_id: args.wheelId,
+      user_id: args.userId,
+      user_name: args.userName ?? undefined,
+      comment_text: args.comment_text,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const vehicleVariantCommentInsert = mutation({
+  args: {
+    vehicleVariantId: v.id("oem_vehicle_variants"),
+    userId: v.string(),
+    userName: optionalString,
+    comment_text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("vehicle_variant_comments", {
+      vehicle_variant_id: args.vehicleVariantId,
+      user_id: args.userId,
+      user_name: args.userName ?? undefined,
+      comment_text: args.comment_text,
+      created_at: now,
+      updated_at: now,
+    });
+  },
+});
+
+export const wheelVariantCommentInsert = mutation({
+  args: {
+    wheelVariantId: v.id("oem_wheel_variants"),
+    userId: v.string(),
+    userName: optionalString,
+    comment_text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = new Date().toISOString();
+    return await ctx.db.insert("wheel_variant_comments", {
+      wheel_variant_id: args.wheelVariantId,
       user_id: args.userId,
       user_name: args.userName ?? undefined,
       comment_text: args.comment_text,

@@ -1,4 +1,7 @@
 import ItemPageHeaderCard from "@/components/item-page/ItemPageHeaderCard";
+import HeaderMediaImage from "@/components/item-page/HeaderMediaImage";
+import { useDevMode } from "@/hooks/useDevMode";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VehicleHeaderProps {
   name: string;
@@ -10,6 +13,8 @@ interface VehicleHeaderProps {
   description: string;
   msrp?: string;
   image?: string;
+  goodPicUrl?: string | null;
+  badPicUrl?: string | null;
   itemId?: string;
   convexId?: string;
   specs?: {
@@ -34,10 +39,37 @@ export default function VehicleHeader({
   drive,
   segment,
   image,
+  goodPicUrl,
+  badPicUrl,
   itemId,
   convexId,
   specs,
 }: VehicleHeaderProps) {
+  const { isDevMode } = useDevMode();
+  const { isAdmin } = useAuth();
+  const preferBadPic = isAdmin && isDevMode;
+  const sources = preferBadPic
+    ? [
+        {
+          value: badPicUrl,
+          bucketHint: "BADPICS",
+          fitMode: "contain" as const,
+          imageClassName: "max-h-[86%] max-w-[86%]",
+        },
+        { value: goodPicUrl, bucketHint: "oemwdb images", fitMode: "cover" as const },
+        { value: image, bucketHint: "oemwdb images", fitMode: "cover" as const },
+      ]
+    : [
+        { value: goodPicUrl, bucketHint: "oemwdb images", fitMode: "cover" as const },
+        {
+          value: badPicUrl,
+          bucketHint: "BADPICS",
+          fitMode: "contain" as const,
+          imageClassName: "max-h-[86%] max-w-[86%]",
+        },
+        { value: image, bucketHint: "oemwdb images", fitMode: "cover" as const },
+      ];
+
   return (
     <ItemPageHeaderCard
       title={name}
@@ -47,23 +79,16 @@ export default function VehicleHeader({
       itemType="vehicle"
       convexId={convexId}
       media={
-        image ? (
-          <img
-            src={image}
-            alt={name}
-            className="h-full w-full object-cover"
-            onError={(event) => {
-              (event.target as HTMLImageElement).src = "/placeholder.svg";
-            }}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="px-2 text-center text-xs text-muted-foreground">
-              No image available
-            </span>
-          </div>
-        )
+        <HeaderMediaImage
+          alt={name}
+          sources={sources}
+        />
       }
+      mediaFrameClassName="border-transparent"
+      mediaRatio={1.8}
+      layoutClassName="lg:grid-cols-[minmax(0,1fr)_420px]"
+      rowsClassName="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2"
+      rowClassName="pb-2"
       rows={[
         {
           label: "Bolt Pattern",

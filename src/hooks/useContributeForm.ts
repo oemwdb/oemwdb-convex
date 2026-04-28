@@ -119,7 +119,7 @@ export const useContributeForm = () => {
         vehicle_title: vehicleData.modelName || undefined,
         generation: vehicleData.oemChasisCode || undefined,
         production_years: vehicleData.productionYearsRange || undefined,
-        vehicle_image: vehicleData.heroImage || undefined,
+        bad_pic_url: vehicleData.heroImage || undefined,
       });
       toast({
         title: "Success!",

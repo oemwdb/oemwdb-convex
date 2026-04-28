@@ -375,7 +375,7 @@ export const detailGet = query({
             "Untitled Vehicle",
           brand: normalizeColorText(vehicleBrandLinks[index]?.brand_title) || "Unknown Brand",
           wheels: 0,
-          image: normalizeColorText(vehicle.vehicle_image) || null,
+          image: normalizeColorText(vehicle.good_pic_url) || normalizeColorText(vehicle.bad_pic_url) || null,
           good_pic_url: normalizeColorText(vehicle.good_pic_url) || null,
           bad_pic_url: normalizeColorText(vehicle.bad_pic_url) || null,
         };

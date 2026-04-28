@@ -58,6 +58,7 @@ export interface ItemPageTabTemplate {
   id: string;
   label: string;
   enabled: boolean;
+  triggerTone?: "default" | "admin";
   triggerClassName?: string;
   blocks: ItemPageBlockTemplate[];
 }

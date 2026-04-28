@@ -2,8 +2,11 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useAuth } from "@/contexts/AuthContext";
+import { getVehicleVariantRoutePath } from "@/lib/variantRoutes";
 import {
     buildExactEngineLabel,
     buildFamilyEngineLabel,
@@ -32,6 +35,8 @@ const isHelperAllVariant = (variant: RawVariant) =>
     normalizeText(variant.variant_title).toLowerCase() === "all";
 
 const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleName }) => {
+    const navigate = useNavigate();
+    const { isAdmin } = useAuth();
     const variants = useQuery(api.queries.vehicleVariantsGetByVehicle, { vehicleId });
     const isLoading = variants === undefined;
 
@@ -183,12 +188,24 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
     }
 
     return (
-        <Card>
-            <CardContent className="pt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {groupedVariants.map((variant) => (
-                        <Card key={variant.id} className="flex flex-col hover:shadow-md transition-shadow">
-                            <CardContent className="p-4 flex flex-col gap-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {groupedVariants.map((variant) => (
+                <Card
+                    key={variant.id}
+                    className="flex flex-col transition-shadow hover:shadow-md"
+                    onClick={(event) => {
+                        if (!isAdmin || !variant.id) return;
+                        const target = event.target as HTMLElement | null;
+                        if (target?.closest("a,button")) return;
+                        navigate(
+                          getVehicleVariantRoutePath({
+                            id: variant.id,
+                            name: [vehicleName, variant.label].filter(Boolean).join(" - "),
+                          })
+                        );
+                    }}
+                >
+                    <CardContent className="flex flex-col gap-2 p-4">
                                 <div className="space-y-1">
                                     <h4 className="font-semibold text-foreground text-base">
                                         {variant.label}
@@ -265,12 +282,10 @@ const VariantsSection: React.FC<VariantsSectionProps> = ({ vehicleId, vehicleNam
                                         </a>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
     );
 };
 

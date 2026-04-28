@@ -40,11 +40,11 @@ export function VehiclesDataTable() {
       enableHiding: false,
     },
     {
-      accessorKey: "vehicle_image",
+      accessorKey: "good_pic_url",
       header: "Image",
       cell: ({ row }) => (
         <Avatar className="h-10 w-10 rounded">
-          <AvatarImage src={row.original.vehicle_image || ""} alt={row.original.model_name || ""} />
+          <AvatarImage src={row.original.good_pic_url || row.original.bad_pic_url || ""} alt={row.original.model_name || ""} />
           <AvatarFallback className="rounded">
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
           </AvatarFallback>

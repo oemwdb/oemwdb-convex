@@ -85,6 +85,7 @@ const Header = ({
   const collectionPages = {
     '/brands': 'brands',
     '/vehicles': 'vehicles',
+    '/builds': 'builds',
     '/wheels': 'wheels',
     '/colors': 'colors',
     '/engines': 'engines',

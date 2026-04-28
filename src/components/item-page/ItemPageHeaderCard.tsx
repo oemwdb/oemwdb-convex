@@ -6,6 +6,7 @@ import { SaveButton } from "@/components/SaveButton";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface ItemPageHeaderValue {
   label: string;
@@ -26,6 +27,10 @@ interface ItemPageHeaderCardProps {
   rows: ItemPageHeaderRow[];
   media?: ReactNode;
   mediaRatio?: number;
+  mediaFrameClassName?: string;
+  layoutClassName?: string;
+  rowsClassName?: string;
+  rowClassName?: string;
   itemId?: string;
   itemType?: "wheel" | "vehicle" | "brand";
   convexId?: string;
@@ -73,6 +78,10 @@ export default function ItemPageHeaderCard({
   rows,
   media,
   mediaRatio = 1,
+  mediaFrameClassName,
+  layoutClassName,
+  rowsClassName,
+  rowClassName,
   itemId,
   itemType,
   convexId,
@@ -81,7 +90,12 @@ export default function ItemPageHeaderCard({
   return (
     <Card className="overflow-hidden rounded-[24px]">
       <CardContent className="p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div
+          className={cn(
+            "grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start",
+            layoutClassName,
+          )}
+        >
           <div className="min-w-0">
             <div className="mb-5">
               <div className="flex items-start gap-2">
@@ -119,7 +133,12 @@ export default function ItemPageHeaderCard({
               ) : null}
             </div>
 
-            <div className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2",
+                rowsClassName,
+              )}
+            >
               {rows.map((row) => {
                 const values =
                   row.values.length > 0
@@ -131,7 +150,12 @@ export default function ItemPageHeaderCard({
                     key={row.label}
                     className={row.span === "full" ? "sm:col-span-2" : undefined}
                   >
-                    <div className="flex items-start gap-2 border-b border-border/60 pb-3">
+                    <div
+                      className={cn(
+                        "flex items-start gap-2 border-b border-border/60 pb-3",
+                        rowClassName,
+                      )}
+                    >
                       <span className="min-w-[110px] font-medium text-muted-foreground">
                         {row.label}:
                       </span>
@@ -150,7 +174,10 @@ export default function ItemPageHeaderCard({
           <div className="w-full">
             <AspectRatio
               ratio={mediaRatio}
-              className="relative overflow-hidden rounded-[24px] border border-border/60 bg-muted"
+              className={cn(
+                "relative overflow-hidden rounded-[24px] border border-border/60",
+                mediaFrameClassName,
+              )}
             >
               {media}
             </AspectRatio>

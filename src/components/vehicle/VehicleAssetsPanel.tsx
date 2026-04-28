@@ -5,7 +5,6 @@ import SharedItemAssetsPanel from "@/components/item-page/SharedItemAssetsPanel"
 interface VehicleAssetsPanelProps {
   vehicleId: Id<"oem_vehicles">;
   vehicleTitle: string;
-  vehicleImage?: string | null;
   goodPicUrl?: string | null;
   badPicUrl?: string | null;
 }
@@ -13,7 +12,6 @@ interface VehicleAssetsPanelProps {
 export function VehicleAssetsPanel({
   vehicleId,
   vehicleTitle,
-  vehicleImage,
   goodPicUrl,
   badPicUrl,
 }: VehicleAssetsPanelProps) {
@@ -23,12 +21,6 @@ export function VehicleAssetsPanel({
       itemId={vehicleId}
       itemTitle={vehicleTitle}
       fields={[
-        {
-          field: "vehicle_image",
-          label: "Hero Image",
-          value: vehicleImage,
-          uploadLabel: "Drop a hero/primary vehicle image",
-        },
         {
           field: "good_pic_url",
           label: "Good Pic",

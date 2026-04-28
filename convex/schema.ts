@@ -493,6 +493,28 @@ export default defineSchema({
     .index("by_wheel", ["wheel_id"])
     .index("by_user", ["user_id"]),
 
+  vehicle_variant_comments: defineTable({
+    user_id: v.string(),
+    vehicle_variant_id: v.id("oem_vehicle_variants"),
+    user_name: v.optional(v.string()),
+    comment_text: v.string(),
+    created_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  })
+    .index("by_vehicle_variant", ["vehicle_variant_id"])
+    .index("by_user", ["user_id"]),
+
+  wheel_variant_comments: defineTable({
+    user_id: v.string(),
+    wheel_variant_id: v.id("oem_wheel_variants"),
+    user_name: v.optional(v.string()),
+    comment_text: v.string(),
+    created_at: v.optional(v.string()),
+    updated_at: v.optional(v.string()),
+  })
+    .index("by_wheel_variant", ["wheel_variant_id"])
+    .index("by_user", ["user_id"]),
+
   brand_comments: defineTable({
     user_id: v.string(),
     brand_id: v.id("oem_brands"),

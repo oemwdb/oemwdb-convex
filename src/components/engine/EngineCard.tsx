@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   normalizeEngineText,
   uniqueEngineValues,
 } from "@/lib/engineDisplay";
+import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
 
 interface EngineCardProps {
   engine: OemEngineFamilyBrowseRow;
@@ -23,6 +24,7 @@ interface EngineCardProps {
 }
 
 const EngineCard = ({ engine, isFlipped = false, onFlip, height = "h-[240px]" }: EngineCardProps) => {
+  const location = useLocation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -88,10 +90,13 @@ const EngineCard = ({ engine, isFlipped = false, onFlip, height = "h-[240px]" }:
     e.stopPropagation();
     onFlip?.(engine.id);
   };
+  const preservedSearch = shouldCarryCollectionSearch(location.pathname, ["/engines"])
+    ? location.search
+    : "";
 
   return (
     <Link
-      to={`/engines/${engine.id}`}
+      to={{ pathname: `/engines/${engine.id}`, search: preservedSearch }}
       className={cn("group relative block w-full perspective-1000", height)}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}

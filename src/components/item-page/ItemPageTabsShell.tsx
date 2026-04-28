@@ -19,6 +19,7 @@ interface AdditionalItemPageTab {
   id: string;
   label: string;
   content: ReactNode;
+  triggerTone?: "default" | "admin";
   triggerClassName?: string;
 }
 
@@ -33,6 +34,9 @@ interface ItemPageTabsShellProps {
   persistentHeaderContent?: ReactNode;
   tabPlacement?: "header" | "content";
   useItemTitleForFirstTab?: boolean;
+  secondaryHeaderContent?: ReactNode;
+  secondarySidebar?: ReactNode;
+  secondarySidebarContextKey?: string;
 }
 
 export default function ItemPageTabsShell({
@@ -46,12 +50,37 @@ export default function ItemPageTabsShell({
   persistentHeaderContent,
   tabPlacement = "header",
   useItemTitleForFirstTab = true,
+  secondaryHeaderContent,
+  secondarySidebar,
+  secondarySidebarContextKey,
 }: ItemPageTabsShellProps) {
   const enabledTabs = template.tabs.filter((tab) => tab.enabled);
   const paddingClass = getItemPagePaddingClass(template.containerStyle.panelPadding);
   const gapClass = getItemPageGapClass(template.containerStyle.blockGap);
   const showPersistentHeader =
     tabPlacement === "content" && template.headerBlock?.enabled && persistentHeaderContent;
+
+  const getTriggerClasses = (
+    tone: "default" | "admin" = "default",
+    placement: "header" | "content" = tabPlacement
+  ) => {
+    const base =
+      placement === "header"
+        ? "min-w-fit rounded-md border !bg-transparent px-2.5 py-1 text-[15px] font-medium transition-colors data-[state=active]:!bg-[#242424] data-[state=active]:shadow-none"
+        : "min-w-fit rounded-full border !bg-transparent px-4 py-2 text-[13px] font-semibold transition-colors data-[state=active]:!bg-[#242424] data-[state=active]:shadow-none";
+
+    if (tone === "admin") {
+      return cn(
+        base,
+        "border-orange-500/35 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground"
+      );
+    }
+
+    return cn(
+      base,
+      "border-white/12 text-muted-foreground hover:border-white/90 hover:text-foreground data-[state=active]:border-white/20 data-[state=active]:text-foreground"
+    );
+  };
 
   const tabsList = (
     <TabsList
@@ -68,10 +97,7 @@ export default function ItemPageTabsShell({
             key={tab.id}
             value={tab.id}
             className={cn(
-              tabPlacement === "header"
-                ? "min-w-fit rounded-md border border-transparent !bg-transparent px-2.5 py-1 text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-white/10 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                : "min-w-fit rounded-full border border-white/12 !bg-transparent px-4 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-white/90 hover:text-foreground data-[state=active]:border-white/20 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none"
-              ,
+              getTriggerClasses(tab.triggerTone, tabPlacement),
               tab.triggerClassName
             )}
           >
@@ -84,15 +110,7 @@ export default function ItemPageTabsShell({
           key={tab.id}
           value={tab.id}
           className={
-            tabPlacement === "header"
-              ? cn(
-                  "min-w-fit rounded-md border border-transparent !bg-transparent px-2.5 py-1 text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-white/10 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none",
-                  tab.triggerClassName,
-                )
-              : cn(
-                  "min-w-fit rounded-full border border-white/12 !bg-transparent px-4 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-white/90 hover:text-foreground data-[state=active]:border-white/20 data-[state=active]:!bg-[#242424] data-[state=active]:text-foreground data-[state=active]:shadow-none",
-                  tab.triggerClassName,
-                )
+            cn(getTriggerClasses(tab.triggerTone, tabPlacement), tab.triggerClassName)
           }
         >
           {tab.label}
@@ -108,6 +126,9 @@ export default function ItemPageTabsShell({
         showBreadcrumb={false}
         showFilterButton={false}
         disableContentPadding={true}
+        secondaryHeaderContent={secondaryHeaderContent}
+        secondarySidebar={secondarySidebar}
+        secondarySidebarContextKey={secondarySidebarContextKey}
         leadingButtonIcon={<ChevronLeft className="h-4 w-4 text-white" />}
         onLeadingButtonClick={onBack}
         leadingButtonTitle="Back"

@@ -7,6 +7,7 @@ import { NavigationProvider } from "@/contexts/NavigationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DevModeProvider } from "@/contexts/DevModeContext";
+import { CollectionSidebarProvider } from "@/contexts/CollectionSidebarContext";
 import Index from "./pages/Index";
 import PublicHomePage from "./pages/PublicHomePage";
 import NotFound from "./pages/NotFound";
@@ -14,6 +15,7 @@ import NotFound from "./pages/NotFound";
 // Import our pages
 import BrandsPage from "./pages/BrandsPage";
 import VehiclesPage from "./pages/VehiclesPage";
+import ModifiedVehiclesPage from "./pages/ModifiedVehiclesPage";
 import WheelsPage from "./pages/WheelsPage";
 import { WheelsPageErrorBoundary } from "./components/wheel/WheelsPageErrorBoundary";
 import ContributePage from "./pages/ContributePage";
@@ -23,7 +25,10 @@ import AccountPage from "./pages/AccountPage";
 import ProfilePage from "./pages/ProfilePage";
 import BrandDetailPage from "./pages/BrandDetailPage";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
+import VehicleVariantPage from "./pages/VehicleVariantPage";
+import ModifiedVehicleDetailPage from "./pages/ModifiedVehicleDetailPage";
 import WheelItemPage from "./pages/WheelItemPage";
+import WheelVariantPage from "./pages/WheelVariantPage";
 import WheelLegacyRedirect from "./pages/WheelLegacyRedirect";
 import EnginesPage from "./pages/EnginesPage";
 import EngineItemPage from "./pages/EngineItemPage";
@@ -63,16 +68,21 @@ const App = () => (
       <NavigationProvider>
         <AuthProvider>
           <DevModeProvider>
-            <Routes>
+            <CollectionSidebarProvider>
+              <Routes>
                 <Route path="/" element={<PublicHomePage />} />
                 <Route path="/dev/home" element={<ProtectedRoute requireAdmin={true} fallbackPath="/brands"><Index /></ProtectedRoute>} />
                 <Route path="/brands" element={<BrandsPage />} />
                 <Route path="/brands/:brandName" element={<BrandDetailPage />} />
                 <Route path="/vehicles" element={<VehiclesPage />} />
                 <Route path="/vehicles/:vehicleName" element={<VehicleDetailPage />} />
+                <Route path="/vehicle-variants/:variantId" element={<VehicleVariantPage />} />
+                <Route path="/builds" element={<ModifiedVehiclesPage />} />
+                <Route path="/builds/:buildSlug" element={<ModifiedVehicleDetailPage />} />
                 <Route path="/wheels" element={<WheelsPageErrorBoundary><WheelsPage /></WheelsPageErrorBoundary>} />
                 <Route path="/wheels/:wheelName" element={<WheelLegacyRedirect />} />
                 <Route path="/wheel/:wheelId" element={<WheelItemPage />} />
+                <Route path="/wheel-variants/:variantId" element={<WheelVariantPage />} />
                 <Route path="/colors" element={<ColorsPage />} />
                 <Route path="/colors/:colorId" element={<ColorItemPage />} />
                 <Route path="/engines" element={<EnginesPage />} />
@@ -87,7 +97,7 @@ const App = () => (
                 <Route path="/cool-board" element={<ProtectedRoute requireAdmin={true}><CoolBoardPage /></ProtectedRoute>} />
                 <Route path="/contribute" element={<ProtectedRoute requireAdmin={true}><ContributePage /></ProtectedRoute>} />
                 <Route path="/dev" element={<ProtectedRoute requireAdmin={true}><DevPage /></ProtectedRoute>} />
-                <Route path="/dev/billy-dash" element={<ProtectedRoute requireAdmin={true}><BillyDashPage /></ProtectedRoute>} />
+                <Route path="/dev/billy-dash" element={<BillyDashPage />} />
                 <Route path="/dev/tables" element={<ProtectedRoute requireAdmin={true}><TablesPage /></ProtectedRoute>} />
                 <Route path="/dev/tables/:tableName/:recordId" element={<ProtectedRoute requireAdmin={true}><DatabaseRecordPage /></ProtectedRoute>} />
                 <Route path="/dev/site-map" element={<ProtectedRoute requireAdmin={true}><InteractiveSiteMapPage /></ProtectedRoute>} />
@@ -109,7 +119,8 @@ const App = () => (
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms" element={<TermsOfServicePage />} />
                 <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </CollectionSidebarProvider>
           </DevModeProvider>
         </AuthProvider>
       </NavigationProvider>

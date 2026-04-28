@@ -32,6 +32,7 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
 import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
+import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 
 const LOAD_TIMEOUT_MS = 12_000;
 const ROWS_PER_LOAD = 3;
@@ -283,11 +284,19 @@ const WheelsPage = () => {
     searchValue: searchTags[0] ?? "",
     totalResults: totalCount,
   });
+  useRegisterPersistedCollectionSidebar({
+    contextKey: "wheels",
+    title: "Filters",
+    basePath: "/wheels",
+    filterFields,
+    searchPlaceholder: "Search wheels...",
+  });
 
   return (
     <DashboardLayout
       title="Wheels"
       showFilterButton={false}
+      secondarySidebarContextKey="wheels"
       secondaryTitle="Filters"
       secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
       secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}

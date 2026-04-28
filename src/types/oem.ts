@@ -17,7 +17,8 @@ export interface OemVehicle {
   model_name?: string | null;
   vehicle_title?: string | null;
   private_blurb?: string | null;
-  vehicle_image?: string | null;
+  good_pic_url?: string | null;
+  bad_pic_url?: string | null;
   brand_name?: string | null;
   production_years?: string | null;
   [key: string]: unknown;
@@ -101,7 +102,8 @@ export interface OemEngineFamilyBrowseRow {
     vehicle_title: string;
     model_name?: string | null;
     production_years?: string | null;
-    vehicle_image?: string | null;
+    good_pic_url?: string | null;
+    bad_pic_url?: string | null;
     brand_title?: string | null;
   }>;
   variants: OemEngineFamilyBrowseVariant[];

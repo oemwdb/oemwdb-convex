@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 import type { OemEngineFamilyBrowseRow } from "@/types/oem";
 import { getEngineFamilyCode, getEngineFamilyTitle } from "@/lib/engineDisplay";
+import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 
 const EnginesPage = () => {
     const [selectionIds, setSelectionIds] = useState<string[]>([]);
@@ -149,6 +150,13 @@ const EnginesPage = () => {
       searchValue: searchTags[0] ?? "",
       totalResults: engineFamilies.length,
     });
+    useRegisterPersistedCollectionSidebar({
+      contextKey: "engines",
+      title: "Filters",
+      basePath: "/engines",
+      filterFields,
+      searchPlaceholder: "Search engines...",
+    });
 
     if (isLoading) {
         return (
@@ -178,6 +186,7 @@ const EnginesPage = () => {
         <DashboardLayout
           title="OEM Engines"
           showFilterButton={false}
+          secondarySidebarContextKey="engines"
           secondaryTitle="Filters"
           secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
           secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}

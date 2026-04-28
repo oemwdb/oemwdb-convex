@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Heart, RotateCw } from "lucide-react";
+import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
 
 interface ColorCardProps {
   color: {
@@ -30,6 +31,7 @@ const ColorCard = ({
   onFlip,
   height = "h-[240px]",
 }: ColorCardProps) => {
+  const location = useLocation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -77,10 +79,13 @@ const ColorCard = ({
     e.stopPropagation();
     onFlip?.(color.slug);
   };
+  const preservedSearch = shouldCarryCollectionSearch(location.pathname, ["/colors"])
+    ? location.search
+    : "";
 
   return (
     <Link
-      to={`/colors/${color.slug}`}
+      to={{ pathname: `/colors/${color.slug}`, search: preservedSearch }}
       className={cn("group relative block w-full perspective-1000", height)}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}

@@ -196,7 +196,7 @@ async function buildLinkedObjects(ctx: any, listing: MarketListingDoc): Promise<
         id: String(vehicle._id),
         label: vehicle.vehicle_title ?? vehicle.model_name ?? vehicle.slug ?? vehicle.id ?? "Vehicle",
         subtitle: vehicle.generation ?? null,
-        imageUrl: vehicle.good_pic_url ?? vehicle.vehicle_image ?? vehicle.bad_pic_url ?? null,
+        imageUrl: vehicle.good_pic_url ?? vehicle.bad_pic_url ?? null,
       });
     }
   }
@@ -260,6 +260,55 @@ function buildExternalLinksForVehicle(vehicle: any, brandTitle: string | null) {
     {
       provider: "Autotrader",
       url: `https://www.autotrader.com/cars-for-sale/all-cars?searchRadius=0&keywordPhrases=${encodeURIComponent(searchTerm)}`,
+    },
+    {
+      provider: "Facebook Marketplace",
+      url: `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(searchTerm)}`,
+    },
+  ];
+}
+
+function buildExternalLinksForVehicleVariant(
+  variant: any,
+  vehicle: any,
+  brandTitle: string | null
+) {
+  const variantName =
+    variant?.variant_title ??
+    variant?.trim_level ??
+    variant?.engine_variant_title ??
+    "";
+  const vehicleName =
+    vehicle?.vehicle_title ??
+    vehicle?.model_name ??
+    vehicle?.generation ??
+    "";
+  const searchTerm = uniqueStrings([brandTitle, vehicleName, variantName]).join(" ").trim();
+  if (!searchTerm) return [];
+  return buildExternalLinksForVehicle({ vehicle_title: `${vehicleName} ${variantName}`.trim() }, brandTitle);
+}
+
+function buildExternalLinksForWheelVariant(
+  variant: any,
+  wheel: any,
+  brandTitle: string | null
+) {
+  const wheelName = wheel?.wheel_title ?? wheel?.slug ?? wheel?.id ?? "";
+  const variantName =
+    variant?.variant_title ??
+    variant?.finish ??
+    variant?.color ??
+    "";
+  const partNumber = typeof variant?.part_numbers === "string"
+    ? variant.part_numbers.split(/[,;\n]/)[0]?.trim() ?? ""
+    : "";
+  const searchTerm = uniqueStrings([brandTitle, wheelName, variantName, partNumber]).join(" ").trim();
+  if (!searchTerm) return [];
+
+  return [
+    {
+      provider: "eBay Motors",
+      url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchTerm)}&_sacat=6000`,
     },
     {
       provider: "Facebook Marketplace",
@@ -497,6 +546,80 @@ export const surfaceByVehicle = query({
   },
 });
 
+export const surfaceByVehicleVariant = query({
+  args: { vehicleVariantId: v.id("oem_vehicle_variants") },
+  handler: async (ctx, args) => {
+    const [variant, listings] = await Promise.all([
+      ctx.db.get(args.vehicleVariantId),
+      ctx.db
+        .query("market_listings")
+        .withIndex("by_vehicle_variant", (q) => q.eq("vehicle_variant_id", args.vehicleVariantId))
+        .collect(),
+    ]);
+
+    const vehicle = variant?.vehicle_id ? await ctx.db.get(variant.vehicle_id) : null;
+    const brand = vehicle?.brand_id ? await ctx.db.get(vehicle.brand_id) : null;
+
+    const nowMs = Date.now();
+    const items = sortMarketItems(
+      await Promise.all(
+        listings
+          .filter((listing) => isPubliclyVisible(listing, nowMs))
+          .map((listing) => buildMarketItem(ctx, listing))
+      )
+    );
+
+    return {
+      targetSummary: {
+        id: String(args.vehicleVariantId),
+        type: "vehicle_variant",
+        title: variant?.variant_title ?? variant?.trim_level ?? variant?.slug ?? "Vehicle Variant",
+      },
+      externalLinks: buildExternalLinksForVehicleVariant(variant, vehicle, brand?.brand_title ?? null),
+      items,
+    };
+  },
+});
+
+export const surfaceByWheelVariant = query({
+  args: { wheelVariantId: v.id("oem_wheel_variants") },
+  handler: async (ctx, args) => {
+    const [variant, listings] = await Promise.all([
+      ctx.db.get(args.wheelVariantId),
+      ctx.db
+        .query("market_listings")
+        .withIndex("by_wheel_variant", (q) => q.eq("wheel_variant_id", args.wheelVariantId))
+        .collect(),
+    ]);
+
+    const wheel = variant?.wheel_id ? await ctx.db.get(variant.wheel_id) : null;
+    const brand = variant?.brand_id
+      ? await ctx.db.get(variant.brand_id)
+      : wheel?.brand_id
+        ? await ctx.db.get(wheel.brand_id)
+        : null;
+
+    const nowMs = Date.now();
+    const items = sortMarketItems(
+      await Promise.all(
+        listings
+          .filter((listing) => isPubliclyVisible(listing, nowMs))
+          .map((listing) => buildMarketItem(ctx, listing))
+      )
+    );
+
+    return {
+      targetSummary: {
+        id: String(args.wheelVariantId),
+        type: "wheel_variant",
+        title: variant?.variant_title ?? variant?.wheel_title ?? variant?.slug ?? "Wheel Variant",
+      },
+      externalLinks: buildExternalLinksForWheelVariant(variant, wheel, brand?.brand_title ?? null),
+      items,
+    };
+  },
+});
+
 export const surfaceByBrand = query({
   args: { brandId: v.id("oem_brands") },
   handler: async (ctx, args) => {
@@ -639,7 +762,7 @@ export const adminLinkSearch = query({
           id: String(vehicle._id),
           label: vehicle.vehicle_title ?? vehicle.model_name ?? vehicle.slug ?? vehicle.id ?? "Vehicle",
           subtitle: vehicle.generation ?? null,
-          imageUrl: vehicle.good_pic_url ?? vehicle.vehicle_image ?? vehicle.bad_pic_url ?? null,
+          imageUrl: vehicle.good_pic_url ?? vehicle.bad_pic_url ?? null,
         })),
       vehicleVariants: vehicleVariants
         .filter((variant: Doc<"oem_vehicle_variants">) =>

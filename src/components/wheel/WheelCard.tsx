@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import WheelCardButtons from "@/components/wheel/WheelCardButtons";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
 import { getMediaUrlCandidates } from "@/lib/mediaUrls";
@@ -13,6 +13,7 @@ import {
     firstCardBackValue,
     stripCardBackContext,
 } from "@/lib/cardBackValues";
+import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
 
 interface WheelCardProps {
     wheel: {
@@ -46,6 +47,7 @@ interface WheelCardProps {
 }
 
 const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCardProps) => {
+    const location = useLocation();
     const [isFavorite, setIsFavorite] = useState(false);
     const [isTextOverflowing, setIsTextOverflowing] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
@@ -142,6 +144,10 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
         setImageError(false);
         setImageCandidateIndex(0);
     }, [wheel.good_pic_url, wheel.bad_pic_url, wheel.imageUrl]);
+
+    const preservedSearch = shouldCarryCollectionSearch(location.pathname, ["/wheels", "/wheel", "/wheel-variants"])
+        ? location.search
+        : "";
 
     const cardContent = (
         <div
@@ -331,7 +337,7 @@ const WheelCard = ({ wheel, isFlipped, onFlip, height = "h-[240px]" }: WheelCard
 
     return (
         <Link
-            to={`/wheel/${wheel.id}`}
+            to={{ pathname: `/wheel/${wheel.id}`, search: preservedSearch }}
             className={cn("group relative block w-full perspective-1000", height)}
         >
             {cardContent}

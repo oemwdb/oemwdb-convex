@@ -262,7 +262,7 @@ export function RecordEditor({
     return key in REFERENCE_FIELD_CONFIG;
   };
 
-  const imageUrl = record.good_pic_url || record.vehicle_image || record.brand_image_url;
+  const imageUrl = record.good_pic_url || record.bad_pic_url || record.brand_image_url;
 
   return (
     <div className="h-full flex flex-col">

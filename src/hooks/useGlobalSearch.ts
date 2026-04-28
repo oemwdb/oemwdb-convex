@@ -47,7 +47,7 @@ export function useGlobalSearch() {
     vehiclesRaw?.map((v) => ({
       ...v,
       brand_refs: [] as string[],
-      hero_image_url: v.vehicle_image ?? null,
+      hero_image_url: v.good_pic_url ?? v.bad_pic_url ?? null,
     })) ?? [];
 
   const wheels =

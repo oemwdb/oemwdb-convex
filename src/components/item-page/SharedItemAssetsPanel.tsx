@@ -8,8 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
 import { toast } from "@/hooks/use-toast";
 
-type SharedAssetItemType = "vehicle" | "engine" | "color";
-type SharedAssetField = "vehicle_image" | "good_pic_url" | "bad_pic_url";
+type SharedAssetItemType =
+  | "vehicle"
+  | "engine"
+  | "color"
+  | "vehicle_variant"
+  | "wheel_variant";
+type SharedAssetField = "good_pic_url" | "bad_pic_url";
 
 interface SharedAssetFieldConfig {
   field: SharedAssetField;
@@ -20,7 +25,12 @@ interface SharedAssetFieldConfig {
 
 interface SharedItemAssetsPanelProps {
   itemType: SharedAssetItemType;
-  itemId: Id<"oem_vehicles"> | Id<"oem_engines"> | Id<"oem_colors">;
+  itemId:
+    | Id<"oem_vehicles">
+    | Id<"oem_engines">
+    | Id<"oem_colors">
+    | Id<"oem_vehicle_variants">
+    | Id<"oem_wheel_variants">;
   itemTitle: string;
   fields: SharedAssetFieldConfig[];
 }

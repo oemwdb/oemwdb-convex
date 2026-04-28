@@ -18,6 +18,7 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
 import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
+import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 import { GitMerge } from "lucide-react";
 
 const LOAD_TIMEOUT_MS = 12_000;
@@ -224,7 +225,7 @@ const BrandsPage = () => {
   const filterFields = [
     { label: 'Has Wheels', category: 'hasWheels', values: ['Yes', 'No'] },
     { label: 'Has Image', category: 'hasImage', values: ['Yes', 'No'] },
-    ...(isDevMode
+    ...(isAdmin
       ? [
           { label: 'Has Good Pic', category: 'hasGoodPic', values: ['Yes', 'No'] },
           { label: 'Has Bad Pic', category: 'hasBadPic', values: ['Yes', 'No'] },
@@ -260,11 +261,19 @@ const BrandsPage = () => {
     searchValue: searchTags[0] ?? "",
     totalResults: filteredBrands.length,
   });
+  useRegisterPersistedCollectionSidebar({
+    contextKey: "brands",
+    title: "Filters",
+    basePath: "/brands",
+    filterFields,
+    searchPlaceholder: "Search brands...",
+  });
 
   return (
     <DashboardLayout
       title="Brands"
       showFilterButton={false}
+      secondarySidebarContextKey="brands"
       secondaryTitle="Filters"
       secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
       secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
@@ -327,6 +336,7 @@ const BrandsPage = () => {
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
               insertAdEvery={itemsPerLoad}
+              showAdminImageFields={isAdmin}
               selectionMode={duplicateControl.selectionMode || deleteControl.selectionMode}
               selectedIds={duplicateControl.selectionMode ? duplicateControl.selectedIds : deleteControl.selectedIds}
               onToggleSelection={

@@ -19,6 +19,7 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCollectionDuplicateControl } from "@/hooks/useCollectionDuplicateControl";
 import { useCollectionDeleteControl } from "@/hooks/useCollectionDeleteControl";
+import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 import { GitMerge } from "lucide-react";
 
 const LOAD_TIMEOUT_MS = 12_000;
@@ -94,9 +95,10 @@ const VehiclesPage = () => {
   const vehicles = (vehiclesData ?? []).map(v => ({
     id: String(v._id),
     name: v.vehicle_title || v.model_name || v.generation || "Unknown",
+    modelLine: v.model_name || v.vehicle_title || v.generation || "Unknown",
     brand: v.brand_name || "Unknown",
     wheels: 0,
-    image: v.vehicle_image || undefined,
+    image: undefined,
     good_pic_url: v.good_pic_url || null,
     bad_pic_url: v.bad_pic_url || null,
     bolt_pattern_ref: v.bolt_pattern,
@@ -217,6 +219,20 @@ const VehiclesPage = () => {
     })
     .sort((a, b) => {
       switch (sortBy) {
+        case "modelLineAsc": {
+          const modelLineCompare = (a.modelLine || "").localeCompare(b.modelLine || "");
+          if (modelLineCompare !== 0) return modelLineCompare;
+          const brandCompare = (a.brand || "").localeCompare(b.brand || "");
+          if (brandCompare !== 0) return brandCompare;
+          return (a.name || "").localeCompare(b.name || "");
+        }
+        case "modelLineDesc": {
+          const modelLineCompare = (b.modelLine || "").localeCompare(a.modelLine || "");
+          if (modelLineCompare !== 0) return modelLineCompare;
+          const brandCompare = (a.brand || "").localeCompare(b.brand || "");
+          if (brandCompare !== 0) return brandCompare;
+          return (a.name || "").localeCompare(b.name || "");
+        }
         case "nameAsc":
           return (a.name || '').localeCompare(b.name || '');
         case "nameDesc":
@@ -304,6 +320,8 @@ const VehiclesPage = () => {
   const sortOptions = [
     { label: "Brand A-Z", value: "brandAsc" },
     { label: "Brand Z-A", value: "brandDesc" },
+    { label: "Model Line A-Z", value: "modelLineAsc" },
+    { label: "Model Line Z-A", value: "modelLineDesc" },
     { label: "Name A-Z", value: "nameAsc" },
     { label: "Name Z-A", value: "nameDesc" },
     { label: "Newest Production Start", value: "yearNewest" },
@@ -330,11 +348,19 @@ const VehiclesPage = () => {
     searchValue: searchTags[0] ?? "",
     totalResults: filteredVehicles.length,
   });
+  useRegisterPersistedCollectionSidebar({
+    contextKey: "vehicles",
+    title: "Filters",
+    basePath: "/vehicles",
+    filterFields,
+    searchPlaceholder: "Search vehicles...",
+  });
 
   return (
     <DashboardLayout
       title="Vehicles"
       showFilterButton={false}
+      secondarySidebarContextKey="vehicles"
       secondaryTitle="Filters"
       secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
       secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}

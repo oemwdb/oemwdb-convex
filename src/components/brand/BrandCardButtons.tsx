@@ -7,6 +7,8 @@ interface BrandCardButtonsProps {
   isFlipped: boolean;
   isSourceExpanded: boolean;
   imageSource?: string | null;
+  badPicSource?: string | null;
+  showAdminImageFields?: boolean;
   onFlip: () => void;
   onToggleSource: () => void;
 }
@@ -15,9 +17,15 @@ const BrandCardButtons = ({
   isFlipped,
   isSourceExpanded,
   imageSource,
+  badPicSource,
+  showAdminImageFields = false,
   onFlip,
   onToggleSource,
 }: BrandCardButtonsProps) => {
+  const sourceText = showAdminImageFields
+    ? `img: ${imageSource || "NULL"} | bad_pic_url: ${badPicSource || "NULL"}`
+    : imageSource || "img source";
+
   return (
     <div className="absolute inset-0 pointer-events-none z-20">
       {/* Info button - top left, invisible when flipped */}
@@ -47,15 +55,15 @@ const BrandCardButtons = ({
 
         {isSourceExpanded && (
           <div className="flex-1 flex items-center gap-2 overflow-hidden animate-in fade-in duration-300 pl-1 pointer-events-auto">
-            <div className="flex-1 overflow-hidden">
-              <div className="animate-marquee whitespace-nowrap">
-                <span className="text-xs text-muted-foreground">
-                  {imageSource || "img source"}
-                </span>
+              <div className="flex-1 overflow-hidden">
+                <div className="animate-marquee whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground">
+                    {sourceText}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {/* Flip button - top right, always visible */}

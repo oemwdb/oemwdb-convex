@@ -16,6 +16,7 @@ import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
 import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
 import { ItemPageEmptyState, ItemPageGrid } from "@/components/item-page/ItemPageCommonBlocks";
 import BrandHeaderCard from "@/components/brand/BrandHeaderCard";
+import HeaderMediaImage from "@/components/item-page/HeaderMediaImage";
 import BrandAssetsPanel from "@/components/brand/BrandAssetsPanel";
 import EngineCard from "@/components/engine/EngineCard";
 import ColorCard from "@/components/color/ColorCard";
@@ -24,6 +25,11 @@ import WheelsGrid from "@/components/wheel/WheelsGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVehicleGridColumns, useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
 import { toOemWheelCard } from "@/lib/wheelCards";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+} from "@/components/collection/CollectionSecondarySidebar";
+import { usePersistedCollectionSidebarState } from "@/hooks/usePersistedCollectionSidebar";
 
 const BrandDetailPage = () => {
   const { brandName } = useParams<{ brandName: string }>();
@@ -54,6 +60,7 @@ const BrandDetailPage = () => {
   const showAdminAssets = isAdmin;
   const vehicleColumns = useVehicleGridColumns();
   const wheelColumns = useWheelsGridColumns();
+  const collectionSidebar = usePersistedCollectionSidebarState("brands");
 
   const vehicleCardList = (brandVehicles ?? []).map((v) => ({
     id: v.id,
@@ -61,7 +68,9 @@ const BrandDetailPage = () => {
     year: v.production_years ?? "",
     brand: v.brand_name || "Unknown",
     wheels: 0,
-    image: v.vehicle_image ?? v.hero_image_url ?? undefined,
+    image: undefined,
+    good_pic_url: v.good_pic_url ?? null,
+    bad_pic_url: v.bad_pic_url ?? null,
     bolt_pattern_ref: v.bolt_pattern ?? undefined,
     center_bore_ref: v.center_bore ?? undefined,
     wheel_diameter_ref: v.wheel_diameter_ref ?? undefined,
@@ -171,10 +180,9 @@ const BrandDetailPage = () => {
       ]}
       media={
         brandReferenceImageUrl ? (
-          <img
-            src={brandReferenceImageUrl}
+          <HeaderMediaImage
             alt={brandTitle || formattedBrandName}
-            className="h-full w-full object-cover"
+            sources={[{ value: brandReferenceImageUrl, bucketHint: "oemwdb images" }]}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -196,6 +204,13 @@ const BrandDetailPage = () => {
       onBack={() => navigate(-1)}
       tabPlacement="content"
       useItemTitleForFirstTab={false}
+      secondaryHeaderContent={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarHeader state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebar={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarBody state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebarContextKey={collectionSidebar.isAvailable ? "brands" : undefined}
       persistentHeaderContent={persistentHeaderContent}
       additionalTabs={
         isAdmin && brand?._id
@@ -203,8 +218,7 @@ const BrandDetailPage = () => {
               {
                 id: "private-blurb",
                 label: "Private blurb",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <AdminPrivateBlurbTab
                     itemType="brand"
@@ -217,8 +231,7 @@ const BrandDetailPage = () => {
               {
                 id: "assets",
                 label: "Assets",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <BrandAssetsPanel
                     brandId={brand._id}

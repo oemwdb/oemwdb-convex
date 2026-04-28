@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { RotateCw, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { CardBackSlot } from "@/components/cards/CardBackSlot";
 import VehicleCardButtons from "./VehicleCardButtons";
 import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 import { getVehicleRoutePath } from "@/lib/vehicleRoutes";
 import { collectCardBackValues } from "@/lib/cardBackValues";
+import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
+import { useDevMode } from "@/hooks/useDevMode";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VehicleCardProps {
   vehicle: {
@@ -20,6 +23,8 @@ interface VehicleCardProps {
     brand: string;
     wheels: number;
     image?: string;
+    good_pic_url?: string | null;
+    bad_pic_url?: string | null;
     bolt_pattern_ref?: any;
     center_bore_ref?: any;
     wheel_diameter_ref?: any;
@@ -39,6 +44,9 @@ interface VehicleCardProps {
 }
 
 const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240px]" }: VehicleCardProps) => {
+  const location = useLocation();
+  const { isDevMode } = useDevMode();
+  const { isAdmin } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -105,12 +113,59 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
   useEffect(() => {
     setImageCandidateIndex(0);
     setImageError(false);
-  }, [vehicle.image]);
+  }, [vehicle.good_pic_url, vehicle.bad_pic_url, vehicle.image]);
 
   // Use chassis code (name) directly - no brand stripping needed for chassis codes like F55, F56
   const displayName = vehicle.name;
-  const imageCandidates = getMediaUrlCandidates(vehicle.image, "oemwdb images");
-  const vehicleImageUrl = !imageError ? imageCandidates[imageCandidateIndex] ?? null : null;
+  const preferBadPic = isAdmin && isDevMode;
+  const prioritizedSources = preferBadPic
+    ? [
+        {
+          values: getMediaUrlCandidates(vehicle.bad_pic_url, "BADPICS"),
+          fitMode: "contain" as const,
+          sourceKind: "bad" as const,
+        },
+        {
+          values: getMediaUrlCandidates(vehicle.good_pic_url, "oemwdb images"),
+          fitMode: "cover" as const,
+          sourceKind: "good" as const,
+        },
+        {
+          values: getMediaUrlCandidates(vehicle.image, "oemwdb images"),
+          fitMode: "cover" as const,
+          sourceKind: "legacy" as const,
+        },
+      ]
+    : [
+        {
+          values: getMediaUrlCandidates(vehicle.good_pic_url, "oemwdb images"),
+          fitMode: "cover" as const,
+          sourceKind: "good" as const,
+        },
+        {
+          values: getMediaUrlCandidates(vehicle.bad_pic_url, "BADPICS"),
+          fitMode: "contain" as const,
+          sourceKind: "bad" as const,
+        },
+        {
+          values: getMediaUrlCandidates(vehicle.image, "oemwdb images"),
+          fitMode: "cover" as const,
+          sourceKind: "legacy" as const,
+        },
+      ];
+
+  const imageSources = prioritizedSources.flatMap(({ values, fitMode, sourceKind }) =>
+    values.map((value) => ({
+      value,
+      fitMode,
+      sourceKind,
+    })),
+  ).filter(
+    (candidate, index, all) => all.findIndex((item) => item.value === candidate.value) === index
+  );
+  const activeImageSource = !imageError ? imageSources[imageCandidateIndex] ?? null : null;
+  const vehicleImageUrl = activeImageSource?.value ?? null;
+  const usesContainedImage = activeImageSource?.fitMode === "contain";
 
   const toggleSource = () => {
     setIsSourceExpanded(!isSourceExpanded);
@@ -134,19 +189,23 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
             {/* Background with image or centered vehicle name */}
             <div className="flex-grow flex items-center justify-center overflow-hidden rounded-t-lg">
               {vehicleImageUrl ? (
-                <img
-                  src={vehicleImageUrl}
-                  alt={vehicle.name}
-                  className="w-full h-full object-cover"
-                  onError={() => {
-                    const nextIndex = imageCandidateIndex + 1;
-                    if (nextIndex < imageCandidates.length) {
-                      setImageCandidateIndex(nextIndex);
-                      return;
-                    }
-                    setImageError(true);
-                  }}
-                />
+                <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg">
+                  <img
+                    src={vehicleImageUrl}
+                    alt={vehicle.name}
+                    className={cn(
+                      usesContainedImage ? "max-w-[90%] max-h-[90%] object-contain" : "w-full h-full object-cover"
+                    )}
+                    onError={() => {
+                      const nextIndex = imageCandidateIndex + 1;
+                      if (nextIndex < imageSources.length) {
+                        setImageCandidateIndex(nextIndex);
+                        return;
+                      }
+                      setImageError(true);
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg">
                   <span className="text-muted-foreground text-sm text-center px-2">
@@ -296,18 +355,21 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
 
   // Use vehicle ID for link if available, otherwise fallback to name-based slug
   const vehicleLink = getVehicleRoutePath(vehicle);
+  const preservedSearch = shouldCarryCollectionSearch(location.pathname, ["/vehicles", "/vehicle-variants"])
+    ? location.search
+    : "";
   const flipKey = vehicle.id || vehicle.slug || vehicle.routeId || vehicle.name;
 
   return (
     <Link
-      to={vehicleLink}
+      to={{ pathname: vehicleLink, search: preservedSearch }}
       className={cn("group relative block w-full perspective-1000", height)}
     >
       {cardContent}
       <VehicleCardButtons
         isFlipped={isFlipped}
         isSourceExpanded={isSourceExpanded}
-        imageSource={vehicle.image}
+        imageSource={activeImageSource?.value ?? vehicle.image}
         onFlip={() => onFlip(flipKey)}
         onToggleSource={toggleSource}
       />

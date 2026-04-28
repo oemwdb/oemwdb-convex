@@ -75,6 +75,153 @@ const getVehicleVariantEngineLayers = async (
   };
 };
 
+const isConvexIdLike = (value: string) => /^[a-z0-9]{20,}$/i.test(value);
+
+const uniqueSortedStrings = (values: Array<string | null | undefined>) =>
+  [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))]
+    .sort((a, b) => a.localeCompare(b));
+
+const cleanOptionalString = (value: string | null | undefined) => {
+  const trimmed = String(value ?? "").trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+function compareVehicleImageRows(
+  a: Doc<"oem_vehicle_images">,
+  b: Doc<"oem_vehicle_images">,
+) {
+  const primaryCompare = Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary));
+  if (primaryCompare !== 0) return primaryCompare;
+
+  const aSort = typeof a.sort_order === "number" ? a.sort_order : Number.MAX_SAFE_INTEGER;
+  const bSort = typeof b.sort_order === "number" ? b.sort_order : Number.MAX_SAFE_INTEGER;
+  if (aSort !== bSort) return aSort - bSort;
+
+  const aCreatedAt = Date.parse(a.created_at ?? "") || 0;
+  const bCreatedAt = Date.parse(b.created_at ?? "") || 0;
+  return bCreatedAt - aCreatedAt;
+}
+
+function buildVehicleImageLookup(imageRows: Doc<"oem_vehicle_images">[]) {
+  const rowsByVehicleId = new Map<string, Doc<"oem_vehicle_images">[]>();
+
+  for (const row of imageRows) {
+    const key = String(row.vehicle_id);
+    const bucket = rowsByVehicleId.get(key);
+    if (bucket) {
+      bucket.push(row);
+    } else {
+      rowsByVehicleId.set(key, [row]);
+    }
+  }
+
+  return rowsByVehicleId;
+}
+
+async function getVehicleImageRows(
+  ctx: QueryCtx,
+  vehicleId: Id<"oem_vehicles">,
+  limit = 8,
+) {
+  return await ctx.db
+    .query("oem_vehicle_images")
+    .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicleId))
+    .take(limit);
+}
+
+function resolveVehicleImageFields(
+  vehicle: {
+    _id: Id<"oem_vehicles">;
+    good_pic_url?: string | null;
+    bad_pic_url?: string | null;
+  },
+  imageRowsByVehicleId: Map<string, Doc<"oem_vehicle_images">[]>,
+) {
+  const imageRows = imageRowsByVehicleId.get(String(vehicle._id)) ?? [];
+  if (imageRows.length === 0) {
+    return {
+      good_pic_url: cleanOptionalString(vehicle.good_pic_url),
+      bad_pic_url: cleanOptionalString(vehicle.bad_pic_url),
+    };
+  }
+
+  const bestByType = new Map<string, Doc<"oem_vehicle_images">>();
+  for (const row of [...imageRows].sort(compareVehicleImageRows)) {
+    if (!bestByType.has(row.image_type)) {
+      bestByType.set(row.image_type, row);
+    }
+  }
+
+  return {
+    good_pic_url:
+      cleanOptionalString(bestByType.get("good")?.url) ??
+      cleanOptionalString(vehicle.good_pic_url),
+    bad_pic_url:
+      cleanOptionalString(bestByType.get("bad")?.url) ??
+      cleanOptionalString(vehicle.bad_pic_url),
+  };
+}
+
+const resolveVehicleVariantDoc = async (
+  ctx: QueryCtx,
+  id: string | Id<"oem_vehicle_variants">
+) => {
+  if (typeof id !== "string") {
+    return await ctx.db.get("oem_vehicle_variants", id);
+  }
+
+  if (isConvexIdLike(id)) {
+    const byConvexId = await ctx.db.get("oem_vehicle_variants", id as Id<"oem_vehicle_variants">);
+    if (byConvexId) return byConvexId;
+  }
+
+  const bySlug = await ctx.db
+    .query("oem_vehicle_variants")
+    .withIndex("by_slug", (q) => q.eq("slug", id))
+    .first();
+  if (bySlug) return bySlug;
+
+  return await ctx.db
+    .query("oem_vehicle_variants")
+    .filter((q) =>
+      q.or(
+        q.eq(q.field("variant_title"), id),
+        q.eq(q.field("trim_level"), id),
+      )
+    )
+    .first();
+};
+
+const resolveWheelVariantDoc = async (
+  ctx: QueryCtx,
+  id: string | Id<"oem_wheel_variants">
+) => {
+  if (typeof id !== "string") {
+    return await ctx.db.get("oem_wheel_variants", id);
+  }
+
+  if (isConvexIdLike(id)) {
+    const byConvexId = await ctx.db.get("oem_wheel_variants", id as Id<"oem_wheel_variants">);
+    if (byConvexId) return byConvexId;
+  }
+
+  const bySlug = await ctx.db
+    .query("oem_wheel_variants")
+    .withIndex("by_slug", (q) => q.eq("slug", id))
+    .first();
+  if (bySlug) return bySlug;
+
+  return await ctx.db
+    .query("oem_wheel_variants")
+    .filter((q) =>
+      q.or(
+        q.eq(q.field("variant_title"), id),
+        q.eq(q.field("wheel_title"), id),
+      )
+    )
+    .first();
+};
+
 // =============================================================================
 // OEM BRANDS
 // =============================================================================
@@ -217,53 +364,41 @@ export const vehiclesGetAllWithBrands = query({
   args: {},
   handler: async (ctx) => {
     try {
-      const vehicles = await ctx.db
-        .query("oem_vehicles")
-        .order("asc")
-        .collect();
-      const result = await Promise.all(
-        vehicles.map(async (v) => {
-          const [link, boltLinks, centerBoreLinks] = await Promise.all([
-            ctx.db
-              .query("j_vehicle_brand")
-              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", v._id))
-              .first(),
-            ctx.db
-              .query("j_vehicle_bolt_pattern")
-              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", v._id))
-              .collect(),
-            ctx.db
-              .query("j_vehicle_center_bore")
-              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", v._id))
-              .collect(),
-          ]);
-          const brand = link ? await ctx.db.get("oem_brands", link.brand_id) : null;
-          const boltPattern = Array.from(
-            new Set(
-              boltLinks
-                .map((entry) => (entry.bolt_pattern ?? "").trim())
-                .filter(Boolean)
-            )
-          ).join(", ");
-          const centerBore = Array.from(
-            new Set(
-              centerBoreLinks
-                .map((entry) => (entry.center_bore ?? "").trim())
-                .filter(Boolean)
-            )
-          ).join(", ");
-          return {
-            ...v,
-            brand_name: (brand?.brand_title ?? v.text_brands ?? null) as string | null,
-            brand_id: link?.brand_id ?? null,
-            bolt_pattern: ((boltPattern || v.text_bolt_patterns) ?? null) as string | null,
-            center_bore: ((centerBore || v.text_center_bores) ?? null) as string | null,
-          };
-        })
+      const [vehicles, brands] = await Promise.all([
+        ctx.db
+          .query("oem_vehicles")
+          .order("asc")
+          .collect(),
+        ctx.db.query("oem_brands").collect(),
+      ]);
+
+      const brandById = new Map(brands.map((brand) => [String(brand._id), brand]));
+      const brandByTitle = new Map(
+        brands
+          .map((brand) => [cleanOptionalString(brand.brand_title)?.toLowerCase(), brand] as const)
+          .filter((entry): entry is [string, Doc<"oem_brands">] => Boolean(entry[0]))
       );
-      return result;
-    } catch {
-      return [];
+
+      return vehicles.map((vehicle) => {
+        const textBrand = cleanOptionalString(vehicle.text_brands);
+        const brand =
+          (vehicle.brand_id ? brandById.get(String(vehicle.brand_id)) : null) ??
+          (textBrand ? brandByTitle.get(textBrand.toLowerCase()) : null) ??
+          null;
+
+        return {
+          ...vehicle,
+          good_pic_url: cleanOptionalString(vehicle.good_pic_url),
+          bad_pic_url: cleanOptionalString(vehicle.bad_pic_url),
+          brand_name: (brand?.brand_title ?? textBrand ?? null) as string | null,
+          brand_id: brand?._id ?? vehicle.brand_id ?? null,
+          bolt_pattern: (vehicle.text_bolt_patterns ?? null) as string | null,
+          center_bore: (vehicle.text_center_bores ?? null) as string | null,
+        };
+      });
+    } catch (error) {
+      console.error("vehiclesGetAllWithBrands failed", error);
+      throw error;
     }
   },
 });
@@ -276,10 +411,25 @@ export const vehiclesGetByBrand = query({
         .query("j_vehicle_brand")
         .withIndex("by_brand", (q) => q.eq("brand_id", args.brandId))
         .collect();
-      const vehicles = await Promise.all(
-        links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))
-      );
-      return vehicles.filter((v): v is NonNullable<typeof v> => v !== null);
+      const [vehicles, imageRowEntries] = await Promise.all([
+        Promise.all(links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))),
+        Promise.all(
+          links.map(async (j) => [
+            String(j.vehicle_id),
+            await ctx.db
+              .query("oem_vehicle_images")
+              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", j.vehicle_id))
+              .collect(),
+          ] as const),
+        ),
+      ]);
+      const imageRowsByVehicleId = new Map(imageRowEntries);
+      return vehicles
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+        .map((vehicle) => ({
+          ...vehicle,
+          ...resolveVehicleImageFields(vehicle, imageRowsByVehicleId),
+        }));
     } catch {
       return [];
     }
@@ -303,6 +453,155 @@ export const vehicleVariantsGetByVehicle = query({
       );
     } catch {
       return [];
+    }
+  },
+});
+
+export const vehicleVariantGetByIdFull = query({
+  args: {
+    id: v.union(v.string(), v.id("oem_vehicle_variants")),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const rawVariant = await resolveVehicleVariantDoc(ctx, args.id);
+      if (!rawVariant) return null;
+
+      const variant = await getVehicleVariantEngineLayers(ctx, rawVariant);
+      const [
+        parentVehicle,
+        parentVehicleImageRows,
+        brandLink,
+        bodyStyleLinks,
+        driveTypeLinks,
+        marketLinks,
+        boltPatternLinks,
+        centerBoreLinks,
+        diameterLinks,
+        widthLinks,
+        offsetLinks,
+        colorLinks,
+        tireSizeLinks,
+        partNumberLinks,
+        wheelVariantLinks,
+      ] = await Promise.all([
+        variant.vehicle_id ? ctx.db.get(variant.vehicle_id) : null,
+        variant.vehicle_id
+          ? ctx.db
+              .query("oem_vehicle_images")
+              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", variant.vehicle_id!))
+              .collect()
+          : [],
+        variant.vehicle_id
+          ? ctx.db
+              .query("j_vehicle_brand")
+              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", variant.vehicle_id!))
+              .first()
+          : null,
+        ctx.db
+          .query("j_oem_vehicle_variant_body_style")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_drive_type")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_market")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_bolt_pattern")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_center_bore")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_diameter")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_width")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_offset")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_color")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_tire_size")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_part_number")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_wheel_variant")
+          .withIndex("by_oem_vehicle_variant", (q) => q.eq("vehicle_variant_id", variant._id))
+          .collect(),
+      ]);
+
+      const brand = brandLink ? await ctx.db.get(brandLink.brand_id) : null;
+      const linkedWheelVariantsRaw = await Promise.all(
+        wheelVariantLinks.map((link) => ctx.db.get(link.wheel_variant_id))
+      );
+      const linkedWheelParents = await Promise.all(
+        linkedWheelVariantsRaw.map((wheelVariant) =>
+          wheelVariant?.wheel_id ? ctx.db.get(wheelVariant.wheel_id) : null
+        )
+      );
+
+      const linkedWheelVariants = linkedWheelVariantsRaw
+        .map((wheelVariant, index) => {
+          if (!wheelVariant) return null;
+          const parentWheel = linkedWheelParents[index];
+          return {
+            ...wheelVariant,
+            parent_wheel_id: parentWheel?._id ?? null,
+            parent_wheel_title: parentWheel?.wheel_title ?? null,
+            parent_wheel_slug: parentWheel?.slug ?? null,
+          };
+        })
+        .filter((wheelVariant): wheelVariant is NonNullable<typeof wheelVariant> => wheelVariant !== null)
+        .sort((a, b) => {
+          const aTitle = (a.variant_title ?? a.wheel_title ?? "").trim();
+          const bTitle = (b.variant_title ?? b.wheel_title ?? "").trim();
+          return aTitle.localeCompare(bTitle, undefined, { sensitivity: "base" });
+        });
+
+      return {
+        ...variant,
+        body_styles: uniqueSortedStrings(bodyStyleLinks.map((link) => link.body_style)),
+        drive_types: uniqueSortedStrings(driveTypeLinks.map((link) => link.drive_type)),
+        markets: uniqueSortedStrings([variant.market, ...marketLinks.map((link) => link.market)]),
+        bolt_patterns: uniqueSortedStrings(boltPatternLinks.map((link) => link.bolt_pattern)),
+        center_bores: uniqueSortedStrings(centerBoreLinks.map((link) => link.center_bore)),
+        diameters: uniqueSortedStrings(diameterLinks.map((link) => link.diameter)),
+        widths: uniqueSortedStrings(widthLinks.map((link) => link.width)),
+        offsets: uniqueSortedStrings(offsetLinks.map((link) => link.offset)),
+        colors: uniqueSortedStrings(colorLinks.map((link) => link.color)),
+        tire_sizes: uniqueSortedStrings(tireSizeLinks.map((link) => link.tire_size)),
+        part_numbers: uniqueSortedStrings(partNumberLinks.map((link) => link.part_number)),
+        parent_vehicle: parentVehicle
+          ? {
+              ...parentVehicle,
+              ...resolveVehicleImageFields(
+                parentVehicle,
+                new Map([[String(parentVehicle._id), parentVehicleImageRows]])
+              ),
+              brand_title: brand?.brand_title ?? null,
+            }
+          : null,
+        linked_wheel_variants: linkedWheelVariants,
+      };
+    } catch {
+      return null;
     }
   },
 });
@@ -343,7 +642,7 @@ export const vehiclesGetByIdFull = query({
       if (!vehicle) return null;
 
       const vehicleId = vehicle._id;
-      const [variants, wheelLinks, engineLinks, directVehicleEngine] = await Promise.all([
+      const [variants, wheelLinks, engineLinks, directVehicleEngine, vehicleImageRows] = await Promise.all([
         ctx.db
           .query("oem_vehicle_variants")
           .withIndex("by_vehicle_id", (q) => q.eq("vehicle_id", vehicleId))
@@ -357,7 +656,15 @@ export const vehiclesGetByIdFull = query({
           .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicleId))
           .collect(),
         vehicle.oem_engine_id ? ctx.db.get("oem_engines", vehicle.oem_engine_id) : null,
+        ctx.db
+          .query("oem_vehicle_images")
+          .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicleId))
+          .collect(),
       ]);
+      const resolvedVehicle = {
+        ...vehicle,
+        ...resolveVehicleImageFields(vehicle, new Map([[String(vehicleId), vehicleImageRows]])),
+      };
 
       const wheelDocs = await Promise.all(
         wheelLinks.map((j) => ctx.db.get("oem_wheels", j.wheel_id))
@@ -375,7 +682,7 @@ export const vehiclesGetByIdFull = query({
       }
 
       return {
-        ...vehicle,
+        ...resolvedVehicle,
         brand: null,
         engine: null,
         engines: Array.from(engineMap.values()),
@@ -778,7 +1085,8 @@ async function buildEngineFamilyBrowseRows(ctx: QueryCtx) {
         vehicle_title: vehicle.vehicle_title ?? vehicle.model_name ?? "Unknown Vehicle",
         model_name: vehicle.model_name ?? null,
         production_years: vehicle.production_years ?? null,
-        vehicle_image: vehicle.vehicle_image ?? null,
+        good_pic_url: vehicle.good_pic_url ?? null,
+        bad_pic_url: vehicle.bad_pic_url ?? null,
         brand_title: brandById.get(String(vehicle.brand_id ?? ""))?.brand_title ?? null,
       }));
 
@@ -1015,12 +1323,26 @@ export const vehiclesGetByEngine = query({
         .query("j_vehicle_engine")
         .withIndex("by_engine", (q) => q.eq("engine_id", args.engineId))
         .collect();
-      const vehicles = await Promise.all(
-        links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))
-      );
+      const [vehicles, imageRowEntries] = await Promise.all([
+        Promise.all(links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))),
+        Promise.all(
+          links.map(async (j) => [
+            String(j.vehicle_id),
+            await ctx.db
+              .query("oem_vehicle_images")
+              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", j.vehicle_id))
+              .collect(),
+          ] as const),
+        ),
+      ]);
+      const imageRowsByVehicleId = new Map(imageRowEntries);
       return vehicles
         .filter((v): v is NonNullable<typeof v> => v !== null)
-        .map((v) => ({ ...v, brand_name: null as string | null }));
+        .map((vehicle) => ({
+          ...vehicle,
+          ...resolveVehicleImageFields(vehicle, imageRowsByVehicleId),
+          brand_name: null as string | null,
+        }));
     } catch {
       return [];
     }
@@ -2056,6 +2378,17 @@ export const wheelsGetByIdFull = query({
         ? await ctx.db.get("oem_brands", brandLink.brand_id)
         : null;
 
+      const vehicleImageEntries = await Promise.all(
+        vehicleLinks.map(async (j) => [
+          String(j.vehicle_id),
+          await ctx.db
+            .query("oem_vehicle_images")
+            .withIndex("by_vehicle", (q) => q.eq("vehicle_id", j.vehicle_id))
+            .collect(),
+        ] as const)
+      );
+      const vehicleImageRowsByVehicleId = new Map(vehicleImageEntries);
+
       const mapVehicleWithBrand = async (vehicleId: Id<"oem_vehicles">) => {
         const v = await ctx.db.get("oem_vehicles", vehicleId);
         if (!v) return null;
@@ -2068,6 +2401,7 @@ export const wheelsGetByIdFull = query({
           : null;
         return {
           ...v,
+          ...resolveVehicleImageFields(v, vehicleImageRowsByVehicleId),
           brand_name: brandDoc?.brand_title ?? v.text_brands ?? null,
         };
       };
@@ -2116,10 +2450,25 @@ export const getVehiclesByWheel = query({
         .query("j_wheel_vehicle")
         .withIndex("by_wheel", (q) => q.eq("wheel_id", args.wheelId))
         .collect();
-      const vehicles = await Promise.all(
-        links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))
-      );
-      return vehicles.filter((v): v is NonNullable<typeof v> => v !== null);
+      const [vehicles, imageRowEntries] = await Promise.all([
+        Promise.all(links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))),
+        Promise.all(
+          links.map(async (j) => [
+            String(j.vehicle_id),
+            await ctx.db
+              .query("oem_vehicle_images")
+              .withIndex("by_vehicle", (q) => q.eq("vehicle_id", j.vehicle_id))
+              .collect(),
+          ] as const),
+        ),
+      ]);
+      const imageRowsByVehicleId = new Map(imageRowEntries);
+      return vehicles
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+        .map((vehicle) => ({
+          ...vehicle,
+          ...resolveVehicleImageFields(vehicle, imageRowsByVehicleId),
+        }));
     } catch {
       return [];
     }
@@ -2158,6 +2507,200 @@ export const getWheelsByBrand = query({
       return wheels.filter((w): w is NonNullable<typeof w> => w !== null);
     } catch {
       return [];
+    }
+  },
+});
+
+export const wheelVariantsGetByWheel = query({
+  args: { wheelId: v.id("oem_wheels") },
+  handler: async (ctx, args) => {
+    try {
+      const variants = await ctx.db
+        .query("oem_wheel_variants")
+        .withIndex("by_wheel_id", (q) => q.eq("wheel_id", args.wheelId))
+        .collect();
+
+      return variants.sort((a, b) => {
+        const aTitle = (a.variant_title ?? a.wheel_title ?? "").trim();
+        const bTitle = (b.variant_title ?? b.wheel_title ?? "").trim();
+        const titleCompare = aTitle.localeCompare(bTitle, undefined, { sensitivity: "base" });
+        if (titleCompare !== 0) return titleCompare;
+
+        const aPart = (a.part_numbers ?? "").trim();
+        const bPart = (b.part_numbers ?? "").trim();
+        return aPart.localeCompare(bPart, undefined, { sensitivity: "base" });
+      });
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const wheelVariantGetByIdFull = query({
+  args: {
+    id: v.union(v.string(), v.id("oem_wheel_variants")),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const variant = await resolveWheelVariantDoc(ctx, args.id);
+      if (!variant) return null;
+
+      const [
+        parentWheel,
+        directBrand,
+        wheelBrandLink,
+        marketLinks,
+        boltPatternLinks,
+        centerBoreLinks,
+        diameterLinks,
+        widthLinks,
+        offsetLinks,
+        colorLinks,
+        tireSizeLinks,
+        partNumberLinks,
+        materialLinks,
+        finishTypeLinks,
+        designStyleLinks,
+        vehicleVariantLinks,
+      ] = await Promise.all([
+        variant.wheel_id ? ctx.db.get(variant.wheel_id) : null,
+        variant.brand_id ? ctx.db.get(variant.brand_id) : null,
+        variant.wheel_id
+          ? ctx.db
+              .query("j_wheel_brand")
+              .withIndex("by_wheel", (q) => q.eq("wheel_id", variant.wheel_id!))
+              .first()
+          : null,
+        ctx.db
+          .query("j_oem_wheel_variant_market")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_bolt_pattern")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_center_bore")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_diameter")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_width")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_offset")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_color")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_tire_size")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_part_number")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_material")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_finish_type")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_wheel_variant_design_style")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("variant_id", variant._id))
+          .collect(),
+        ctx.db
+          .query("j_oem_vehicle_variant_wheel_variant")
+          .withIndex("by_oem_wheel_variant", (q) => q.eq("wheel_variant_id", variant._id))
+          .collect(),
+      ]);
+
+      const wheelBrand =
+        directBrand ??
+        (wheelBrandLink ? await ctx.db.get(wheelBrandLink.brand_id) : null);
+
+      const linkedVehicleVariantsRaw = await Promise.all(
+        vehicleVariantLinks.map((link) => ctx.db.get(link.vehicle_variant_id))
+      );
+      const linkedVehicleVariants = await Promise.all(
+        linkedVehicleVariantsRaw.map(async (vehicleVariant) => {
+          if (!vehicleVariant) return null;
+          const enrichedVariant = await getVehicleVariantEngineLayers(ctx, vehicleVariant);
+          const parentVehicle = enrichedVariant.vehicle_id
+            ? await ctx.db.get(enrichedVariant.vehicle_id)
+            : null;
+          const vehicleBrandLink = enrichedVariant.vehicle_id
+            ? await ctx.db
+                .query("j_vehicle_brand")
+                .withIndex("by_vehicle", (q) => q.eq("vehicle_id", enrichedVariant.vehicle_id!))
+                .first()
+            : null;
+          const brand = vehicleBrandLink ? await ctx.db.get(vehicleBrandLink.brand_id) : null;
+
+          return {
+            ...enrichedVariant,
+            parent_vehicle_title:
+              parentVehicle?.vehicle_title ??
+              parentVehicle?.model_name ??
+              parentVehicle?.generation ??
+              null,
+            parent_vehicle_generation: parentVehicle?.generation ?? null,
+            parent_vehicle_image:
+              parentVehicle?.good_pic_url ??
+              parentVehicle?.bad_pic_url ??
+              null,
+            parent_vehicle_slug: parentVehicle?.slug ?? null,
+            parent_vehicle_id: parentVehicle?._id ?? null,
+            brand_title: brand?.brand_title ?? null,
+          };
+        })
+      );
+
+      return {
+        ...variant,
+        markets: uniqueSortedStrings(marketLinks.map((link) => link.market)),
+        bolt_patterns: uniqueSortedStrings([variant.bolt_pattern, ...boltPatternLinks.map((link) => link.bolt_pattern)]),
+        center_bores: uniqueSortedStrings([variant.center_bore, ...centerBoreLinks.map((link) => link.center_bore)]),
+        diameters: uniqueSortedStrings([variant.diameter, ...diameterLinks.map((link) => link.diameter)]),
+        widths: uniqueSortedStrings([variant.width, ...widthLinks.map((link) => link.width)]),
+        offsets: uniqueSortedStrings([variant.offset, ...offsetLinks.map((link) => link.offset)]),
+        colors: uniqueSortedStrings([variant.color, variant.finish, ...colorLinks.map((link) => link.color)]),
+        tire_sizes: uniqueSortedStrings(tireSizeLinks.map((link) => link.tire_size)),
+        part_numbers: uniqueSortedStrings([
+          ...(variant.part_numbers ?? "")
+            .split(/[,;\n]/)
+            .map((part) => part.trim()),
+          ...partNumberLinks.map((link) => link.part_number),
+        ]),
+        materials: uniqueSortedStrings([variant.metal_type, ...materialLinks.map((link) => link.material)]),
+        finish_types: uniqueSortedStrings([variant.finish, ...finishTypeLinks.map((link) => link.finish_type)]),
+        design_styles: uniqueSortedStrings(designStyleLinks.map((link) => link.design_style)),
+        parent_wheel: parentWheel
+          ? {
+              ...parentWheel,
+              brand_title: wheelBrand?.brand_title ?? null,
+            }
+          : null,
+        linked_vehicle_variants: linkedVehicleVariants
+          .filter((vehicleVariant): vehicleVariant is NonNullable<typeof vehicleVariant> => vehicleVariant !== null)
+          .sort((a, b) => {
+            const aTitle = (a.variant_title ?? a.trim_level ?? "").trim();
+            const bTitle = (b.variant_title ?? b.trim_level ?? "").trim();
+            return aTitle.localeCompare(bTitle, undefined, { sensitivity: "base" });
+          }),
+      };
+    } catch {
+      return null;
     }
   },
 });
@@ -2478,7 +3021,7 @@ export const userCommentsGetByUser = query({
                 id: vehicle.id,
                 model_name: vehicle.model_name ?? null,
                 chassis_code: vehicle.generation ?? null,
-                hero_image_url: vehicle.vehicle_image ?? null,
+                hero_image_url: vehicle.good_pic_url ?? vehicle.bad_pic_url ?? null,
                 brand_refs: null as unknown,
               }
               : null,
@@ -2541,6 +3084,44 @@ export const wheelCommentsGetByWheel = query({
       const comments = await ctx.db
         .query("wheel_comments")
         .withIndex("by_wheel", (q) => q.eq("wheel_id", args.wheelId))
+        .collect();
+      return comments.sort((a, b) => {
+        const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tB - tA;
+      });
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const vehicleVariantCommentsGetByVehicleVariant = query({
+  args: { vehicleVariantId: v.id("oem_vehicle_variants") },
+  handler: async (ctx, args) => {
+    try {
+      const comments = await ctx.db
+        .query("vehicle_variant_comments")
+        .withIndex("by_vehicle_variant", (q) => q.eq("vehicle_variant_id", args.vehicleVariantId))
+        .collect();
+      return comments.sort((a, b) => {
+        const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tB - tA;
+      });
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const wheelVariantCommentsGetByWheelVariant = query({
+  args: { wheelVariantId: v.id("oem_wheel_variants") },
+  handler: async (ctx, args) => {
+    try {
+      const comments = await ctx.db
+        .query("wheel_variant_comments")
+        .withIndex("by_wheel_variant", (q) => q.eq("wheel_variant_id", args.wheelVariantId))
         .collect();
       return comments.sort((a, b) => {
         const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -3364,7 +3945,7 @@ const VEHICLE_FIELDS = [
   { key: "generation", label: "Generation", required: false },
   { key: "production_years", label: "Production years", required: false },
   { key: "good_pic_url", label: "Good pic URL", required: false },
-  { key: "vehicle_image", label: "Vehicle image", required: false },
+  { key: "bad_pic_url", label: "Bad pic URL", required: false },
   { key: "text_brands", label: "Text brands (or j_vehicle_brand)", required: false },
 ] as const;
 

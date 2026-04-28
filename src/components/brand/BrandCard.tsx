@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useImageLoader } from "./hooks/useImageLoader";
 import { useBrandCardState } from "./hooks/useBrandCardState";
 import BrandCardFront from "./BrandCardFront";
 import BrandCardBack from "./BrandCardBack";
 import BrandCardButtons from "./BrandCardButtons";
+import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
 
 interface BrandCardProps {
   brand: {
@@ -15,9 +16,12 @@ interface BrandCardProps {
     vehicleCount?: number;
     description?: string | null;
     imagelink?: string | null;
+    good_pic_url?: string | null;
+    bad_pic_url?: string | null;
   };
   isFlipped: boolean;
   onFlip: (name: string) => void;
+  showAdminImageFields?: boolean;
   dataMapping?: Array<{
     id: string;
     field: string;
@@ -28,7 +32,15 @@ interface BrandCardProps {
   height?: string;
 }
 
-const BrandCard = ({ brand, isFlipped, onFlip, dataMapping, height = "h-[240px]" }: BrandCardProps) => {
+const BrandCard = ({
+  brand,
+  isFlipped,
+  onFlip,
+  showAdminImageFields = false,
+  dataMapping,
+  height = "h-[240px]",
+}: BrandCardProps) => {
+  const location = useLocation();
   const { imageUrl, handleImageError } = useImageLoader(brand.imagelink);
   const {
     isFavorite,
@@ -55,6 +67,9 @@ const BrandCard = ({ brand, isFlipped, onFlip, dataMapping, height = "h-[240px]"
   const handleFlip = () => {
     onFlip(brand.name);
   };
+  const preservedSearch = shouldCarryCollectionSearch(location.pathname, ["/brands"])
+    ? location.search
+    : "";
 
   const cardContent = (
     <div 
@@ -95,7 +110,10 @@ const BrandCard = ({ brand, isFlipped, onFlip, dataMapping, height = "h-[240px]"
   
   return (
     <Link 
-      to={`/brands/${brand.name.toLowerCase().replace(/\s+/g, '-')}`} 
+      to={{
+        pathname: `/brands/${brand.name.toLowerCase().replace(/\s+/g, '-')}`,
+        search: preservedSearch,
+      }}
       className={cn("group relative block w-full perspective-1000", height)}
     >
       {cardContent}
@@ -103,6 +121,8 @@ const BrandCard = ({ brand, isFlipped, onFlip, dataMapping, height = "h-[240px]"
         isFlipped={isFlipped}
         isSourceExpanded={isSourceExpanded}
         imageSource={brand.imagelink}
+        badPicSource={brand.bad_pic_url}
+        showAdminImageFields={showAdminImageFields}
         onFlip={handleFlip}
         onToggleSource={toggleSource}
       />

@@ -14,8 +14,8 @@ export interface BrandVehicle {
   center_bore: string | null;
   wheel_diameter_ref: string | null;
   wheel_width_ref: string | null;
-  vehicle_image: string | null;
-  hero_image_url: string | null;
+  good_pic_url: string | null;
+  bad_pic_url: string | null;
   status: string | null;
 }
 
@@ -72,7 +72,8 @@ function mapToBrandVehicle(
     center_bore?: string | null;
     text_diameters?: string | null;
     text_widths?: string | null;
-    vehicle_image?: string | null;
+    good_pic_url?: string | null;
+    bad_pic_url?: string | null;
   },
   brandName: string | null
 ): BrandVehicle {
@@ -89,8 +90,8 @@ function mapToBrandVehicle(
     center_bore: raw.center_bore ?? null,
     wheel_diameter_ref: raw.text_diameters ?? null,
     wheel_width_ref: raw.text_widths ?? null,
-    vehicle_image: raw.vehicle_image ?? null,
-    hero_image_url: raw.vehicle_image ?? null,
+    good_pic_url: raw.good_pic_url ?? null,
+    bad_pic_url: raw.bad_pic_url ?? null,
     status: "active",
   };
 }

@@ -28,6 +28,11 @@ import VehicleAssetsPanel from "@/components/vehicle/VehicleAssetsPanel";
 import WheelsGrid from "@/components/wheel/WheelsGrid";
 import { useEngineGridColumns, useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
 import { toOemWheelCard } from "@/lib/wheelCards";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+} from "@/components/collection/CollectionSecondarySidebar";
+import { usePersistedCollectionSidebarState } from "@/hooks/usePersistedCollectionSidebar";
 
 const VehicleDetailPage = () => {
   const { vehicleName: vehicleRouteId } = useParams<{ vehicleName: string }>();
@@ -38,6 +43,7 @@ const VehicleDetailPage = () => {
   const showAdminAssets = isAdmin;
   const engineColumns = useEngineGridColumns();
   const wheelColumns = useWheelsGridColumns();
+  const collectionSidebar = usePersistedCollectionSidebarState("vehicles");
 
   const vehicleData = useQuery(
     api.queries.vehiclesGetByIdFull,
@@ -74,10 +80,6 @@ const VehicleDetailPage = () => {
       .filter((id) => !defaults[id].adminOnly || isAdmin)
       .map((id) => {
         const existing = byId.get(id);
-        const triggerClassName =
-          defaults[id].adminOnly
-            ? "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground"
-            : undefined;
         if (existing) {
           const normalizedBlocks =
             existing.blocks.length > 0
@@ -94,7 +96,8 @@ const VehicleDetailPage = () => {
           return {
             ...existing,
             label: defaults[id].label,
-            triggerClassName,
+            triggerClassName: undefined,
+            triggerTone: "default",
             enabled: true,
             blocks:
               id === "overview"
@@ -115,7 +118,8 @@ const VehicleDetailPage = () => {
         return {
           id,
           label: defaults[id].label,
-          triggerClassName,
+          triggerClassName: undefined,
+          triggerTone: "default",
           enabled: true,
           blocks:
             id === "overview"
@@ -310,7 +314,9 @@ const VehicleDetailPage = () => {
       segment={vehicleData.segment || "-"}
       description={vehicleData.special_notes || ""}
       msrp={vehicleData.production_stats || ""}
-      image={(vehicleData as any).vehicle_image || (vehicleData as any).good_pic_url || undefined}
+      image={(vehicleData as any).good_pic_url || (vehicleData as any).bad_pic_url || undefined}
+      goodPicUrl={(vehicleData as any).good_pic_url ?? null}
+      badPicUrl={(vehicleData as any).bad_pic_url ?? null}
       itemId={String(vehicleData._id)}
       convexId={vehicleData._id}
       specs={{
@@ -331,6 +337,13 @@ const VehicleDetailPage = () => {
       onBack={() => navigate(-1)}
       tabPlacement="content"
       useItemTitleForFirstTab={false}
+      secondaryHeaderContent={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarHeader state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebar={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarBody state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebarContextKey={collectionSidebar.isAvailable ? "vehicles" : undefined}
       persistentHeaderContent={persistentHeaderContent}
       additionalTabs={
         isAdmin && vehicleData?._id
@@ -338,8 +351,7 @@ const VehicleDetailPage = () => {
               {
                 id: "private-blurb",
                 label: "Private blurb",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <AdminPrivateBlurbTab
                     itemType="vehicle"
@@ -353,13 +365,11 @@ const VehicleDetailPage = () => {
                     {
                       id: "assets",
                       label: "Assets",
-                      triggerClassName:
-                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      triggerTone: "admin",
                       content: (
                         <VehicleAssetsPanel
                           vehicleId={vehicleData._id}
                           vehicleTitle={vehicleDisplayName}
-                          vehicleImage={(vehicleData as any).vehicle_image ?? null}
                           goodPicUrl={(vehicleData as any).good_pic_url ?? null}
                           badPicUrl={(vehicleData as any).bad_pic_url ?? null}
                         />

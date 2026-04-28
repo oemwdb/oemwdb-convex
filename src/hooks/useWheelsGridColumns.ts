@@ -17,11 +17,11 @@ function getWheelsColumns(width: number): number {
 
 /**
  * Breakpoints matching VehiclesGrid:
- * grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6
+ * grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5
  */
 function getVehiclesColumns(width: number): number {
-  if (width >= 1536) return 6;
-  if (width >= 1280) return 5;
+  if (width >= 1536) return 5;
+  if (width >= 1280) return 4;
   if (width >= 1024) return 4;
   if (width >= 768) return 3;
   if (width >= 420) return 2;

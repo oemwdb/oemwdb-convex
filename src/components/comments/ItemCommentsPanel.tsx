@@ -8,7 +8,15 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 interface ItemCommentsPanelProps {
   itemType: CommentableItemType;
-  itemId: Id<"oem_brands"> | Id<"oem_vehicles"> | Id<"oem_wheels"> | Id<"oem_engines"> | null | undefined;
+  itemId:
+    | Id<"oem_brands">
+    | Id<"oem_vehicles">
+    | Id<"oem_wheels">
+    | Id<"oem_engines">
+    | Id<"oem_vehicle_variants">
+    | Id<"oem_wheel_variants">
+    | null
+    | undefined;
   itemName: string;
   layout?: "default" | "bottom-anchored";
   footerSlot?: ReactNode;
@@ -89,7 +97,7 @@ export default function ItemCommentsPanel({
       </div>
       {!isAvailable ? (
         <p className="text-xs text-muted-foreground">
-          This backend does not expose engine comments yet.
+          Comments are unavailable on this backend.
         </p>
       ) : !isAuthenticated ? (
         <div className="flex justify-end">

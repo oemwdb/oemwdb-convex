@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ItemPagePanel } from "@/components/item-page/ItemPageCommonBlocks";
 
-type EditableCollectionItemType = "brand" | "vehicle" | "wheel" | "engine" | "color";
+type EditableCollectionItemType =
+  | "brand"
+  | "vehicle"
+  | "wheel"
+  | "engine"
+  | "color"
+  | "vehicle_variant"
+  | "wheel_variant";
 
 interface AdminPrivateBlurbTabProps {
   itemType: EditableCollectionItemType;

@@ -14,6 +14,8 @@ interface BrandGridItem {
   vehicleCount?: number;
   description?: string | null;
   imagelink?: string | null;
+  good_pic_url?: string | null;
+  bad_pic_url?: string | null;
 }
 
 interface BrandsGridProps {
@@ -21,6 +23,7 @@ interface BrandsGridProps {
   flippedCards: Record<string, boolean>;
   onFlip: (name: string) => void;
   insertAdEvery?: number;
+  showAdminImageFields?: boolean;
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
@@ -32,6 +35,7 @@ export default function BrandsGrid({
   flippedCards,
   onFlip,
   insertAdEvery,
+  showAdminImageFields = false,
   selectionMode,
   selectedIds,
   onToggleSelection,
@@ -68,6 +72,7 @@ export default function BrandsGrid({
               brand={brand}
               isFlipped={flippedCards[brand.name] || false}
               onFlip={onFlip}
+              showAdminImageFields={showAdminImageFields}
             />
           </SelectableCollectionCard>
         );
@@ -100,6 +105,7 @@ export default function BrandsGrid({
             brand={brand}
             isFlipped={flippedCards[brand.name] || false}
             onFlip={onFlip}
+            showAdminImageFields={showAdminImageFields}
           />
         </SelectableCollectionCard>
       ))}

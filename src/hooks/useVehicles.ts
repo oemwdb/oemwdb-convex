@@ -10,7 +10,8 @@ export interface OemVehicleRow {
   chassis_code?: string | null;
   brand_name?: string | null;
   brand_id?: string | null;
-  vehicle_image?: string | null;
+  good_pic_url?: string | null;
+  bad_pic_url?: string | null;
   production_years?: string | null;
   bolt_pattern?: string | null;
   center_bore?: string | null;

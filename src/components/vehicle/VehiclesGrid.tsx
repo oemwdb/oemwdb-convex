@@ -5,7 +5,7 @@ import { SelectableCollectionCard } from "@/components/collection/SelectableColl
 import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 
 const GRID_CLASSES =
-  "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2";
+  "grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2";
 
 const getVehicleFlipKey = (vehicle: Vehicle) =>
   vehicle.id ||
@@ -70,6 +70,8 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
                 brand: vehicle.brand,
                 wheels: vehicle.wheels,
                 image: vehicle.image,
+                good_pic_url: (vehicle as any).good_pic_url ?? null,
+                bad_pic_url: (vehicle as any).bad_pic_url ?? null,
                 bolt_pattern_ref: (vehicle as any).bolt_pattern_ref,
                 center_bore_ref: (vehicle as any).center_bore_ref,
                 wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,
@@ -108,6 +110,8 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
               brand: vehicle.brand,
               wheels: vehicle.wheels,
               image: vehicle.image,
+              good_pic_url: (vehicle as any).good_pic_url ?? null,
+              bad_pic_url: (vehicle as any).bad_pic_url ?? null,
               bolt_pattern_ref: (vehicle as any).bolt_pattern_ref,
               center_bore_ref: (vehicle as any).center_bore_ref,
               wheel_diameter_ref: (vehicle as any).wheel_diameter_ref,

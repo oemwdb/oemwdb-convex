@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { getConvexErrorMessage } from "@/lib/convexErrors";
 import { CircleSlash2, GitMerge, Loader2 } from "lucide-react";
+import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 
 const sortText = (left: string, right: string) =>
   left.localeCompare(right, undefined, { sensitivity: "base" });
@@ -269,6 +270,13 @@ const ColorsPage = () => {
     searchValue: searchTags[0] ?? "",
     totalResults: filteredColors.length,
   });
+  useRegisterPersistedCollectionSidebar({
+    contextKey: "colors",
+    title: "Color Filters",
+    basePath: "/colors",
+    filterFields,
+    searchPlaceholder: "Search colors...",
+  });
 
   if (colorsResource.isInitialLoading) {
     return (
@@ -313,6 +321,7 @@ const ColorsPage = () => {
   return (
     <DashboardLayout
       title="Colors"
+      secondarySidebarContextKey="colors"
       secondaryHeaderContent={<CollectionSecondarySidebarHeader state={filterSidebarState} />}
       secondarySidebar={<CollectionSecondarySidebarBody state={filterSidebarState} />}
       sortSidebar={

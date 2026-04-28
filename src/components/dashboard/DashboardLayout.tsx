@@ -6,6 +6,7 @@ import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { useCollectionSidebarContext } from "@/contexts/CollectionSidebarContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,7 @@ interface DashboardLayoutProps {
   customActionIcon?: React.ReactNode;
   customSidebarInteractive?: boolean;
   customSidebarSide?: "left" | "right";
+  secondarySidebarContextKey?: string;
 
   // Header customization
   headerActions?: React.ReactNode;
@@ -85,6 +87,7 @@ const DashboardLayout = ({
   customActionIcon,
   customSidebarInteractive = false,
   customSidebarSide = "left",
+  secondarySidebarContextKey,
   headerActions,
   headerLeftContent,
   leadingButtonIcon,
@@ -96,25 +99,43 @@ const DashboardLayout = ({
   disableContentPadding = false
 }: DashboardLayoutProps) => {
   const location = useLocation();
-  const [activePanel, setActivePanel] = useState<"filter" | "sort" | "custom" | null>(null);
+  const {
+    filterPanelOpenByContextKey,
+    setFilterPanelOpen,
+    setActiveCollectionContext,
+  } = useCollectionSidebarContext();
+  const [localActivePanel, setLocalActivePanel] = useState<"filter" | "sort" | "custom" | null>(null);
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const previousSearchRef = React.useRef(location.search);
 
-  // Collapse secondary sidebar on route change
   useEffect(() => {
-    setActivePanel(null);
-  }, [location.pathname]);
+    setActiveCollectionContext(secondarySidebarContextKey);
+  }, [secondarySidebarContextKey, setActiveCollectionContext]);
+
+  useEffect(() => {
+    if (previousSearchRef.current !== location.search) {
+      if (secondarySidebarContextKey) {
+        setFilterPanelOpen(secondarySidebarContextKey, false);
+      }
+      setLocalActivePanel(null);
+    }
+    previousSearchRef.current = location.search;
+  }, [location.search, secondarySidebarContextKey, setFilterPanelOpen]);
 
   // Content margin is now always 48px (Primary Sidebar width) because Secondary Sidebar overlays
   const contentMargin = 48;
 
-  const showFilterPanel = !!secondarySidebar && activePanel === "filter";
-  const showSortPanel = !!sortSidebar && activePanel === "sort";
-  const showCustomPanel = !!customSidebar && activePanel === "custom";
+  const filterPanelOpen = secondarySidebarContextKey
+    ? (filterPanelOpenByContextKey[secondarySidebarContextKey] ?? false)
+    : localActivePanel === "filter";
+  const showFilterPanel = !!secondarySidebar && filterPanelOpen;
+  const showSortPanel = !!sortSidebar && localActivePanel === "sort";
+  const showCustomPanel = !!customSidebar && localActivePanel === "custom";
   const isRightCustomPanel = showCustomPanel && customSidebarSide === "right";
   const activePanelContent =
-    activePanel === "sort"
+    localActivePanel === "sort"
       ? sortSidebar
-      : activePanel === "custom"
+      : localActivePanel === "custom"
         ? customSidebar
         : secondarySidebar;
   const showBackdrop =
@@ -122,13 +143,13 @@ const DashboardLayout = ({
     (showFilterPanel || showSortPanel || showCustomPanel) &&
     !(showCustomPanel && customSidebarInteractive);
   const activePanelTitle =
-    activePanel === "sort"
+    localActivePanel === "sort"
       ? (sortTitle || "Sort")
-      : activePanel === "custom"
+      : localActivePanel === "custom"
         ? (customTitle || "Panel")
         : (secondaryTitle || "Filters");
   const activeHeaderContent =
-    activePanel === "filter" && secondaryHeaderContent
+    showFilterPanel && secondaryHeaderContent
       ? secondaryHeaderContent
       : null;
   const customSidebarButton = customSidebar ? (
@@ -136,7 +157,7 @@ const DashboardLayout = ({
       variant="ghost"
       size="icon"
       className="h-8 w-8 rounded-full border border-border bg-sidebar hover:bg-white/10"
-      onClick={() => setActivePanel((prev) => prev === "custom" ? null : "custom")}
+      onClick={() => setLocalActivePanel((prev) => prev === "custom" ? null : "custom")}
       title={customTitle || "Open panel"}
     >
       {customActionIcon || <Search className="h-4 w-4 text-white" />}
@@ -150,7 +171,13 @@ const DashboardLayout = ({
         onHoverChange={setSidebarHovered}
         hasSecondary={!!secondarySidebar}
         isSecondaryOpen={showFilterPanel}
-        onToggleSecondary={() => setActivePanel((prev) => prev === "filter" ? null : "filter")}
+        onToggleSecondary={() => {
+          if (secondarySidebarContextKey) {
+            setFilterPanelOpen(secondarySidebarContextKey, !filterPanelOpen);
+            return;
+          }
+          setLocalActivePanel((prev) => prev === "filter" ? null : "filter");
+        }}
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-background rounded-2xl border shadow-sm overflow-hidden relative">
@@ -179,10 +206,16 @@ const DashboardLayout = ({
             topSuggestion={topSuggestion}
             // Show toggle button if we have secondary sidebar but it's hidden
             sidebarCollapsed={!!secondarySidebar && !showFilterPanel}
-            onSidebarToggle={() => setActivePanel((prev) => prev === "filter" ? null : "filter")}
+            onSidebarToggle={() => {
+              if (secondarySidebarContextKey) {
+                setFilterPanelOpen(secondarySidebarContextKey, !filterPanelOpen);
+                return;
+              }
+              setLocalActivePanel((prev) => prev === "filter" ? null : "filter");
+            }}
             actionIcon={secondaryActionIcon}
             showSortButton={!!sortSidebar}
-            onSortClick={() => setActivePanel((prev) => prev === "sort" ? null : "sort")}
+            onSortClick={() => setLocalActivePanel((prev) => prev === "sort" ? null : "sort")}
             showSearch={showSearch}
             showBreadcrumb={showBreadcrumb}
             leadingButtonIcon={leadingButtonIcon}
@@ -216,7 +249,12 @@ const DashboardLayout = ({
             {showBackdrop && (
               <div
                 className="absolute inset-0 z-30 bg-background/40 backdrop-blur-[1px]"
-                onClick={() => setActivePanel(null)}
+                onClick={() => {
+                  if (secondarySidebarContextKey) {
+                    setFilterPanelOpen(secondarySidebarContextKey, false);
+                  }
+                  setLocalActivePanel(null);
+                }}
               />
             )}
 
@@ -247,7 +285,13 @@ const DashboardLayout = ({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full border border-border/60 bg-black hover:bg-black/80"
-                  onClick={() => setActivePanel(null)}
+                  onClick={() => {
+                    if (showFilterPanel && secondarySidebarContextKey) {
+                      setFilterPanelOpen(secondarySidebarContextKey, false);
+                      return;
+                    }
+                    setLocalActivePanel(null);
+                  }}
                   title="Close filters"
                 >
                   {isRightCustomPanel ? (

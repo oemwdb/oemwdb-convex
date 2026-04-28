@@ -48,7 +48,7 @@ export const useVehicleDetails = (
                   "Unknown Model",
                 year,
                 brandImageUrl: brand.brand_image_url,
-                vehicleImageUrl: vehicle.vehicle_image,
+                vehicleImageUrl: vehicle.good_pic_url ?? vehicle.bad_pic_url,
                 productionYears: vehicle.production_years,
               };
             })()

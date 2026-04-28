@@ -11,6 +11,7 @@ import { CircleSlash2, Loader2, Palette } from "lucide-react";
 import WheelVariantsTable from "@/components/wheel/WheelVariantsTable";
 import { buildTireRackUrl } from "@/lib/tireRack";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVehicleVariantRoutePath, getWheelVariantRoutePath } from "@/lib/variantRoutes";
 import { useResolvedItemPageLayoutTemplate } from "@/hooks/useItemPageLayoutTemplate";
 import ItemPageTabsShell from "@/components/item-page/ItemPageTabsShell";
 import { AdminPrivateBlurbTab } from "@/components/item-page/AdminPrivateBlurbTab";
@@ -21,6 +22,11 @@ import WheelsGrid from "@/components/wheel/WheelsGrid";
 import VehiclesGrid from "@/components/vehicle/VehiclesGrid";
 import { useVehicleGridColumns, useWheelsGridColumns } from "@/hooks/useWheelsGridColumns";
 import { toOemWheelCard } from "@/lib/wheelCards";
+import {
+  CollectionSecondarySidebarBody,
+  CollectionSecondarySidebarHeader,
+} from "@/components/collection/CollectionSecondarySidebar";
+import { usePersistedCollectionSidebarState } from "@/hooks/usePersistedCollectionSidebar";
 
 const splitSummaryValues = (value?: string | null) =>
   String(value ?? "")
@@ -45,6 +51,7 @@ const ColorItemPage = () => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const { isAdmin } = useAuth();
   const showAdminAssets = isAdmin;
+  const collectionSidebar = usePersistedCollectionSidebarState("colors");
   const vehicleColumns = useVehicleGridColumns();
   const wheelColumns = useWheelsGridColumns();
   const detailResource = useConvexResourceQuery<any>({
@@ -236,6 +243,13 @@ const ColorItemPage = () => {
       onBack={() => navigate(-1)}
       tabPlacement="content"
       useItemTitleForFirstTab={false}
+      secondaryHeaderContent={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarHeader state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebar={
+        collectionSidebar.isAvailable ? <CollectionSecondarySidebarBody state={collectionSidebar.state} /> : undefined
+      }
+      secondarySidebarContextKey={collectionSidebar.isAvailable ? "colors" : undefined}
       persistentHeaderContent={persistentHeaderContent}
       additionalTabs={
         isAdmin && color._id
@@ -243,8 +257,7 @@ const ColorItemPage = () => {
               {
                 id: "private-blurb",
                 label: "Private blurb",
-                triggerClassName:
-                  "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                triggerTone: "admin",
                 content: (
                   <AdminPrivateBlurbTab
                     itemType="color"
@@ -258,8 +271,7 @@ const ColorItemPage = () => {
                     {
                       id: "assets",
                       label: "Assets",
-                      triggerClassName:
-                        "border-orange-500/60 text-foreground hover:border-orange-400/90 hover:text-foreground data-[state=active]:border-orange-400/90 data-[state=active]:text-foreground",
+                      triggerTone: "admin",
                       content: (
                         <ColorAssetsPanel
                           colorId={color._id}
@@ -283,7 +295,9 @@ const ColorItemPage = () => {
           name: vehicle.vehicle_title || vehicle.model_name || vehicle.generation || "Unknown Vehicle",
           brand: vehicle.brand_title || vehicle.brand_name || "Unknown",
           wheels: 0,
-          image: vehicle.vehicle_image || vehicle.hero_image_url || undefined,
+          image: undefined,
+          good_pic_url: vehicle.good_pic_url ?? null,
+          bad_pic_url: vehicle.bad_pic_url ?? null,
           bolt_pattern_ref: vehicle.bolt_pattern ?? vehicle.bolt_pattern_ref,
           center_bore_ref: vehicle.center_bore ?? vehicle.center_bore_ref,
           wheel_diameter_ref: vehicle.text_diameters ?? vehicle.wheel_diameter_ref,
@@ -324,7 +338,22 @@ const ColorItemPage = () => {
               return vehicleVariants.length > 0 ? (
                 <ItemPageGrid columnsClassName="grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {vehicleVariants.map((variant: any) => (
-                    <Card key={variant.id}>
+                    <Card
+                      key={variant.id}
+                      className="transition-shadow hover:shadow-md"
+                      onClick={(event) => {
+                        if (!isAdmin || !variant.id) return;
+                        const target = event.target as HTMLElement | null;
+                        if (target?.closest("a,button")) return;
+                        navigate(
+                          getVehicleVariantRoutePath({
+                            id: String(variant.id),
+                            slug: typeof variant.slug === "string" ? variant.slug : undefined,
+                            name: variant.title,
+                          })
+                        );
+                      }}
+                    >
                       <CardContent className="space-y-3 p-4">
                         <div>
                           <h3 className="text-lg font-semibold text-foreground">{variant.title}</h3>
@@ -350,7 +379,22 @@ const ColorItemPage = () => {
                 <ItemPagePanel title="Wheel Variants">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {wheelVariantRows.map((variant) => (
-                      <Card key={variant.id} className="flex flex-col transition-shadow hover:shadow-md">
+                      <Card
+                        key={variant.id}
+                        className="flex flex-col transition-shadow hover:shadow-md"
+                        onClick={(event) => {
+                          if (!isAdmin || !variant.id) return;
+                          const target = event.target as HTMLElement | null;
+                          if (target?.closest("a,button")) return;
+                          navigate(
+                            getWheelVariantRoutePath({
+                              id: String(variant.id),
+                              slug: typeof variant.slug === "string" ? variant.slug : undefined,
+                              name: variant.cardTitle,
+                            })
+                          );
+                        }}
+                      >
                         <CardContent className="flex flex-col gap-2 p-4">
                           <h4 className="text-base font-semibold text-foreground">{variant.cardTitle}</h4>
                           <div className="space-y-1 text-sm">

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 
@@ -176,12 +176,81 @@ export function CollectionSecondarySidebarBody({
 }: {
   state: CollectionSecondarySidebarState;
 }) {
+  const [showAllValuesByCategory, setShowAllValuesByCategory] = useState<Record<string, boolean>>({});
+  const [hasOverflowByCategory, setHasOverflowByCategory] = useState<Record<string, boolean>>({});
+  const [collapsedHeightByCategory, setCollapsedHeightByCategory] = useState<Record<string, number>>({});
+  const valuesContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const tagRefs = useRef<Record<string, Array<HTMLButtonElement | null>>>({});
+
+  useEffect(() => {
+    const measureOverflow = () => {
+      const nextOverflow: Record<string, boolean> = {};
+      const nextCollapsedHeights: Record<string, number> = {};
+
+      state.filterFields.forEach((field) => {
+        const container = valuesContainerRefs.current[field.category];
+        const tags = (tagRefs.current[field.category] ?? []).filter(
+          (value): value is HTMLButtonElement => Boolean(value),
+        );
+
+        if (!container) {
+          nextOverflow[field.category] = false;
+          return;
+        }
+
+        nextOverflow[field.category] = container.scrollHeight > container.clientHeight + 1;
+
+        if (tags.length === 0) {
+          return;
+        }
+
+        const uniqueRowTops = [...new Set(tags.map((tag) => tag.offsetTop))].sort((left, right) => left - right);
+        if (uniqueRowTops.length <= 2) {
+          return;
+        }
+
+        const firstRowTop = uniqueRowTops[0];
+        const secondRowTop = uniqueRowTops[1];
+        const secondRowTags = tags.filter((tag) => tag.offsetTop === secondRowTop);
+        const secondRowBottom =
+          secondRowTags.length > 0
+            ? Math.max(...secondRowTags.map((tag) => tag.offsetTop + tag.offsetHeight))
+            : secondRowTop;
+
+        nextCollapsedHeights[field.category] = secondRowBottom - firstRowTop;
+      });
+
+      setHasOverflowByCategory((current) => {
+        const currentSerialized = JSON.stringify(current);
+        const nextSerialized = JSON.stringify(nextOverflow);
+        return currentSerialized === nextSerialized ? current : nextOverflow;
+      });
+
+      setCollapsedHeightByCategory((current) => {
+        const currentSerialized = JSON.stringify(current);
+        const nextSerialized = JSON.stringify(nextCollapsedHeights);
+        return currentSerialized === nextSerialized ? current : nextCollapsedHeights;
+      });
+    };
+
+    const timeoutId = window.setTimeout(measureOverflow, 0);
+    window.addEventListener("resize", measureOverflow);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("resize", measureOverflow);
+    };
+  }, [state.filterFields, showAllValuesByCategory]);
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto">
         {state.filterFields.map((field) => {
           const isExpanded = state.expandedSections[field.category];
           const activeCount = state.draftFilters[field.category]?.length || 0;
+          const showAllValues = showAllValuesByCategory[field.category] ?? false;
+          const hasOverflow = hasOverflowByCategory[field.category] ?? false;
+          const collapsedHeight = collapsedHeightByCategory[field.category];
 
           return (
             <div key={field.category} className="border-b border-border/50">
@@ -205,15 +274,27 @@ export function CollectionSecondarySidebarBody({
               </button>
 
               {isExpanded && (
-                <div className="px-3 pb-2 flex flex-wrap gap-1">
-                  {field.values.slice(0, 20).map((value, idx) => {
-                    const isActive = state.draftFilters[field.category]?.includes(value);
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => state.toggleTag(value, field.category)}
-                        className={cn(
-                          "text-[11px] px-2 py-0.5 rounded-full border transition-colors",
+                <div className="px-3 pb-2">
+                  <div
+                    ref={(element) => {
+                      valuesContainerRefs.current[field.category] = element;
+                    }}
+                    className="flex flex-wrap gap-1 overflow-hidden"
+                    style={!showAllValues && collapsedHeight ? { maxHeight: `${collapsedHeight}px` } : undefined}
+                  >
+                    {field.values.map((value, idx) => {
+                      const isActive = state.draftFilters[field.category]?.includes(value);
+                      return (
+                        <button
+                          key={idx}
+                          ref={(element) => {
+                            const currentRefs = tagRefs.current[field.category] ?? [];
+                            currentRefs[idx] = element;
+                            tagRefs.current[field.category] = currentRefs;
+                          }}
+                          onClick={() => state.toggleTag(value, field.category)}
+                          className={cn(
+                            "text-[11px] px-2 py-0.5 rounded-full border transition-colors",
                           isActive
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground"
@@ -223,11 +304,35 @@ export function CollectionSecondarySidebarBody({
                       </button>
                     );
                   })}
-                  {field.values.length > 20 && (
-                    <span className="text-[10px] text-muted-foreground py-0.5">
-                      +{field.values.length - 20} more
-                    </span>
-                  )}
+                  </div>
+                  {hasOverflow && !showAllValues ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowAllValuesByCategory((current) => ({
+                          ...current,
+                          [field.category]: true,
+                        }))
+                      }
+                      className="text-[10px] text-muted-foreground py-0.5 hover:text-foreground transition-colors"
+                    >
+                      +more
+                    </button>
+                  ) : null}
+                  {hasOverflow && showAllValues ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowAllValuesByCategory((current) => ({
+                          ...current,
+                          [field.category]: false,
+                        }))
+                      }
+                      className="text-[10px] text-muted-foreground py-0.5 hover:text-foreground transition-colors"
+                    >
+                      Show less
+                    </button>
+                  ) : null}
                 </div>
               )}
             </div>
