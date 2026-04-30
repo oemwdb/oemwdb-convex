@@ -59,6 +59,7 @@ import BucketsPage from "./pages/BucketsPage";
 import AdvertisingPage from "./pages/AdvertisingPage";
 import WheelRecogniserPage from "./pages/WheelRecogniserPage";
 import SchemaVisualizerPage from "./pages/SchemaVisualizerPage";
+import ConfiguratorPage from "./pages/ConfiguratorPage";
 
 const App = () => (
   <ThemeProvider>
@@ -88,6 +89,7 @@ const App = () => (
                 <Route path="/engines" element={<EnginesPage />} />
                 <Route path="/engines/:engineId" element={<EngineItemPage />} />
                 <Route path="/garage" element={<GaragePage />} />
+                <Route path="/configurator" element={<ConfiguratorPage />} />
 
                 <Route path="/users" element={<ProtectedRoute requireAdmin={true}><UsersPage /></ProtectedRoute>} />
                 <Route path="/users/:username" element={<PublicProfilePage />} />

@@ -251,6 +251,9 @@ export default defineSchema({
     production_stats: v.optional(v.string()),
     good_pic_url: v.optional(v.string()),
     bad_pic_url: v.optional(v.string()),
+    vehicle_length_mm: v.optional(v.number()),
+    vehicle_width_mm: v.optional(v.number()),
+    vehicle_height_mm: v.optional(v.number()),
     wheelbase_mm: v.optional(v.number()),
     platform_code: v.optional(v.string()),
     is_visible: v.optional(v.boolean()),
@@ -2005,6 +2008,92 @@ export default defineSchema({
     .index("by_variant", ["variant_id"])
     .index("by_variant_type", ["variant_id", "image_type"])
     .index("by_storage_id", ["storage_id"]),
+
+  // =============================================================================
+  // CONFIGURATOR RIGS
+  // =============================================================================
+
+  configurator_vehicle_rigs: defineTable({
+    vehicle_id: v.id("oem_vehicles"),
+    vehicle_variant_id: v.optional(v.id("oem_vehicle_variants")),
+    title: v.optional(v.string()),
+    source_asset_url: v.string(),
+    cutout_asset_url: v.optional(v.string()),
+    source_kind: v.union(
+      v.literal("existing_asset"),
+      v.literal("upload"),
+      v.literal("generated")
+    ),
+    generation_session_id: v.optional(v.string()),
+    image_width_px: v.optional(v.number()),
+    image_height_px: v.optional(v.number()),
+    vehicle_length_mm: v.optional(v.number()),
+    wheelbase_mm: v.optional(v.number()),
+    front_x: v.optional(v.number()),
+    rear_x: v.optional(v.number()),
+    front_axle_x: v.optional(v.number()),
+    front_axle_y: v.optional(v.number()),
+    rear_axle_x: v.optional(v.number()),
+    rear_axle_y: v.optional(v.number()),
+    ground_y: v.optional(v.number()),
+    px_per_mm: v.optional(v.number()),
+    status: v.union(v.literal("draft"), v.literal("approved"), v.literal("archived")),
+    notes: v.optional(v.string()),
+    created_by: v.optional(v.string()),
+    created_at: v.string(),
+    updated_at: v.string(),
+    approved_at: v.optional(v.string()),
+  })
+    .index("by_vehicle", ["vehicle_id"])
+    .index("by_vehicle_status", ["vehicle_id", "status"])
+    .index("by_status", ["status"])
+    .index("by_updated_at", ["updated_at"]),
+
+  configurator_wheel_rigs: defineTable({
+    wheel_id: v.id("oem_wheels"),
+    wheel_variant_id: v.optional(v.id("oem_wheel_variants")),
+    title: v.optional(v.string()),
+    source_asset_url: v.string(),
+    cutout_asset_url: v.optional(v.string()),
+    source_kind: v.union(
+      v.literal("existing_asset"),
+      v.literal("upload"),
+      v.literal("generated")
+    ),
+    generation_session_id: v.optional(v.string()),
+    image_width_px: v.optional(v.number()),
+    image_height_px: v.optional(v.number()),
+    wheel_center_x: v.optional(v.number()),
+    wheel_center_y: v.optional(v.number()),
+    wheel_radius_px: v.optional(v.number()),
+    wheel_diameter_mm: v.optional(v.number()),
+    px_per_mm: v.optional(v.number()),
+    status: v.union(v.literal("draft"), v.literal("approved"), v.literal("archived")),
+    notes: v.optional(v.string()),
+    created_by: v.optional(v.string()),
+    created_at: v.string(),
+    updated_at: v.string(),
+    approved_at: v.optional(v.string()),
+  })
+    .index("by_wheel", ["wheel_id"])
+    .index("by_wheel_status", ["wheel_id", "status"])
+    .index("by_status", ["status"])
+    .index("by_updated_at", ["updated_at"]),
+
+  configurator_build_presets: defineTable({
+    vehicle_rig_id: v.id("configurator_vehicle_rigs"),
+    wheel_rig_id: v.id("configurator_wheel_rigs"),
+    tire_size: v.optional(v.string()),
+    visual_transform_json: v.optional(v.string()),
+    fitment_result_json: v.optional(v.string()),
+    owner_user_id: v.optional(v.string()),
+    label: v.optional(v.string()),
+    created_at: v.string(),
+    updated_at: v.string(),
+  })
+    .index("by_vehicle_rig", ["vehicle_rig_id"])
+    .index("by_wheel_rig", ["wheel_rig_id"])
+    .index("by_owner", ["owner_user_id"]),
 
   // =============================================================================
   // VIRTUAL FILE SYSTEM

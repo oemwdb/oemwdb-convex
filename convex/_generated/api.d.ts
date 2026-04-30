@@ -25,6 +25,7 @@ import type * as bucketBrowserShared from "../bucketBrowserShared.js";
 import type * as collectionMerges from "../collectionMerges.js";
 import type * as colors from "../colors.js";
 import type * as colorsBrowser from "../colorsBrowser.js";
+import type * as configurator from "../configurator.js";
 import type * as databaseTableAccess from "../databaseTableAccess.js";
 import type * as debug from "../debug.js";
 import type * as http from "../http.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   collectionMerges: typeof collectionMerges;
   colors: typeof colors;
   colorsBrowser: typeof colorsBrowser;
+  configurator: typeof configurator;
   databaseTableAccess: typeof databaseTableAccess;
   debug: typeof debug;
   http: typeof http;
