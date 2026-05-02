@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import BackendTargetBadge from "./BackendTargetBadge";
 import type { ParsedFilters } from '@/utils/filterParser';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -181,11 +180,6 @@ const DashboardLayout = ({
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-background rounded-2xl border shadow-sm overflow-hidden relative">
-        {hideHeader ? (
-          <div className="absolute top-3 right-3 z-50">
-            <BackendTargetBadge />
-          </div>
-        ) : null}
         {!hideHeader && (
           <Header
             className="border-b-0 bg-background/50 backdrop-blur-sm"

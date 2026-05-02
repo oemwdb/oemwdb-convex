@@ -39,11 +39,27 @@ export default function VehicleVariantHeader({
       subtitle={subtitle}
       description={description}
       media={
-        <HeaderMediaImage
-          alt={title}
-          sources={[{ value: image, bucketHint: "oemwdb images" }]}
-        />
+        <div className="relative h-full w-full">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-[10%] left-1/2 h-5 w-[68%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.32)_42%,rgba(0,0,0,0)_72%)] blur-[1px]"
+          />
+          <HeaderMediaImage
+            alt={title}
+            sources={[
+              {
+                value: image,
+                bucketHint: "oemwdb images",
+                fitMode: "contain",
+                imageClassName: "max-h-full max-w-full",
+              },
+            ]}
+            className="relative z-10 h-full w-full object-contain"
+            containerClassName="relative z-10 flex h-full w-full items-center justify-center px-2 pb-[8%] pt-1"
+          />
+        </div>
       }
+      mediaFrameClassName="overflow-visible rounded-none border-0 bg-transparent shadow-none"
       rows={[
         { label: "Engine", values: valueItems(engines) },
         { label: "Market", values: valueItems(markets) },

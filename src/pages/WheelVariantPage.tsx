@@ -238,9 +238,9 @@ const WheelVariantPage = () => {
                       },
                       {
                         field: "bad_pic_url",
-                        label: "Bad Pic",
+                        label: "Bad Pics",
                         value: variant.bad_pic_url ?? null,
-                        uploadLabel: "Drop a reference/unprocessed image",
+                        uploadLabel: "Drop reference/unprocessed images",
                       },
                     ]}
                   />

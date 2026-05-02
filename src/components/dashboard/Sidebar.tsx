@@ -8,15 +8,10 @@ import {
   CircleDot,
   Gauge,
   Palette,
-  SlidersHorizontal,
   LayoutDashboard,
-  Database,
   LogIn,
   LogOut,
-  Megaphone,
-  Network,
   Settings,
-  Terminal,
   UserCircle2,
   UserPlus
 } from "lucide-react";
@@ -27,6 +22,7 @@ import { useBackendTarget } from "@/contexts/BackendTargetContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { buildCollectionNavPathWithGlobalBrand } from "@/lib/collectionSearchPersistence";
 import {
   Tooltip,
   TooltipContent,
@@ -48,7 +44,7 @@ const Sidebar = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const { user, actualUser, isAuthenticated, actualIsAuthenticated, isAdmin, signIn, signUp, signOut } = useAuth();
+  const { user, actualUser, isAuthenticated, actualIsAuthenticated, isAdmin, signOut } = useAuth();
   const { startNewHistory } = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,12 +98,7 @@ const Sidebar = ({
     { icon: CircleDot, label: "Wheels", path: "/wheels", adminOnly: false },
     { icon: Palette, label: "Colors", path: "/colors", adminOnly: false },
     { icon: Gauge, label: "Engines", path: "/engines", adminOnly: false },
-    { icon: SlidersHorizontal, label: "Configurator", path: "/configurator", adminOnly: false },
     { icon: LayoutDashboard, label: "Dev", path: "/dev", adminOnly: true },
-    { icon: Megaphone, label: "Advertising", path: "/dev/advertising", adminOnly: true },
-    { icon: Network, label: "Schema", path: "/dev/schema", adminOnly: true },
-    { icon: Database, label: "Buckets", path: "/dev/buckets", adminOnly: true },
-    { icon: Terminal, label: "Tables", path: "/dev/tables", adminOnly: true }
   ];
 
   const isActive = (path: string) => {
@@ -116,12 +107,14 @@ const Sidebar = ({
 
   const accountUser = actualUser ?? user;
   const accountName = accountUser?.fullName
+    || accountUser?.name
     || accountUser?.username
+    || accountUser?.email?.split("@")[0]
     || accountUser?.emailAddresses?.[0]?.emailAddress?.split("@")[0]
     || "Guest";
-  const accountEmail = accountUser?.emailAddresses?.[0]?.emailAddress || "Browse in guest mode";
+  const accountEmail = accountUser?.email || accountUser?.emailAddresses?.[0]?.emailAddress || "Browse in guest mode";
   const accountImage = actualIsAuthenticated
-    ? accountUser?.imageUrl
+    ? accountUser?.imageUrl || accountUser?.profileImage
     : "/lovable-uploads/af8ef8ef-5e23-4161-a1c6-65e3628660d5.png";
   const accountInitials = accountName
     .split(/\s+/)
@@ -129,6 +122,15 @@ const Sidebar = ({
     .slice(0, 2)
     .map((part: string) => part[0]?.toUpperCase() ?? "")
     .join("") || "G";
+  const isLocalAdminMode = actualIsAuthenticated && isAdmin && isDevMode && activeTarget === "workshop";
+  const avatarRingClass = isLocalAdminMode
+    ? "ring-2 ring-orange-500/80 shadow-[0_0_14px_rgba(249,115,22,0.42)]"
+    : "ring-2 ring-border/60";
+  const accountStatusClass = isLocalAdminMode
+    ? "bg-orange-500"
+    : actualIsAuthenticated
+      ? "bg-emerald-500"
+      : "bg-red-500";
 
   const accountTrigger = (
     <div
@@ -138,7 +140,7 @@ const Sidebar = ({
       )}
     >
       <div className="relative shrink-0">
-        <Avatar className="h-8 w-8 ring-2 ring-border/50">
+        <Avatar className={cn("h-8 w-8", avatarRingClass)}>
           <AvatarImage src={accountImage} alt={accountName} />
           <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-semibold">
             {accountInitials}
@@ -147,7 +149,7 @@ const Sidebar = ({
         <div
           className={cn(
             "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-sidebar",
-            actualIsAuthenticated ? "bg-emerald-500" : "bg-red-500"
+            accountStatusClass
           )}
         />
       </div>
@@ -195,7 +197,7 @@ const Sidebar = ({
             >
               <div className="p-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-2 ring-border/60">
+                  <Avatar className={cn("h-10 w-10", avatarRingClass)}>
                     <AvatarImage src={accountImage} alt={accountName} />
                     <AvatarFallback className="bg-secondary text-secondary-foreground font-semibold">
                       {accountInitials}
@@ -271,7 +273,7 @@ const Sidebar = ({
                   ) : null}
                 </div>
 
-                {actualIsAuthenticated && isAdmin ? (
+                {showAdminUi ? (
                   <div className="mt-4">
                     <div className="flex items-center gap-1 rounded-full p-0.5 bg-white/5 border border-white/10 w-full">
                       {(["control", "workshop"] as const).map((target) => {
@@ -305,12 +307,12 @@ const Sidebar = ({
                             title={
                               disabled
                                 ? workshopConfigured
-                                  ? "Workshop is only available to admins."
-                                  : "Set VITE_CONVEX_WORKSHOP_URL to enable Workshop."
+                                  ? "Local is only available to admins."
+                                  : "Set VITE_CONVEX_WORKSHOP_URL or VITE_CONVEX_LOCAL_URL to enable Local."
                                 : undefined
                             }
                           >
-                            {target === "control" ? "Control" : "Workshop"}
+                            {target === "control" ? "Cloud" : "Local"}
                           </button>
                         );
                       })}
@@ -372,7 +374,7 @@ const Sidebar = ({
                       className="rounded-2xl"
                       onClick={() => {
                         setIsAccountMenuOpen(false);
-                        void signIn("", "");
+                        navigate("/login");
                       }}
                     >
                       <LogIn className="mr-2 h-4 w-4" />
@@ -383,7 +385,7 @@ const Sidebar = ({
                       className="rounded-2xl border-white/10 bg-transparent text-zinc-100 hover:bg-white/5 hover:text-zinc-100"
                       onClick={() => {
                         setIsAccountMenuOpen(false);
-                        void signUp("", "", "");
+                        navigate("/login?tab=register");
                       }}
                     >
                       <UserPlus className="mr-2 h-4 w-4" />
@@ -400,10 +402,11 @@ const Sidebar = ({
           {navigationItems.map((item) => {
             if (item.adminOnly && !showAdminUi) return null;
             const active = isActive(item.path);
+            const navPath = buildCollectionNavPathWithGlobalBrand(item.path, location.search);
 
             const LinkContent = (
               <Link
-                to={item.path}
+                to={navPath}
                 state={{ resetNavigation: true }}
                 className={cn(
                   "flex items-center gap-3 h-10 px-4 rounded-full text-sm transition-all duration-200 relative group",
@@ -416,7 +419,7 @@ const Sidebar = ({
                 )}
                 onClick={(event) => {
                   event.stopPropagation();
-                  startNewHistory(item.path);
+                  startNewHistory(navPath);
                 }}
               >
                 <item.icon size={20} className={cn("shrink-0 transition-transform duration-200", active && "scale-105")} />

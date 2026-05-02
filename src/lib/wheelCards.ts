@@ -65,6 +65,10 @@ export function toOemWheelCard(raw: Record<string, unknown>): OemWheel {
     tire_size: tireSize,
     wheel_offset: asText(raw.wheel_offset),
     color: asText(raw.color) ?? asText(raw.text_colors) ?? null,
+    vehicle_names:
+      asText(raw.vehicle_names) ??
+      asText(raw.text_vehicles) ??
+      null,
     good_pic_url: asText(raw.good_pic_url),
     bad_pic_url: asText(raw.bad_pic_url),
     status: asText(raw.status),

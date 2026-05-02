@@ -161,6 +161,7 @@ export interface OemWheel {
   tire_size?: string | null;
   wheel_offset?: string | null;
   color?: string | null;
+  vehicle_names?: string | string[] | null;
   good_pic_url?: string | null;
   bad_pic_url?: string | null;
   status?: string | null;

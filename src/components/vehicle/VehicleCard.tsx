@@ -11,8 +11,6 @@ import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 import { getVehicleRoutePath } from "@/lib/vehicleRoutes";
 import { collectCardBackValues } from "@/lib/cardBackValues";
 import { shouldCarryCollectionSearch } from "@/lib/collectionSearchPersistence";
-import { useDevMode } from "@/hooks/useDevMode";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface VehicleCardProps {
   vehicle: {
@@ -41,12 +39,27 @@ interface VehicleCardProps {
     label: string;
   }>;
   height?: string;
+  floatingImageShadow?: boolean;
 }
 
-const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240px]" }: VehicleCardProps) => {
+const VEHICLE_FLOATING_IMAGE_FRAME_CLASS =
+  "relative w-full h-full flex items-end justify-center overflow-hidden rounded-t-lg bg-muted px-3 pb-6 pt-3";
+const VEHICLE_FLOATING_IMAGE_CLASS =
+  "relative z-10 max-h-[92%] w-[92%] object-contain";
+const VEHICLE_ZOOMED_CONTAINED_IMAGE_CLASS =
+  "relative z-10 h-full w-full translate-y-[8%] object-contain";
+const VEHICLE_IMAGE_SHADOW_CLASS =
+  "drop-shadow-[0_14px_12px_rgba(0,0,0,0.42)]";
+
+const VehicleCard = ({
+  vehicle,
+  isFlipped,
+  onFlip,
+  dataMapping,
+  height = "h-[240px]",
+  floatingImageShadow = false,
+}: VehicleCardProps) => {
   const location = useLocation();
-  const { isDevMode } = useDevMode();
-  const { isAdmin } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -117,42 +130,23 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
 
   // Use chassis code (name) directly - no brand stripping needed for chassis codes like F55, F56
   const displayName = vehicle.name;
-  const preferBadPic = isAdmin && isDevMode;
-  const prioritizedSources = preferBadPic
-    ? [
-        {
-          values: getMediaUrlCandidates(vehicle.bad_pic_url, "BADPICS"),
-          fitMode: "contain" as const,
-          sourceKind: "bad" as const,
-        },
-        {
-          values: getMediaUrlCandidates(vehicle.good_pic_url, "oemwdb images"),
-          fitMode: "cover" as const,
-          sourceKind: "good" as const,
-        },
-        {
-          values: getMediaUrlCandidates(vehicle.image, "oemwdb images"),
-          fitMode: "cover" as const,
-          sourceKind: "legacy" as const,
-        },
-      ]
-    : [
-        {
-          values: getMediaUrlCandidates(vehicle.good_pic_url, "oemwdb images"),
-          fitMode: "cover" as const,
-          sourceKind: "good" as const,
-        },
-        {
-          values: getMediaUrlCandidates(vehicle.bad_pic_url, "BADPICS"),
-          fitMode: "contain" as const,
-          sourceKind: "bad" as const,
-        },
-        {
-          values: getMediaUrlCandidates(vehicle.image, "oemwdb images"),
-          fitMode: "cover" as const,
-          sourceKind: "legacy" as const,
-        },
-      ];
+  const prioritizedSources = [
+    {
+      values: getMediaUrlCandidates(vehicle.good_pic_url, "oemwdb images"),
+      fitMode: "contain" as const,
+      sourceKind: "good" as const,
+    },
+    {
+      values: getMediaUrlCandidates(vehicle.bad_pic_url, "BADPICS"),
+      fitMode: "contain" as const,
+      sourceKind: "bad" as const,
+    },
+    {
+      values: getMediaUrlCandidates(vehicle.image, "oemwdb images"),
+      fitMode: "contain" as const,
+      sourceKind: "legacy" as const,
+    },
+  ];
 
   const imageSources = prioritizedSources.flatMap(({ values, fitMode, sourceKind }) =>
     values.map((value) => ({
@@ -166,6 +160,7 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
   const activeImageSource = !imageError ? imageSources[imageCandidateIndex] ?? null : null;
   const vehicleImageUrl = activeImageSource?.value ?? null;
   const usesContainedImage = activeImageSource?.fitMode === "contain";
+  const shouldZoomContainedImage = usesContainedImage && activeImageSource?.sourceKind !== "bad";
 
   const toggleSource = () => {
     setIsSourceExpanded(!isSourceExpanded);
@@ -189,12 +184,28 @@ const VehicleCard = ({ vehicle, isFlipped, onFlip, dataMapping, height = "h-[240
             {/* Background with image or centered vehicle name */}
             <div className="flex-grow flex items-center justify-center overflow-hidden rounded-t-lg">
               {vehicleImageUrl ? (
-                <div className="w-full h-full flex items-center justify-center bg-muted rounded-t-lg">
+                <div
+                  className={cn(
+                    floatingImageShadow
+                      ? VEHICLE_FLOATING_IMAGE_FRAME_CLASS
+                      : "relative w-full h-full flex items-center justify-center bg-muted rounded-t-lg"
+                  )}
+                >
                   <img
                     src={vehicleImageUrl}
                     alt={vehicle.name}
                     className={cn(
-                      usesContainedImage ? "max-w-[90%] max-h-[90%] object-contain" : "w-full h-full object-cover"
+                      floatingImageShadow
+                        ? shouldZoomContainedImage
+                          ? VEHICLE_ZOOMED_CONTAINED_IMAGE_CLASS
+                          : VEHICLE_FLOATING_IMAGE_CLASS
+                        : shouldZoomContainedImage
+                          ? VEHICLE_ZOOMED_CONTAINED_IMAGE_CLASS
+                          : usesContainedImage
+                            ? "relative z-10 max-w-[90%] max-h-[90%] object-contain"
+                          : "w-full h-full object-cover"
+                      ,
+                      usesContainedImage && VEHICLE_IMAGE_SHADOW_CLASS
                     )}
                     onError={() => {
                       const nextIndex = imageCandidateIndex + 1;

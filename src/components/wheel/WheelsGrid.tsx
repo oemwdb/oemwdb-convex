@@ -62,6 +62,7 @@ function WheelCardCell({
           center_bore: wheel.center_bore,
           color: wheel.color,
           tire_size: wheel.tire_size,
+          vehicle_names: wheel.vehicle_names,
           diameter_ref: wheel.diameter_ref,
           width_ref: wheel.width_ref,
           bolt_pattern_ref: wheel.bolt_pattern_ref,

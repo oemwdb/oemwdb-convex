@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SaveButton } from "@/components/SaveButton";
 import { getMediaUrlCandidates } from "@/lib/mediaUrls";
 import { useWheelRotation } from "@/hooks/useWheelRotation";
-import { Plus, X } from "lucide-react";
+import { Copy, Download, Plus, X } from "lucide-react";
 import type { ItemPageFieldLayoutItem } from "@/types/itemPageLayout";
 import {
   normalizeWheelHeaderFieldLayout,
@@ -83,6 +83,20 @@ function normalizeSpecState(specs: WheelHeaderProps["specs"]): WheelSpecState {
   };
 }
 
+function imageFilename(name: string, imageUrl: string, contentType?: string | null) {
+  const fromUrl = imageUrl.split("?")[0]?.split("/").pop() ?? "";
+  const urlExtension = fromUrl.includes(".") ? fromUrl.split(".").pop() : "";
+  const typeExtension = contentType?.split("/")[1]?.split(";")[0];
+  const extension = (urlExtension || typeExtension || "png").replace(/[^a-z0-9]/gi, "").toLowerCase();
+  const safeName = (name || "wheel-image")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${safeName || "wheel-image"}.${extension || "png"}`;
+}
+
 const WheelHeader = ({
   name,
   brand,
@@ -137,6 +151,64 @@ const WheelHeader = ({
   }, [goodPicUrl, badPicUrl, image, isDevMode]);
 
   const finalImageUrl = !imageError ? candidates[candidateIndex] ?? null : null;
+
+  const fetchImageBlob = async () => {
+    if (!finalImageUrl) return null;
+    const response = await fetch(finalImageUrl);
+    if (!response.ok) {
+      throw new Error(`Image request failed (${response.status})`);
+    }
+    return await response.blob();
+  };
+
+  const handleCopyImage = async () => {
+    if (!finalImageUrl) return;
+
+    try {
+      const blob = await fetchImageBlob();
+      if (!blob || !navigator.clipboard || typeof window.ClipboardItem === "undefined") {
+        throw new Error("Image clipboard is unavailable");
+      }
+      await navigator.clipboard.write([
+        new window.ClipboardItem({
+          [blob.type || "image/png"]: blob,
+        }),
+      ]);
+      toast.success("Image copied");
+    } catch {
+      try {
+        await navigator.clipboard.writeText(finalImageUrl);
+        toast.success("Image URL copied");
+      } catch {
+        toast.error("Could not copy image");
+      }
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!finalImageUrl) return;
+
+    try {
+      const blob = await fetchImageBlob();
+      if (!blob) throw new Error("No image data");
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = imageFilename(name, finalImageUrl, blob.type);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      const anchor = document.createElement("a");
+      anchor.href = finalImageUrl;
+      anchor.download = imageFilename(name, finalImageUrl);
+      anchor.rel = "noopener noreferrer";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+  };
 
   const saveSpecField = async (field: WheelHeaderFieldKey, nextValues: string[]) => {
     if (!convexId) return;
@@ -353,6 +425,38 @@ const WheelHeader = ({
             <AspectRatio ratio={1} className="relative overflow-hidden rounded-[24px] group">
               {finalImageUrl ? (
                 <div className="flex h-full w-full items-center justify-center pt-[5%]">
+                  {showAdminControls ? (
+                    <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-full bg-black/75 text-white shadow-lg hover:bg-black"
+                        title="Copy image"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleCopyImage();
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-full bg-black/75 text-white shadow-lg hover:bg-black"
+                        title="Download image"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleDownloadImage();
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : null}
                   <img
                     ref={wheelImageRef}
                     src={finalImageUrl}

@@ -13,6 +13,8 @@ import type * as alfaRomeoImageBackfill from "../alfaRomeoImageBackfill.js";
 import type * as alfaRomeoLegacyAdditive from "../alfaRomeoLegacyAdditive.js";
 import type * as alfaRomeoNavigation from "../alfaRomeoNavigation.js";
 import type * as alfaRomeoRebuild from "../alfaRomeoRebuild.js";
+import type * as assetGeneration from "../assetGeneration.js";
+import type * as assetGenerationInternal from "../assetGenerationInternal.js";
 import type * as auth from "../auth.js";
 import type * as billyDash from "../billyDash.js";
 import type * as billyDashBrowser from "../billyDashBrowser.js";
@@ -59,6 +61,8 @@ declare const fullApi: ApiFromModules<{
   alfaRomeoLegacyAdditive: typeof alfaRomeoLegacyAdditive;
   alfaRomeoNavigation: typeof alfaRomeoNavigation;
   alfaRomeoRebuild: typeof alfaRomeoRebuild;
+  assetGeneration: typeof assetGeneration;
+  assetGenerationInternal: typeof assetGenerationInternal;
   auth: typeof auth;
   billyDash: typeof billyDash;
   billyDashBrowser: typeof billyDashBrowser;

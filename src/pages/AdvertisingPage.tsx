@@ -1,1134 +1,958 @@
 import React, { useMemo, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { StatsCard } from "@/components/admin/StatsCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
+  BarChart3,
   CalendarClock,
-  CircleOff,
-  Filter,
-  Globe2,
-  HandCoins,
-  Link2,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock3,
+  CreditCard,
+  ImagePlus,
   Megaphone,
+  PackagePlus,
   PanelTop,
+  PauseCircle,
+  Plus,
+  ReceiptText,
+  Rows3,
+  Search,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
-  TicketPercent,
-  TriangleAlert,
+  Target,
+  TrendingUp,
+  WalletCards,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type RegionScope = "NA" | "UK" | "EU" | "global";
-type PlacementType =
-  | "affiliate_link"
-  | "cta_stack"
-  | "merchant_compare"
-  | "sponsored_module"
-  | "market_outbound";
-type ProductCategory =
-  | "wheel"
-  | "vehicle"
-  | "tire"
-  | "engine"
-  | "color"
-  | "topic"
-  | "market";
-type PlacementPosition =
-  | "card link"
-  | "below card/list"
-  | "inline block"
-  | "rail/sidebar"
-  | "after every N rows"
-  | "item-page primary CTA"
-  | "item-page secondary CTA";
-type SurfaceFamily =
-  | "collection pages"
-  | "item pages"
-  | "variant lists"
-  | "market tab surfaces"
-  | "topic/news pages";
-type SlotType = "hero" | "inline" | "related" | "market spotlight" | "topic sponsor";
-type RequestStatus = "pending" | "approved" | "rejected";
+type AdType = "item_slots" | "collection_bars" | "market_boosts" | "guide_sponsors";
+type PlacementStatus = "active" | "scheduled" | "outbid" | "paused" | "available";
 
-interface AffiliatePlacement {
+interface AdTypeTab {
+  id: AdType;
+  label: string;
+  shortLabel: string;
+  description: string;
+}
+
+interface AdPlacement {
   id: string;
-  placementName: string;
-  surfaceFamily: SurfaceFamily;
-  surfaceKey: string;
-  placementType: PlacementType;
-  position: PlacementPosition;
-  enabled: boolean;
-  provider: string;
-  region: RegionScope;
-  categories: ProductCategory[];
-  priority: number;
+  type: AdType;
+  title: string;
+  itemName: string;
+  surface: string;
+  region: "NA" | "EU" | "UK" | "Global";
+  imageUrl: string;
+  placementLabel: string;
+  minCredits: number;
+  currentLeaderCredits: number;
+  activeBidders: number;
+  estimatedViews: number;
+  subscribed: boolean;
+  allocationCredits: number;
+  status: PlacementStatus;
+  rank?: number;
+  daysRemaining?: number;
+  categories: string[];
   notes: string;
 }
 
-interface SponsorSlot {
+interface CreditTransaction {
   id: string;
-  slotName: string;
-  surfaceFamily: SurfaceFamily;
-  surfaceKey: string;
-  slotType: SlotType;
-  reservePrice: number;
-  durationOptions: number[];
-  active: boolean;
-  maxWinners: number;
-  exclusivity: "exclusive" | "shared";
-  region: RegionScope;
-  categories: ProductCategory[];
-  approvedRelevance: string[];
-  notes: string;
+  label: string;
+  amount: number;
+  date: string;
+  kind: "purchase" | "allocation" | "release";
 }
 
-interface SponsorRequest {
-  id: string;
-  sponsorName: string;
-  requestedSlotId: string;
-  requestedStart: string;
-  requestedEnd: string;
-  bid: number;
-  region: RegionScope;
-  categories: ProductCategory[];
-  status: RequestStatus;
-  notes: string;
-}
-
-interface ScheduledCampaign {
-  id: string;
-  sponsorName: string;
-  slotId: string;
-  startDate: string;
-  endDate: string;
-  bid: number;
-  region: RegionScope;
-  categories: ProductCategory[];
-  sourceRequestId?: string;
-}
-
-const seededPlacements: AffiliatePlacement[] = [
+const adTypeTabs: AdTypeTab[] = [
   {
-    id: "apl_ebay_wheel_primary",
-    placementName: "Wheel detail primary exact-match CTA",
-    surfaceFamily: "item pages",
-    surfaceKey: "wheel-detail",
-    placementType: "affiliate_link",
-    position: "item-page primary CTA",
-    enabled: true,
-    provider: "eBay",
-    region: "global",
-    categories: ["wheel"],
-    priority: 1,
-    notes: "Exact OEM wheel intent. Use when part number or family title is specific enough.",
+    id: "item_slots",
+    label: "Under Item Slots",
+    shortLabel: "Item slots",
+    description: "Promoted slots under item cards and item detail media.",
   },
   {
-    id: "apl_tirerack_variant_tire",
-    placementName: "Variant table tire-size CTA",
-    surfaceFamily: "variant lists",
-    surfaceKey: "wheel-variants-table",
-    placementType: "cta_stack",
-    position: "item-page secondary CTA",
-    enabled: true,
-    provider: "Tire Rack",
-    region: "NA",
-    categories: ["tire", "wheel"],
-    priority: 1,
-    notes: "North America only. Replace with Delticom family for EU routing.",
+    id: "collection_bars",
+    label: "Collection Ad Bars",
+    shortLabel: "Ad bars",
+    description: "Horizontal ad bars inside vehicle, wheel, and brand collections.",
   },
   {
-    id: "apl_delticom_variant_tire",
-    placementName: "Variant table EU tire CTA",
-    surfaceFamily: "variant lists",
-    surfaceKey: "wheel-variants-table",
-    placementType: "cta_stack",
-    position: "item-page secondary CTA",
-    enabled: true,
-    provider: "Delticom",
+    id: "market_boosts",
+    label: "Market Boosts",
+    shortLabel: "Market",
+    description: "Boosted market placements for listings and vendor modules.",
+  },
+  {
+    id: "guide_sponsors",
+    label: "Guide Sponsors",
+    shortLabel: "Guides",
+    description: "Sponsored placements on fitment guides and editorial surfaces.",
+  },
+];
+
+const seededPlacements: AdPlacement[] = [
+  {
+    id: "ad_item_bmw_style_666",
+    type: "item_slots",
+    title: "Wheel item card lower slot",
+    itemName: "BMW M Style 666M",
+    surface: "Wheel detail / item card",
+    region: "Global",
+    imageUrl: "/ads/wheel_ad.png",
+    placementLabel: "Under item image",
+    minCredits: 450,
+    currentLeaderCredits: 1250,
+    activeBidders: 6,
+    estimatedViews: 18200,
+    subscribed: true,
+    allocationCredits: 1400,
+    status: "active",
+    rank: 1,
+    daysRemaining: 18,
+    categories: ["wheel", "BMW", "M"],
+    notes: "High-intent slot for users already looking at exact wheel data.",
+  },
+  {
+    id: "ad_item_vw_gti",
+    type: "item_slots",
+    title: "Vehicle item lower slot",
+    itemName: "Volkswagen Golf GTI Mk7",
+    surface: "Vehicle detail / item card",
     region: "EU",
-    categories: ["tire", "wheel"],
-    priority: 2,
-    notes: "Country-routed tyre storefront family for mainland Europe.",
+    imageUrl: "/ads/vehicle_ad.png",
+    placementLabel: "Under item image",
+    minCredits: 350,
+    currentLeaderCredits: 900,
+    activeBidders: 4,
+    estimatedViews: 12800,
+    subscribed: true,
+    allocationCredits: 650,
+    status: "outbid",
+    rank: 3,
+    daysRemaining: 9,
+    categories: ["vehicle", "Volkswagen"],
+    notes: "Good for fitment tools, wheel vendors, and tuning shops.",
   },
   {
-    id: "apl_market_featured_vendor",
-    placementName: "Market tab featured merchant strip",
-    surfaceFamily: "market tab surfaces",
-    surfaceKey: "market-listings",
-    placementType: "market_outbound",
-    position: "inline block",
-    enabled: false,
-    provider: "eBay",
-    region: "global",
-    categories: ["market", "wheel", "vehicle"],
-    priority: 3,
-    notes: "Disabled until market surfaces settle.",
+    id: "ad_item_rr_style_712",
+    type: "item_slots",
+    title: "Premium wheel item slot",
+    itemName: "Rolls-Royce Style 712",
+    surface: "Wheel detail / item card",
+    region: "Global",
+    imageUrl: "/wheels/rolls-royce/rolls-royce-style-712.webp",
+    placementLabel: "Under item image",
+    minCredits: 700,
+    currentLeaderCredits: 1100,
+    activeBidders: 3,
+    estimatedViews: 6400,
+    subscribed: false,
+    allocationCredits: 0,
+    status: "available",
+    categories: ["wheel", "luxury"],
+    notes: "Lower volume but unusually specific purchase intent.",
   },
   {
-    id: "apl_topic_guides_tire",
-    placementName: "Topic guide secondary merchant block",
-    surfaceFamily: "topic/news pages",
-    surfaceKey: "editorial-buying-guides",
-    placementType: "merchant_compare",
-    position: "after every N rows",
-    enabled: true,
-    provider: "Tire Rack",
-    region: "NA",
-    categories: ["topic", "tire"],
-    priority: 2,
-    notes: "Applies after guide modules, not inside body copy.",
+    id: "ad_collection_wheels",
+    type: "collection_bars",
+    title: "Wheel collection mid-feed bar",
+    itemName: "All wheel collections",
+    surface: "Wheel collection pages",
+    region: "Global",
+    imageUrl: "/ads/wheel_ad.png",
+    placementLabel: "Between card rows",
+    minCredits: 900,
+    currentLeaderCredits: 2600,
+    activeBidders: 10,
+    estimatedViews: 73500,
+    subscribed: true,
+    allocationCredits: 2200,
+    status: "outbid",
+    rank: 2,
+    daysRemaining: 12,
+    categories: ["wheel", "collection"],
+    notes: "Broad reach surface. Best for vendors with wide catalog coverage.",
   },
   {
-    id: "apl_collection_sidebar",
-    placementName: "Collection rail merchant module",
-    surfaceFamily: "collection pages",
-    surfaceKey: "wheel-collection",
-    placementType: "sponsored_module",
-    position: "rail/sidebar",
-    enabled: false,
-    provider: "Reserved",
-    region: "global",
-    categories: ["wheel", "vehicle"],
-    priority: 4,
-    notes: "Held back until sponsor inventory is live.",
-  },
-];
-
-const seededSlots: SponsorSlot[] = [
-  {
-    id: "ssl_wheel_hero",
-    slotName: "Wheel detail hero sponsor",
-    surfaceFamily: "item pages",
-    surfaceKey: "wheel-detail",
-    slotType: "hero",
-    reservePrice: 1800,
-    durationOptions: [30, 60, 90],
-    active: true,
-    maxWinners: 1,
-    exclusivity: "exclusive",
-    region: "global",
-    categories: ["wheel", "tire"],
-    approvedRelevance: ["OEM wheel specialists", "Tyre retailers", "Premium detailing"],
-    notes: "Premium placement above fold. Human approval only.",
-  },
-  {
-    id: "ssl_variant_inline",
-    slotName: "Wheel variants inline sponsor",
-    surfaceFamily: "variant lists",
-    surfaceKey: "wheel-variants-table",
-    slotType: "inline",
-    reservePrice: 950,
-    durationOptions: [30, 60, 90],
-    active: true,
-    maxWinners: 1,
-    exclusivity: "exclusive",
+    id: "ad_collection_vehicle_brand",
+    type: "collection_bars",
+    title: "Brand collection top ad bar",
+    itemName: "Volkswagen vehicles",
+    surface: "Brand vehicle collection",
     region: "EU",
-    categories: ["wheel", "tire"],
-    approvedRelevance: ["Regional tyre merchants", "Fitment specialists"],
-    notes: "Sits under the card block and above the table fold.",
+    imageUrl: "/ads/brand_ad.png",
+    placementLabel: "Top collection bar",
+    minCredits: 650,
+    currentLeaderCredits: 1500,
+    activeBidders: 7,
+    estimatedViews: 41400,
+    subscribed: false,
+    allocationCredits: 0,
+    status: "available",
+    categories: ["vehicle", "brand"],
+    notes: "Sits below filters before the first collection row.",
   },
   {
-    id: "ssl_market_spotlight",
-    slotName: "Market spotlight vendor slot",
-    surfaceFamily: "market tab surfaces",
-    surfaceKey: "market-home",
-    slotType: "market spotlight",
-    reservePrice: 1200,
-    durationOptions: [30, 60],
-    active: true,
-    maxWinners: 2,
-    exclusivity: "shared",
-    region: "global",
-    categories: ["market", "wheel", "vehicle"],
-    approvedRelevance: ["Verified vendors", "OEM part sellers"],
-    notes: "Can run two winners if categories do not conflict.",
-  },
-  {
-    id: "ssl_topic_sponsor",
-    slotName: "Buying guide topic sponsor",
-    surfaceFamily: "topic/news pages",
-    surfaceKey: "buying-guides",
-    slotType: "topic sponsor",
-    reservePrice: 800,
-    durationOptions: [30, 60, 90],
-    active: false,
-    maxWinners: 1,
-    exclusivity: "exclusive",
+    id: "ad_collection_tire_fitment",
+    type: "collection_bars",
+    title: "Tire fitment collection bar",
+    itemName: "Fitment-safe tire collections",
+    surface: "Filtered tire/wheel collections",
     region: "NA",
-    categories: ["topic", "tire", "wheel"],
-    approvedRelevance: ["Tyre retailers", "Wheel retailers", "Fitment tools"],
-    notes: "Inactive until editorial surfaces stabilize.",
-  },
-];
-
-const seededRequests: SponsorRequest[] = [
-  {
-    id: "srq_delticom_spring",
-    sponsorName: "Delticom Spring Fitment Push",
-    requestedSlotId: "ssl_variant_inline",
-    requestedStart: "2026-04-15",
-    requestedEnd: "2026-05-15",
-    bid: 1200,
-    region: "EU",
-    categories: ["tire", "wheel"],
-    status: "pending",
-    notes: "Wants EU variant-table coverage for summer tyre season.",
+    imageUrl: "/ads/vehicle_ad.png",
+    placementLabel: "Inline collection bar",
+    minCredits: 500,
+    currentLeaderCredits: 720,
+    activeBidders: 2,
+    estimatedViews: 18300,
+    subscribed: false,
+    allocationCredits: 0,
+    status: "available",
+    categories: ["tire", "fitment"],
+    notes: "Useful for regional tire merchants and installers.",
   },
   {
-    id: "srq_ebay_exact",
-    sponsorName: "eBay Exact Wheel Push",
-    requestedSlotId: "ssl_wheel_hero",
-    requestedStart: "2026-05-01",
-    requestedEnd: "2026-05-31",
-    bid: 2100,
-    region: "global",
-    categories: ["wheel"],
-    status: "approved",
-    notes: "Strong contextual fit for exact OEM item pages.",
+    id: "ad_market_featured_vendor",
+    type: "market_boosts",
+    title: "Featured market vendor",
+    itemName: "OEM wheel listings",
+    surface: "Market landing and listings",
+    region: "Global",
+    imageUrl: "/ads/wheel_ad.png",
+    placementLabel: "Market spotlight",
+    minCredits: 800,
+    currentLeaderCredits: 1700,
+    activeBidders: 8,
+    estimatedViews: 32200,
+    subscribed: true,
+    allocationCredits: 1800,
+    status: "scheduled",
+    rank: 1,
+    daysRemaining: 27,
+    categories: ["market", "vendor"],
+    notes: "Rotates inside the marketplace with verified seller guardrails.",
   },
   {
-    id: "srq_michelin_na",
-    sponsorName: "Michelin Fitment Education",
-    requestedSlotId: "ssl_topic_sponsor",
-    requestedStart: "2026-04-10",
-    requestedEnd: "2026-06-09",
-    bid: 950,
+    id: "ad_market_listing_boost",
+    type: "market_boosts",
+    title: "Listing row boost",
+    itemName: "Used OEM wheel sets",
+    surface: "Market search results",
+    region: "UK",
+    imageUrl: "/ads/brand_ad.png",
+    placementLabel: "Promoted result row",
+    minCredits: 300,
+    currentLeaderCredits: 620,
+    activeBidders: 5,
+    estimatedViews: 15600,
+    subscribed: false,
+    allocationCredits: 0,
+    status: "available",
+    categories: ["market", "listings"],
+    notes: "Smaller slot for inventory-specific sellers.",
+  },
+  {
+    id: "ad_guides_wheel_buying",
+    type: "guide_sponsors",
+    title: "Wheel buying guide sponsor",
+    itemName: "OEM wheel buying guide",
+    surface: "Guide header and related blocks",
     region: "NA",
-    categories: ["topic", "tire"],
-    status: "pending",
-    notes: "Needs review because topic inventory is still inactive.",
+    imageUrl: "/ads/wheel_ad.png",
+    placementLabel: "Guide sponsor",
+    minCredits: 550,
+    currentLeaderCredits: 1150,
+    activeBidders: 4,
+    estimatedViews: 20700,
+    subscribed: true,
+    allocationCredits: 950,
+    status: "paused",
+    rank: 2,
+    daysRemaining: 21,
+    categories: ["guide", "wheel"],
+    notes: "Educational intent. Better for fitment help than direct product pushes.",
   },
   {
-    id: "srq_vendor_market",
-    sponsorName: "OEM Auto Supply Market Highlight",
-    requestedSlotId: "ssl_market_spotlight",
-    requestedStart: "2026-04-05",
-    requestedEnd: "2026-05-04",
-    bid: 1300,
-    region: "global",
-    categories: ["market", "wheel"],
-    status: "approved",
-    notes: "Verified seller with high OEM relevance.",
-  },
-  {
-    id: "srq_second_vendor_market",
-    sponsorName: "Classic Hub Centre",
-    requestedSlotId: "ssl_market_spotlight",
-    requestedStart: "2026-04-20",
-    requestedEnd: "2026-05-30",
-    bid: 900,
-    region: "EU",
-    categories: ["market", "wheel"],
-    status: "pending",
-    notes: "Overlaps with current market spotlight request.",
+    id: "ad_guides_tire_sizing",
+    type: "guide_sponsors",
+    title: "Tire sizing guide sponsor",
+    itemName: "Tire sizing and offset guide",
+    surface: "Editorial guide pages",
+    region: "Global",
+    imageUrl: "/ads/vehicle_ad.png",
+    placementLabel: "Topic sponsor",
+    minCredits: 500,
+    currentLeaderCredits: 780,
+    activeBidders: 3,
+    estimatedViews: 24600,
+    subscribed: false,
+    allocationCredits: 0,
+    status: "available",
+    categories: ["guide", "tire"],
+    notes: "Good fit for tire retailers, calculators, and installer networks.",
   },
 ];
 
-const seededCampaigns: ScheduledCampaign[] = [
+const seededTransactions: CreditTransaction[] = [
   {
-    id: "cmp_ebay_may",
-    sponsorName: "eBay Exact Wheel Push",
-    slotId: "ssl_wheel_hero",
-    startDate: "2026-05-01",
-    endDate: "2026-05-31",
-    bid: 2100,
-    region: "global",
-    categories: ["wheel"],
-    sourceRequestId: "srq_ebay_exact",
+    id: "txn_purchase_apr",
+    label: "Credit pack purchase",
+    amount: 10000,
+    date: "Apr 28",
+    kind: "purchase",
   },
   {
-    id: "cmp_vendor_april",
-    sponsorName: "OEM Auto Supply Market Highlight",
-    slotId: "ssl_market_spotlight",
-    startDate: "2026-04-05",
-    endDate: "2026-05-04",
-    bid: 1300,
-    region: "global",
-    categories: ["market", "wheel"],
-    sourceRequestId: "srq_vendor_market",
+    id: "txn_alloc_bmw",
+    label: "BMW Style 666M allocation",
+    amount: -1400,
+    date: "Apr 28",
+    kind: "allocation",
+  },
+  {
+    id: "txn_alloc_collection",
+    label: "Wheel collection bar allocation",
+    amount: -2200,
+    date: "Apr 27",
+    kind: "allocation",
   },
 ];
 
-const surfaceOptions: Array<SurfaceFamily | "all"> = [
-  "all",
-  "collection pages",
-  "item pages",
-  "variant lists",
-  "market tab surfaces",
-  "topic/news pages",
-];
+const formatCredits = (value: number) => new Intl.NumberFormat("en-US").format(Math.max(0, value));
 
-const regionOptions: Array<RegionScope | "all"> = ["all", "NA", "UK", "EU", "global"];
-const statusOptions = ["all", "enabled", "disabled", "active", "inactive", "pending", "approved", "rejected", "scheduled"] as const;
-const slotTypeOptions: Array<SlotType | "all"> = ["all", "hero", "inline", "related", "market spotlight", "topic sponsor"];
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-
-const rangeOverlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) =>
-  new Date(aStart).getTime() <= new Date(bEnd).getTime() &&
-  new Date(bStart).getTime() <= new Date(aEnd).getTime();
-
-const formatDateRange = (start: string, end: string) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-
-  return `${startDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} - ${endDate.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-  })}`;
+const getStatusTone = (status: PlacementStatus) => {
+  if (status === "active") return "border-emerald-500/35 bg-emerald-500/10 text-emerald-300";
+  if (status === "scheduled") return "border-sky-500/35 bg-sky-500/10 text-sky-300";
+  if (status === "outbid") return "border-amber-500/35 bg-amber-500/10 text-amber-300";
+  if (status === "paused") return "border-zinc-500/35 bg-zinc-500/10 text-zinc-300";
+  return "border-white/12 bg-white/5 text-muted-foreground";
 };
 
-const getCampaignStatus = (startDate: string, endDate: string) => {
-  const now = new Date();
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  if (now < start) return "Scheduled";
-  if (now > end) return "Ended";
-  return "Live";
+const getTabIcon = (type: AdType) => {
+  if (type === "item_slots") return ImagePlus;
+  if (type === "collection_bars") return Rows3;
+  if (type === "market_boosts") return Megaphone;
+  return Sparkles;
 };
 
-const StatusBadge = ({ label }: { label: string }) => {
-  const tone =
-    label === "enabled" || label === "active" || label === "approved" || label === "Live"
-      ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/10"
-      : label === "pending" || label === "Scheduled"
-        ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
-        : label === "disabled" || label === "inactive"
-          ? "text-zinc-300 border-zinc-500/30 bg-zinc-500/10"
-          : "text-red-300 border-red-500/30 bg-red-500/10";
+const tabTriggerClass =
+  "min-w-fit rounded-full border border-white/12 !bg-transparent px-4 py-2 text-[13px] font-semibold text-muted-foreground shadow-none transition-colors hover:border-white/60 hover:text-foreground data-[state=active]:!bg-[#242424] data-[state=active]:border-white/20 data-[state=active]:text-foreground data-[state=active]:shadow-none";
 
-  return (
-    <Badge variant="outline" className={cn("rounded-full capitalize", tone)}>
-      {label}
-    </Badge>
-  );
-};
-
-const EmptyStateRow = ({ colSpan, message }: { colSpan: number; message: string }) => (
-  <TableRow>
-    <TableCell colSpan={colSpan} className="py-10 text-center text-sm text-muted-foreground">
-      {message}
-    </TableCell>
-  </TableRow>
+const PlacementStatusBadge = ({ status }: { status: PlacementStatus }) => (
+  <Badge variant="outline" className={cn("rounded-full capitalize", getStatusTone(status))}>
+    {status}
+  </Badge>
 );
 
+const MetricTile = ({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+}) => (
+  <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+    <div className="flex items-center justify-between gap-3">
+      <div className="text-xs font-medium uppercase text-muted-foreground">{label}</div>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </div>
+    <div className="mt-2 text-xl font-semibold text-foreground">{value}</div>
+    <div className="mt-1 text-xs text-muted-foreground">{detail}</div>
+  </div>
+);
+
+const PlacementCard = ({
+  placement,
+  onOpen,
+  onPauseToggle,
+}: {
+  placement: AdPlacement;
+  onOpen: (placement: AdPlacement) => void;
+  onPauseToggle: (placementId: string) => void;
+}) => {
+  const bidPressure = Math.min(100, Math.round((placement.currentLeaderCredits / Math.max(placement.minCredits, 1)) * 28));
+  const isSubscribed = placement.subscribed;
+
+  return (
+    <Card className="overflow-hidden border-border/70 bg-card/35">
+      <div className="relative aspect-[16/9] overflow-hidden border-b border-border/70 bg-muted/20">
+        <img src={placement.imageUrl} alt="" className="h-full w-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-black/20" />
+        <Badge variant="outline" className="absolute left-3 top-3 rounded-full border-black/30 bg-black/45 text-white">
+          {placement.placementLabel}
+        </Badge>
+        <button
+          type="button"
+          onClick={() => onOpen(placement)}
+          className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-black/70 text-white shadow-lg transition hover:scale-105 hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={isSubscribed ? `Manage ${placement.itemName}` : `Subscribe to ${placement.itemName}`}
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      </div>
+
+      <CardHeader className="space-y-2 p-4 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="truncate text-base">{placement.itemName}</CardTitle>
+            <CardDescription className="mt-1 line-clamp-2">{placement.title}</CardDescription>
+          </div>
+          <PlacementStatusBadge status={placement.status} />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="secondary" className="rounded-full">
+            {placement.region}
+          </Badge>
+          {placement.categories.slice(0, 3).map((category) => (
+            <Badge key={category} variant="outline" className="rounded-full capitalize">
+              {category}
+            </Badge>
+          ))}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4 p-4 pt-0">
+        <div className="grid grid-cols-3 gap-2 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground">Allocated</div>
+            <div className="font-semibold text-foreground">{formatCredits(placement.allocationCredits)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Leader</div>
+            <div className="font-semibold text-foreground">{formatCredits(placement.currentLeaderCredits)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Views</div>
+            <div className="font-semibold text-foreground">{formatCredits(placement.estimatedViews)}</div>
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Bid pressure</span>
+            <span>{placement.activeBidders} bidders</span>
+          </div>
+          <Progress value={bidPressure} className="h-2" />
+        </div>
+
+        <div className="flex items-center justify-between gap-2 border-t border-border/70 pt-3">
+          <div className="text-xs text-muted-foreground">
+            {isSubscribed
+              ? `Rank ${placement.rank ?? "-"}${placement.daysRemaining ? ` / ${placement.daysRemaining} days left` : ""}`
+              : `Minimum ${formatCredits(placement.minCredits)} credits`}
+          </div>
+          <div className="flex items-center gap-2">
+            {isSubscribed ? (
+              <Button size="sm" variant="ghost" onClick={() => onPauseToggle(placement.id)}>
+                <PauseCircle className="mr-2 h-4 w-4" />
+                {placement.status === "paused" ? "Resume" : "Pause"}
+              </Button>
+            ) : null}
+            <Button size="sm" variant={isSubscribed ? "outline" : "default"} onClick={() => onOpen(placement)}>
+              {isSubscribed ? "Manage" : "Bid"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const AdvertisingPage = () => {
-  const [placements, setPlacements] = useState(seededPlacements);
-  const [slots, setSlots] = useState(seededSlots);
-  const [requests, setRequests] = useState(seededRequests);
-  const [campaigns, setCampaigns] = useState(seededCampaigns);
+  const [activeTab, setActiveTab] = useState<AdType>("item_slots");
+  const [placements, setPlacements] = useState(seedPlacementsWithStatus(seededPlacements));
+  const [baseCredits, setBaseCredits] = useState(10000);
+  const [transactions, setTransactions] = useState(seededTransactions);
+  const [selectedPlacementId, setSelectedPlacementId] = useState<string | null>(null);
+  const [bidAmount, setBidAmount] = useState(0);
+  const [durationDays, setDurationDays] = useState("30");
+  const [bidNotes, setBidNotes] = useState("");
 
-  const [searchValue, setSearchValue] = useState("");
-  const [surfaceFilter, setSurfaceFilter] = useState<(typeof surfaceOptions)[number]>("all");
-  const [regionFilter, setRegionFilter] = useState<(typeof regionOptions)[number]>("all");
-  const [providerFilter, setProviderFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<(typeof statusOptions)[number]>("all");
-  const [slotTypeFilter, setSlotTypeFilter] = useState<(typeof slotTypeOptions)[number]>("all");
-
-  const slotById = useMemo(
-    () =>
-      slots.reduce<Record<string, SponsorSlot>>((acc, slot) => {
-        acc[slot.id] = slot;
-        return acc;
-      }, {}),
-    [slots]
+  const selectedPlacement = useMemo(
+    () => placements.find((placement) => placement.id === selectedPlacementId) ?? null,
+    [placements, selectedPlacementId]
   );
 
-  const providerOptions = useMemo(() => {
-    const values = new Set<string>();
-    placements.forEach((placement) => values.add(placement.provider));
-    requests.forEach((request) => values.add(request.sponsorName));
-    campaigns.forEach((campaign) => values.add(campaign.sponsorName));
-    return ["all", ...Array.from(values).sort((a, b) => a.localeCompare(b))];
-  }, [campaigns, placements, requests]);
+  const activeTabMeta = adTypeTabs.find((tab) => tab.id === activeTab) ?? adTypeTabs[0];
+  const tabPlacements = placements.filter((placement) => placement.type === activeTab);
+  const subscribedPlacements = tabPlacements.filter((placement) => placement.subscribed);
+  const availablePlacements = tabPlacements.filter((placement) => !placement.subscribed);
+  const allSubscribedPlacements = placements.filter((placement) => placement.subscribed);
+  const reservedCredits = allSubscribedPlacements.reduce((total, placement) => total + placement.allocationCredits, 0);
+  const availableCredits = Math.max(0, baseCredits - reservedCredits);
+  const activePlacements = allSubscribedPlacements.filter((placement) => placement.status === "active" || placement.status === "scheduled");
+  const attentionPlacements = allSubscribedPlacements.filter((placement) => placement.status === "outbid" || placement.status === "paused");
+  const selectedExistingAllocation = selectedPlacement?.allocationCredits ?? 0;
+  const selectedCreditDelta = Math.max(0, bidAmount - selectedExistingAllocation);
+  const canSubmitBid =
+    !!selectedPlacement &&
+    bidAmount >= selectedPlacement.minCredits &&
+    selectedCreditDelta <= availableCredits + selectedExistingAllocation;
 
-  const requestRows = useMemo(() => {
-    return requests.map((request) => {
-      const slot = slotById[request.requestedSlotId];
-      const overlappingRequests = requests.filter(
-        (other) =>
-          other.id !== request.id &&
-          other.requestedSlotId === request.requestedSlotId &&
-          other.status !== "rejected" &&
-          rangeOverlaps(request.requestedStart, request.requestedEnd, other.requestedStart, other.requestedEnd)
-      );
-      const overlappingCampaigns = campaigns.filter(
-        (campaign) =>
-          campaign.slotId === request.requestedSlotId &&
-          rangeOverlaps(request.requestedStart, request.requestedEnd, campaign.startDate, campaign.endDate)
-      );
+  const openBidPanel = (placement: AdPlacement) => {
+    setSelectedPlacementId(placement.id);
+    setBidAmount(Math.max(placement.allocationCredits || placement.minCredits, placement.minCredits));
+    setDurationDays(String(placement.daysRemaining && placement.daysRemaining > 30 ? placement.daysRemaining : 30));
+    setBidNotes("");
+  };
 
-      return {
-        ...request,
-        slot,
-        overlapCount: overlappingRequests.length + overlappingCampaigns.length,
-        hasConflict:
-          overlappingRequests.length > 0 ||
-          (slot ? slot.maxWinners <= overlappingCampaigns.length : false),
-      };
-    });
-  }, [campaigns, requests, slotById]);
+  const handleBuyCredits = (amount: number) => {
+    setBaseCredits((current) => current + amount);
+    setTransactions((current) => [
+      {
+        id: `txn_purchase_${Date.now()}`,
+        label: `Credit pack purchase`,
+        amount,
+        date: "Today",
+        kind: "purchase",
+      },
+      ...current,
+    ]);
+  };
 
-  const filteredPlacements = useMemo(() => {
-    return placements.filter((placement) => {
-      if (
-        searchValue &&
-        !`${placement.placementName} ${placement.notes} ${placement.provider} ${placement.surfaceKey}`
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ) {
-        return false;
-      }
-      if (surfaceFilter !== "all" && placement.surfaceFamily !== surfaceFilter) return false;
-      if (regionFilter !== "all" && placement.region !== regionFilter) return false;
-      if (providerFilter !== "all" && placement.provider !== providerFilter) return false;
-      if (slotTypeFilter !== "all") return false;
-      if (statusFilter !== "all") {
-        const status = placement.enabled ? "enabled" : "disabled";
-        if (status !== statusFilter) return false;
-      }
-      return true;
-    });
-  }, [placements, providerFilter, regionFilter, searchValue, slotTypeFilter, statusFilter, surfaceFilter]);
-
-  const filteredSlots = useMemo(() => {
-    return slots.filter((slot) => {
-      if (
-        searchValue &&
-        !`${slot.slotName} ${slot.notes} ${slot.surfaceKey} ${slot.approvedRelevance.join(" ")}`
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ) {
-        return false;
-      }
-      if (surfaceFilter !== "all" && slot.surfaceFamily !== surfaceFilter) return false;
-      if (regionFilter !== "all" && slot.region !== regionFilter) return false;
-      if (slotTypeFilter !== "all" && slot.slotType !== slotTypeFilter) return false;
-      if (providerFilter !== "all") return false;
-      if (statusFilter !== "all") {
-        const status = slot.active ? "active" : "inactive";
-        if (status !== statusFilter) return false;
-      }
-      return true;
-    });
-  }, [providerFilter, regionFilter, searchValue, slotTypeFilter, slots, statusFilter, surfaceFilter]);
-
-  const filteredRequests = useMemo(() => {
-    return requestRows.filter((request) => {
-      if (
-        searchValue &&
-        !`${request.sponsorName} ${request.notes} ${request.slot?.slotName ?? ""}`
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ) {
-        return false;
-      }
-      if (surfaceFilter !== "all" && request.slot?.surfaceFamily !== surfaceFilter) return false;
-      if (regionFilter !== "all" && request.region !== regionFilter) return false;
-      if (providerFilter !== "all" && request.sponsorName !== providerFilter) return false;
-      if (slotTypeFilter !== "all" && request.slot?.slotType !== slotTypeFilter) return false;
-      if (statusFilter !== "all" && request.status !== statusFilter) return false;
-      return true;
-    });
-  }, [providerFilter, regionFilter, requestRows, searchValue, slotTypeFilter, statusFilter, surfaceFilter]);
-
-  const filteredCampaigns = useMemo(() => {
-    return campaigns.filter((campaign) => {
-      const slot = slotById[campaign.slotId];
-      const campaignStatus = getCampaignStatus(campaign.startDate, campaign.endDate);
-      if (
-        searchValue &&
-        !`${campaign.sponsorName} ${slot?.slotName ?? ""} ${campaign.categories.join(" ")}`
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ) {
-        return false;
-      }
-      if (surfaceFilter !== "all" && slot?.surfaceFamily !== surfaceFilter) return false;
-      if (regionFilter !== "all" && campaign.region !== regionFilter) return false;
-      if (providerFilter !== "all" && campaign.sponsorName !== providerFilter) return false;
-      if (slotTypeFilter !== "all" && slot?.slotType !== slotTypeFilter) return false;
-      if (statusFilter !== "all" && campaignStatus.toLowerCase() !== statusFilter.toLowerCase()) return false;
-      return true;
-    });
-  }, [campaigns, providerFilter, regionFilter, searchValue, slotById, slotTypeFilter, statusFilter, surfaceFilter]);
-
-  const handlePlacementToggle = (placementId: string, enabled: boolean) => {
+  const handlePauseToggle = (placementId: string) => {
     setPlacements((current) =>
-      current.map((placement) => (placement.id === placementId ? { ...placement, enabled } : placement))
+      current.map((placement) => {
+        if (placement.id !== placementId) return placement;
+        const nextStatus: PlacementStatus = placement.status === "paused" ? "active" : "paused";
+        return { ...placement, status: nextStatus };
+      })
     );
   };
 
-  const handleSlotToggle = (slotId: string, active: boolean) => {
-    setSlots((current) => current.map((slot) => (slot.id === slotId ? { ...slot, active } : slot)));
-  };
+  const handleSubmitBid = () => {
+    if (!selectedPlacement || !canSubmitBid) return;
 
-  const handleRequestStatus = (requestId: string, status: RequestStatus) => {
-    setRequests((current) => current.map((request) => (request.id === requestId ? { ...request, status } : request)));
-    if (status === "rejected") {
-      setCampaigns((current) => current.filter((campaign) => campaign.sourceRequestId !== requestId));
-    }
-  };
-
-  const handleAssignRequest = (requestId: string) => {
-    const request = requests.find((entry) => entry.id === requestId);
-    if (!request) return;
-
-    setRequests((current) =>
-      current.map((entry) => (entry.id === requestId ? { ...entry, status: "approved" } : entry))
+    setPlacements((current) =>
+      current.map((placement) => {
+        if (placement.id !== selectedPlacement.id) return placement;
+        const beatsLeader = bidAmount >= placement.currentLeaderCredits;
+        return {
+          ...placement,
+          subscribed: true,
+          allocationCredits: bidAmount,
+          currentLeaderCredits: Math.max(placement.currentLeaderCredits, bidAmount),
+          status: beatsLeader ? "active" : "outbid",
+          rank: beatsLeader ? 1 : Math.max(2, placement.rank ?? 2),
+          daysRemaining: Number(durationDays),
+        };
+      })
     );
 
-    setCampaigns((current) => {
-      const nextCampaign: ScheduledCampaign = {
-        id: `cmp_${requestId}`,
-        sponsorName: request.sponsorName,
-        slotId: request.requestedSlotId,
-        startDate: request.requestedStart,
-        endDate: request.requestedEnd,
-        bid: request.bid,
-        region: request.region,
-        categories: request.categories,
-        sourceRequestId: request.id,
-      };
+    const delta = bidAmount - selectedExistingAllocation;
+    setTransactions((current) => [
+      {
+        id: `txn_alloc_${selectedPlacement.id}_${Date.now()}`,
+        label: `${selectedPlacement.itemName} allocation`,
+        amount: -delta,
+        date: "Today",
+        kind: delta >= 0 ? "allocation" : "release",
+      },
+      ...current,
+    ]);
 
-      const existingIndex = current.findIndex((campaign) => campaign.sourceRequestId === requestId);
-      if (existingIndex === -1) return [nextCampaign, ...current];
-
-      const clone = [...current];
-      clone[existingIndex] = nextCampaign;
-      return clone;
-    });
+    setSelectedPlacementId(null);
   };
-
-  const clearFilters = () => {
-    setSearchValue("");
-    setSurfaceFilter("all");
-    setRegionFilter("all");
-    setProviderFilter("all");
-    setStatusFilter("all");
-    setSlotTypeFilter("all");
-  };
-
-  const activePlacementsCount = placements.filter((placement) => placement.enabled).length;
-  const activeSlotsCount = slots.filter((slot) => slot.active).length;
-  const pendingRequestsCount = requests.filter((request) => request.status === "pending").length;
-  const scheduledCampaignCount = campaigns.filter((campaign) => getCampaignStatus(campaign.startDate, campaign.endDate) !== "Ended").length;
-  const disabledPlacementsCount = placements.filter((placement) => !placement.enabled).length;
 
   return (
     <DashboardLayout title="Advertising" showFilterButton={false} disableContentPadding={true}>
-      <div className="h-full overflow-y-auto p-2 space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Advertising</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Contextual monetization control board for affiliate placements, sponsor inventory, and adjudicated reservations.
-            </p>
+      <div className="h-full overflow-y-auto p-2">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold text-foreground">Advertising Dashboard</h1>
+                <Badge variant="outline" className="rounded-full border-primary/35 bg-primary/10 text-primary">
+                  Credit marketplace
+                </Badge>
+              </div>
+              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                Buy credits, subscribe to ad placements, and manage how your credits are allocated across OEMWDB item and collection surfaces.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[1000, 5000, 15000].map((amount) => (
+                <Button key={amount} size="sm" variant="outline" onClick={() => handleBuyCredits(amount)}>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Buy {formatCredits(amount)}
+                </Button>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary">
-              Admin only
-            </Badge>
-            <Badge variant="outline" className="rounded-full border-border/60 bg-card/50 text-muted-foreground">
-              Seeded admin data
-            </Badge>
-          </div>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatsCard title="Active Affiliate Placements" value={activePlacementsCount} description="Currently enabled merchant placements" icon={Link2} />
-          <StatsCard title="Active Sponsor Slots" value={activeSlotsCount} description="Sellable contextual inventory" icon={Megaphone} />
-          <StatsCard title="Pending Sponsor Requests" value={pendingRequestsCount} description="Waiting for manual review" icon={TriangleAlert} />
-          <StatsCard title="Scheduled Campaigns" value={scheduledCampaignCount} description="Approved placements on the calendar" icon={CalendarClock} />
-          <StatsCard title="Disabled Placements" value={disabledPlacementsCount} description="Paused or held-back affiliate surfaces" icon={CircleOff} />
-        </div>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdType)}>
+            <TabsList className="!inline-flex !h-auto !w-full !justify-start gap-2 overflow-x-auto !rounded-none !border-0 !bg-transparent !p-0 text-muted-foreground shadow-none">
+              {adTypeTabs.map((tab) => {
+                const Icon = getTabIcon(tab.id);
+                const count = placements.filter((placement) => placement.type === tab.id && placement.subscribed).length;
+                return (
+                  <TabsTrigger key={tab.id} value={tab.id} className={tabTriggerClass}>
+                    <Icon className="mr-2 h-4 w-4" />
+                    {tab.label}
+                    <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-muted-foreground">{count}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
 
-        <Card className="border-border/50 bg-card/30">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              Control Filters
-            </CardTitle>
-            <CardDescription>
-              Narrow the control board by surface, region, merchant/provider, status, or slot type.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-              <Input
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="Search placement, sponsor, slot, note…"
-                className="xl:col-span-2"
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <MetricTile
+                icon={WalletCards}
+                label="Wallet"
+                value={`${formatCredits(availableCredits)} credits`}
+                detail={`${formatCredits(baseCredits)} purchased / ${formatCredits(reservedCredits)} reserved`}
               />
-
-              <Select value={surfaceFilter} onValueChange={(value) => setSurfaceFilter(value as (typeof surfaceOptions)[number])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Surface" />
-                </SelectTrigger>
-                <SelectContent>
-                  {surfaceOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All surfaces" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={regionFilter} onValueChange={(value) => setRegionFilter(value as (typeof regionOptions)[number])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Region" />
-                </SelectTrigger>
-                <SelectContent>
-                  {regionOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All regions" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={providerFilter} onValueChange={setProviderFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Provider / sponsor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {providerOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All providers / sponsors" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as (typeof statusOptions)[number])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All statuses" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={slotTypeFilter} onValueChange={(value) => setSlotTypeFilter(value as (typeof slotTypeOptions)[number])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Slot type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {slotTypeOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All slot types" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MetricTile
+                icon={Target}
+                label="Subscribed"
+                value={`${allSubscribedPlacements.length} placements`}
+                detail={`${activePlacements.length} active or scheduled`}
+              />
+              <MetricTile
+                icon={TrendingUp}
+                label="Estimated Reach"
+                value={formatCredits(activePlacements.reduce((total, placement) => total + placement.estimatedViews, 0))}
+                detail="Projected views on active placements"
+              />
+              <MetricTile
+                icon={ShieldCheck}
+                label="Needs Attention"
+                value={`${attentionPlacements.length} placements`}
+                detail="Outbid or paused allocations"
+              />
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline" className="rounded-full">
-                  {filteredPlacements.length} placements
-                </Badge>
-                <Badge variant="outline" className="rounded-full">
-                  {filteredSlots.length} sponsor slots
-                </Badge>
-                <Badge variant="outline" className="rounded-full">
-                  {filteredRequests.length} requests
-                </Badge>
-                <Badge variant="outline" className="rounded-full">
-                  {filteredCampaigns.length} campaigns
-                </Badge>
-              </div>
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <Card className="border-border/50 bg-card/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Link2 className="h-4 w-4 text-muted-foreground" />
-                Affiliate Placements
-              </CardTitle>
-              <CardDescription>
-                Manage contextual merchant placements by surface, position, region, and product intent.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Placement</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Region</TableHead>
-                    <TableHead>Categories</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Enabled</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPlacements.length === 0 ? (
-                    <EmptyStateRow colSpan={7} message="No affiliate placements match the current filters." />
-                  ) : (
-                    filteredPlacements.map((placement) => (
-                      <TableRow key={placement.id}>
-                        <TableCell className="align-top">
-                          <div className="space-y-2">
-                            <div className="font-medium text-foreground">{placement.placementName}</div>
-                            <div className="flex flex-wrap gap-1.5 text-xs">
-                              <Badge variant="outline" className="rounded-full">{placement.surfaceFamily}</Badge>
-                              <Badge variant="outline" className="rounded-full">{placement.position}</Badge>
-                              <Badge variant="outline" className="rounded-full">{placement.placementType.replaceAll("_", " ")}</Badge>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="font-medium">{placement.provider}</div>
-                          <div className="text-xs text-muted-foreground">{placement.surfaceKey}</div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Badge variant="outline" className="rounded-full">
-                            <Globe2 className="mr-1 h-3 w-3" />
-                            {placement.region}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex flex-wrap gap-1.5">
-                            {placement.categories.map((category) => (
-                              <Badge key={category} variant="secondary" className="rounded-full capitalize">
-                                {category}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-muted-foreground">#{placement.priority}</TableCell>
-                        <TableCell className="align-top text-sm text-muted-foreground">{placement.notes}</TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex justify-end">
-                            <Switch
-                              checked={placement.enabled}
-                              onCheckedChange={(checked) => handlePlacementToggle(placement.id, checked)}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/50 bg-card/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-4 w-4 text-muted-foreground" />
-                Placement Rules
-              </CardTitle>
-              <CardDescription>
-                Keep monetization contextual, regional, and curated. This board assumes one primary merchant intent per surface.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0 text-sm">
-              <div className="rounded-2xl border border-border/60 bg-black/20 p-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Primary rule</div>
-                <div className="mt-2 font-medium text-foreground">Exact item intent and tire-size intent should not compete in the same cell.</div>
-              </div>
-              <div className="space-y-3">
-                <div className="rounded-xl border border-border/60 p-3">
-                  <div className="flex items-center gap-2 font-medium"><ShieldCheck className="h-4 w-4 text-emerald-400" />Affiliate quality</div>
-                  <p className="mt-2 text-muted-foreground">Use region-aware merchants and keep positions explicit: primary CTA, secondary CTA, rail, or inline module.</p>
-                </div>
-                <div className="rounded-xl border border-border/60 p-3">
-                  <div className="flex items-center gap-2 font-medium"><PanelTop className="h-4 w-4 text-amber-400" />Sponsor relevance</div>
-                  <p className="mt-2 text-muted-foreground">Slots are contextual inventory, not generic banner junk. Relevance must be approved before a sponsor can win inventory.</p>
-                </div>
-                <div className="rounded-xl border border-border/60 p-3">
-                  <div className="flex items-center gap-2 font-medium"><TriangleAlert className="h-4 w-4 text-red-400" />Conflict watch</div>
-                  <p className="mt-2 text-muted-foreground">Overlapping requests are surfaced below so reservations can be adjudicated manually before anything goes live.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="border-border/50 bg-card/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Megaphone className="h-4 w-4 text-muted-foreground" />
-              Sponsor Inventory
-            </CardTitle>
-            <CardDescription>
-              Curated slot definitions tied to specific site contexts, with reserve pricing and approved relevance guardrails.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Slot</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Reserve</TableHead>
-                  <TableHead>Durations</TableHead>
-                  <TableHead>Winners</TableHead>
-                  <TableHead>Approved relevance</TableHead>
-                  <TableHead className="text-right">Active</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSlots.length === 0 ? (
-                  <EmptyStateRow colSpan={8} message="No sponsor slots match the current filters." />
-                ) : (
-                  filteredSlots.map((slot) => (
-                    <TableRow key={slot.id}>
-                      <TableCell className="align-top">
-                        <div className="space-y-2">
-                          <div className="font-medium text-foreground">{slot.slotName}</div>
-                          <div className="flex flex-wrap gap-1.5 text-xs">
-                            <Badge variant="outline" className="rounded-full">{slot.surfaceFamily}</Badge>
-                            <Badge variant="outline" className="rounded-full">{slot.surfaceKey}</Badge>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <div className="flex flex-col gap-2">
-                          <Badge variant="outline" className="w-fit rounded-full capitalize">{slot.slotType}</Badge>
-                          <StatusBadge label={slot.active ? "active" : "inactive"} />
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <Badge variant="outline" className="rounded-full">{slot.region}</Badge>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {slot.categories.map((category) => (
-                            <Badge key={category} variant="secondary" className="rounded-full capitalize">
-                              {category}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top font-medium">{formatCurrency(slot.reservePrice)}</TableCell>
-                      <TableCell className="align-top">
-                        <div className="flex flex-wrap gap-1.5">
-                          {slot.durationOptions.map((duration) => (
-                            <Badge key={duration} variant="outline" className="rounded-full">
-                              {duration} days
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top text-sm text-muted-foreground">
-                        {slot.maxWinners} max / {slot.exclusivity}
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <div className="flex flex-wrap gap-1.5">
-                          {slot.approvedRelevance.map((value) => (
-                            <Badge key={value} variant="outline" className="rounded-full">
-                              {value}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="mt-2 text-xs text-muted-foreground">{slot.notes}</div>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <div className="flex justify-end">
-                          <Switch checked={slot.active} onCheckedChange={(checked) => handleSlotToggle(slot.id, checked)} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card className="border-border/50 bg-card/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <HandCoins className="h-4 w-4 text-muted-foreground" />
-                Sponsor Requests
-              </CardTitle>
-              <CardDescription>
-                Manual adjudication workflow for incoming sponsor requests, with conflict awareness and explicit assignment.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sponsor</TableHead>
-                    <TableHead>Requested slot</TableHead>
-                    <TableHead>Dates</TableHead>
-                    <TableHead>Bid</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Conflict</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRequests.length === 0 ? (
-                    <EmptyStateRow colSpan={7} message="No sponsor requests match the current filters." />
-                  ) : (
-                    filteredRequests.map((request) => (
-                      <TableRow key={request.id}>
-                        <TableCell className="align-top">
-                          <div className="font-medium">{request.sponsorName}</div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {request.categories.map((category) => (
-                              <Badge key={category} variant="secondary" className="rounded-full capitalize">
-                                {category}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="mt-2 text-xs text-muted-foreground">{request.notes}</div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="font-medium">{request.slot?.slotName ?? "Unknown slot"}</div>
-                          <div className="text-xs text-muted-foreground">{request.slot?.surfaceFamily ?? "Unknown surface"}</div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-muted-foreground">
-                          {formatDateRange(request.requestedStart, request.requestedEnd)}
-                        </TableCell>
-                        <TableCell className="align-top font-medium">{formatCurrency(request.bid)}</TableCell>
-                        <TableCell className="align-top">
-                          <StatusBadge label={request.status} />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {request.hasConflict ? (
-                            <Badge variant="outline" className="rounded-full border-red-500/30 bg-red-500/10 text-red-300">
-                              {request.overlapCount} overlap{request.overlapCount === 1 ? "" : "s"}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="rounded-full border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
-                              clear
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRequestStatus(request.id, "approved")}
-                              disabled={request.status === "approved"}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRequestStatus(request.id, "rejected")}
-                              disabled={request.status === "rejected"}
-                            >
-                              Reject
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleAssignRequest(request.id)}
-                              disabled={request.status === "rejected"}
-                            >
-                              Assign
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/50 bg-card/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TicketPercent className="h-4 w-4 text-muted-foreground" />
-                Scheduled Campaigns
-              </CardTitle>
-              <CardDescription>
-                Upcoming and live placements that have already won inventory.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              {filteredCampaigns.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/60 px-4 py-10 text-center text-sm text-muted-foreground">
-                  No scheduled campaigns match the current filters.
-                </div>
-              ) : (
-                filteredCampaigns.map((campaign) => {
-                  const slot = slotById[campaign.slotId];
-                  const campaignStatus = getCampaignStatus(campaign.startDate, campaign.endDate);
-
-                  return (
-                    <div key={campaign.id} className="rounded-2xl border border-border/60 bg-black/20 p-4">
-                      <div className="flex items-start justify-between gap-3">
+            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="space-y-4">
+                {adTypeTabs.map((tab) => (
+                  <TabsContent key={tab.id} value={tab.id} className="mt-0 space-y-4">
+                    <section className="rounded-lg border border-border/70 bg-card/25">
+                      <div className="flex flex-col gap-3 border-b border-border/70 p-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                          <div className="font-medium text-foreground">{campaign.sponsorName}</div>
-                          <div className="mt-1 text-sm text-muted-foreground">{slot?.slotName ?? "Unknown slot"}</div>
+                          <div className="flex items-center gap-2">
+                            <PanelTop className="h-4 w-4 text-muted-foreground" />
+                            <h2 className="text-base font-semibold text-foreground">{tab.shortLabel} subscriptions</h2>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">{tab.description}</p>
                         </div>
-                        <StatusBadge label={campaignStatus} />
+                        <Badge variant="outline" className="w-fit rounded-full">
+                          {subscribedPlacements.length} subscribed / {availablePlacements.length} available
+                        </Badge>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Badge variant="outline" className="rounded-full">
-                          {formatDateRange(campaign.startDate, campaign.endDate)}
-                        </Badge>
-                        <Badge variant="outline" className="rounded-full">
-                          {campaign.region}
-                        </Badge>
-                        <Badge variant="outline" className="rounded-full">
-                          {formatCurrency(campaign.bid)}
-                        </Badge>
-                        {campaign.categories.map((category) => (
-                          <Badge key={category} variant="secondary" className="rounded-full capitalize">
-                            {category}
-                          </Badge>
-                        ))}
+
+                      <div className="p-4">
+                        {subscribedPlacements.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-border/70 px-4 py-8 text-center">
+                            <PackagePlus className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <div className="mt-3 text-sm font-medium text-foreground">No subscriptions in this ad type yet</div>
+                            <p className="mt-1 text-sm text-muted-foreground">Use the centered plus on an available placement to start allocating credits.</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-3 lg:grid-cols-2">
+                            {subscribedPlacements.map((placement) => (
+                              <PlacementCard
+                                key={placement.id}
+                                placement={placement}
+                                onOpen={openBidPanel}
+                                onPauseToggle={handlePauseToggle}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="rounded-lg border border-border/70 bg-card/25">
+                      <div className="flex flex-col gap-3 border-b border-border/70 p-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Search className="h-4 w-4 text-muted-foreground" />
+                            <h2 className="text-base font-semibold text-foreground">Available {tab.shortLabel.toLowerCase()}</h2>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">Click the centered plus on any image to open the credit allocation panel.</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <SlidersHorizontal className="h-4 w-4" />
+                          Minimum bids and leader pressure are mocked for this V1 shell.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 p-4 lg:grid-cols-2">
+                        {availablePlacements.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-border/70 px-4 py-8 text-center text-sm text-muted-foreground lg:col-span-2">
+                            Every placement in this ad type is already subscribed.
+                          </div>
+                        ) : (
+                          availablePlacements.map((placement) => (
+                            <PlacementCard
+                              key={placement.id}
+                              placement={placement}
+                              onOpen={openBidPanel}
+                              onPauseToggle={handlePauseToggle}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </section>
+                  </TabsContent>
+                ))}
+              </div>
+
+              <aside className="space-y-4">
+                <Card className="border-border/70 bg-card/35">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+                      Credit Wallet
+                    </CardTitle>
+                    <CardDescription>Available credits power bids across every advertising type.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Reserved</span>
+                        <span className="font-medium text-foreground">{formatCredits(reservedCredits)} / {formatCredits(baseCredits)}</span>
+                      </div>
+                      <Progress value={baseCredits ? (reservedCredits / baseCredits) * 100 : 0} className="h-2" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-lg border border-border/70 p-3">
+                        <div className="text-xs text-muted-foreground">Available</div>
+                        <div className="mt-1 text-lg font-semibold">{formatCredits(availableCredits)}</div>
+                      </div>
+                      <div className="rounded-lg border border-border/70 p-3">
+                        <div className="text-xs text-muted-foreground">Reserved</div>
+                        <div className="mt-1 text-lg font-semibold">{formatCredits(reservedCredits)}</div>
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/70 bg-card/35">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                      {activeTabMeta.shortLabel} Snapshot
+                    </CardTitle>
+                    <CardDescription>{activeTabMeta.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Subscribed</span>
+                      <span className="font-medium">{subscribedPlacements.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Available inventory</span>
+                      <span className="font-medium">{availablePlacements.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Reserved here</span>
+                      <span className="font-medium">
+                        {formatCredits(subscribedPlacements.reduce((total, placement) => total + placement.allocationCredits, 0))}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Needs attention</span>
+                      <span className="font-medium">
+                        {subscribedPlacements.filter((placement) => placement.status === "outbid" || placement.status === "paused").length}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/70 bg-card/35">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ReceiptText className="h-4 w-4 text-muted-foreground" />
+                      Recent Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {transactions.slice(0, 6).map((transaction) => (
+                      <div key={transaction.id} className="flex items-start justify-between gap-3 border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
+                        <div>
+                          <div className="text-sm font-medium text-foreground">{transaction.label}</div>
+                          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock3 className="h-3.5 w-3.5" />
+                            {transaction.date}
+                          </div>
+                        </div>
+                        <div className={cn("text-sm font-semibold", transaction.amount >= 0 ? "text-emerald-300" : "text-muted-foreground")}>
+                          {transaction.amount >= 0 ? "+" : ""}
+                          {formatCredits(transaction.amount)}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </aside>
+            </div>
+          </Tabs>
         </div>
       </div>
+
+      <Dialog open={!!selectedPlacement} onOpenChange={(open) => (!open ? setSelectedPlacementId(null) : undefined)}>
+        {selectedPlacement ? (
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedPlacement.subscribed ? "Manage credit allocation" : "Subscribe to ad placement"}</DialogTitle>
+              <DialogDescription>
+                Allocate credits to this placement. Higher allocations improve rank, but only reserved credits are committed.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+              <div className="space-y-3">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-border/70 bg-muted/20">
+                  <img src={selectedPlacement.imageUrl} alt="" className="h-full w-full object-cover opacity-85" />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-black/70 text-white">
+                    <Plus className="h-6 w-6" />
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border/70 p-3 text-sm">
+                  <div className="font-medium text-foreground">{selectedPlacement.itemName}</div>
+                  <div className="mt-1 text-muted-foreground">{selectedPlacement.surface}</div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <PlacementStatusBadge status={selectedPlacement.status} />
+                    <Badge variant="outline" className="rounded-full">
+                      {selectedPlacement.region}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg border border-border/70 p-3">
+                    <div className="text-xs text-muted-foreground">Minimum</div>
+                    <div className="mt-1 text-lg font-semibold">{formatCredits(selectedPlacement.minCredits)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border/70 p-3">
+                    <div className="text-xs text-muted-foreground">Leader</div>
+                    <div className="mt-1 text-lg font-semibold">{formatCredits(selectedPlacement.currentLeaderCredits)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border/70 p-3">
+                    <div className="text-xs text-muted-foreground">Wallet free</div>
+                    <div className="mt-1 text-lg font-semibold">{formatCredits(availableCredits)}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="bid-credits" className="text-sm font-medium text-foreground">
+                      Credit allocation
+                    </label>
+                    <span className="text-xs text-muted-foreground">
+                      {selectedCreditDelta > 0 ? `${formatCredits(selectedCreditDelta)} new credits` : "No new credits needed"}
+                    </span>
+                  </div>
+                  <Input
+                    id="bid-credits"
+                    type="number"
+                    min={selectedPlacement.minCredits}
+                    value={bidAmount}
+                    onChange={(event) => setBidAmount(Number(event.target.value))}
+                  />
+                  <Slider
+                    value={[bidAmount]}
+                    min={selectedPlacement.minCredits}
+                    max={Math.max(selectedPlacement.currentLeaderCredits + 2500, selectedPlacement.minCredits + availableCredits + selectedExistingAllocation)}
+                    step={50}
+                    onValueChange={(value) => setBidAmount(value[0] ?? selectedPlacement.minCredits)}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Run length</label>
+                    <Select value={durationDays} onValueChange={setDurationDays}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[7, 14, 30, 60, 90].map((days) => (
+                          <SelectItem key={days} value={String(days)}>
+                            {days} days
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-lg border border-border/70 p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-foreground">
+                      {bidAmount >= selectedPlacement.currentLeaderCredits ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                      ) : (
+                        <CalendarClock className="h-4 w-4 text-amber-300" />
+                      )}
+                      {bidAmount >= selectedPlacement.currentLeaderCredits ? "Likely winning" : "Below current leader"}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Current leader is {formatCredits(selectedPlacement.currentLeaderCredits)} credits.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Internal note</label>
+                  <Textarea
+                    value={bidNotes}
+                    onChange={(event) => setBidNotes(event.target.value)}
+                    placeholder="Optional campaign note for this allocation"
+                    rows={3}
+                  />
+                </div>
+
+                {!canSubmitBid ? (
+                  <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 p-3 text-sm text-amber-200">
+                    Increase the bid above the minimum or buy more credits before submitting this allocation.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedPlacementId(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitBid} disabled={!canSubmitBid}>
+                {selectedPlacement.subscribed ? "Update allocation" : "Subscribe with credits"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        ) : null}
+      </Dialog>
     </DashboardLayout>
   );
 };
+
+const seedPlacementsWithStatus = (placements: AdPlacement[]) =>
+  placements.map((placement) => ({
+    ...placement,
+    status: placement.subscribed ? placement.status : "available",
+  }));
 
 export default AdvertisingPage;

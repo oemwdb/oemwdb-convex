@@ -325,6 +325,12 @@ const VehicleDetailPage = () => {
         wheel_diameter_ref: pickSpecValues((vehicleData as any).diameter_ref, (vehicleData as any).text_diameters),
         wheel_width_ref: pickSpecValues((vehicleData as any).width_ref, (vehicleData as any).text_widths),
       }}
+      dimensions={{
+        vehicle_length_mm: (vehicleData as any).vehicle_length_mm ?? null,
+        vehicle_width_mm: (vehicleData as any).vehicle_width_mm ?? null,
+        vehicle_height_mm: (vehicleData as any).vehicle_height_mm ?? null,
+        wheelbase_mm: (vehicleData as any).wheelbase_mm ?? null,
+      }}
     />
   );
 

@@ -28,6 +28,9 @@ import {
   Bot,
   Megaphone,
   Network,
+  SlidersHorizontal,
+  GitCompareArrows,
+  ImagePlus,
 } from "lucide-react";
 
 const DevPage = () => {
@@ -106,16 +109,22 @@ const DevPage = () => {
           <CollapsibleContent>
             <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 pt-0">
             <AppIcon
-              to="/users"
-              icon={Users}
-              label="Users"
-              description="Manage user accounts"
+              to="/dev/configurator"
+              icon={SlidersHorizontal}
+              label="Configurator"
+              description="Build vehicle and wheel visual composites"
             />
             <AppIcon
-              to="/market"
-              icon={ShoppingCart}
-              label="Market"
-              description="Marketplace listings"
+              to="/dev/compare"
+              icon={GitCompareArrows}
+              label="Compare"
+              description="Compare vehicles and wheels side by side"
+            />
+            <AppIcon
+              to="/dev/asset-studio"
+              icon={ImagePlus}
+              label="Asset Studio"
+              description="Create and repair product image assets"
             />
             <AppIcon
               to="/dev/advertising"
@@ -130,16 +139,28 @@ const DevPage = () => {
               description="Visualize schema tables and relations"
             />
             <AppIcon
-              to="/dev/storage"
+              to="/dev/buckets"
               icon={Database}
-              label="Storage"
+              label="Buckets"
               description="Manage bucket storage"
             />
             <AppIcon
-              to="/dev/database"
-              icon={Database}
-              label="Database"
-              description="Database management & data"
+              to="/dev/tables"
+              icon={Terminal}
+              label="Tables"
+              description="Inspect and edit database tables"
+            />
+            <AppIcon
+              to="/users"
+              icon={Users}
+              label="Users"
+              description="Manage user accounts"
+            />
+            <AppIcon
+              to="/market"
+              icon={ShoppingCart}
+              label="Market"
+              description="Marketplace listings"
             />
             <AppIcon
               to="/dev/billy-dash"
@@ -231,9 +252,9 @@ const DevPage = () => {
               description="Interactive navigation map"
             />
             <AppIcon
-              to="/dev/wheel-recogniser"
+              to="/dev/wheel-recognizer"
               icon={Search}
-              label="Wheel Recogniser"
+              label="Wheel Recognizer"
               description="Upload, align, and metadata-match wheel photos"
             />
             </div>

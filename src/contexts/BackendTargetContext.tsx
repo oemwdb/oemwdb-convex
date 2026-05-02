@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { useUser } from "@clerk/react";
-import { ADMIN_EMAILS } from "@/lib/perspective";
 import {
   type BackendTarget,
   BACKEND_TARGET_CHANGE_EVENT,
@@ -10,6 +8,7 @@ import {
   readStoredBackendTarget,
 } from "@/lib/backendTarget";
 import { setRuntimeConvexSiteUrl } from "@/lib/backendTargetRuntime";
+import { readStoredPerspective, type ViewerPerspective } from "@/lib/perspective";
 
 interface BackendTargetContextValue {
   selectedTarget: BackendTarget;
@@ -26,17 +25,12 @@ interface BackendTargetContextValue {
 const BackendTargetContext = createContext<BackendTargetContextValue | undefined>(undefined);
 
 export const BackendTargetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoaded, isSignedIn } = useUser();
   const [{ controlUrl, workshopUrl, controlSiteUrl, workshopSiteUrl }] = useState(() => getBackendUrlConfig());
   const [selectedTarget, setSelectedTargetState] = useState<BackendTarget>(() => readStoredBackendTarget());
+  const [storedPerspective, setStoredPerspective] = useState<ViewerPerspective>(() => readStoredPerspective());
 
-  const primaryEmail =
-    user?.primaryEmailAddress?.emailAddress?.toLowerCase() ??
-    user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() ??
-    null;
-  const isAdmin = !!primaryEmail && ADMIN_EMAILS.has(primaryEmail);
   const workshopConfigured = Boolean(workshopUrl);
-  const canUseWorkshop = !!isLoaded && !!isSignedIn && isAdmin && workshopConfigured;
+  const canUseWorkshop = workshopConfigured && storedPerspective === "dev";
   const activeTarget: BackendTarget =
     canUseWorkshop && selectedTarget === "workshop"
       ? "workshop"
@@ -53,6 +47,20 @@ export const BackendTargetProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       window.removeEventListener("storage", syncStoredTarget);
       window.removeEventListener(BACKEND_TARGET_CHANGE_EVENT, syncStoredTarget);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncStoredPerspective = () => {
+      setStoredPerspective(readStoredPerspective());
+    };
+
+    window.addEventListener("storage", syncStoredPerspective);
+    window.addEventListener("viewer-perspective-change", syncStoredPerspective);
+
+    return () => {
+      window.removeEventListener("storage", syncStoredPerspective);
+      window.removeEventListener("viewer-perspective-change", syncStoredPerspective);
     };
   }, []);
 

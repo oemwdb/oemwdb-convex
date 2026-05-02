@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import EngineCard from "@/components/engine/EngineCard";
@@ -24,6 +25,8 @@ import { getEngineFamilyCode, getEngineFamilyTitle } from "@/lib/engineDisplay";
 import { useRegisterPersistedCollectionSidebar } from "@/hooks/usePersistedCollectionSidebar";
 
 const EnginesPage = () => {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [selectionIds, setSelectionIds] = useState<string[]>([]);
     const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
     const [searchTags, setSearchTags] = useState<string[]>([]);
@@ -35,6 +38,18 @@ const EnginesPage = () => {
     const rawEngineFamilies = useQuery(api.queries.engineFamiliesBrowse);
     const error: Error | null = null;
     const isLoading = rawEngineFamilies === undefined;
+
+    useEffect(() => {
+      const nextFilters: Record<string, string[] | undefined> = {};
+      ["brand", "configuration", "fuel", "aspiration"].forEach((key) => {
+        const values = searchParams.getAll(key);
+        if (values.length > 0) nextFilters[key] = values;
+      });
+      setParsedFilters(nextFilters);
+      const searchValue = searchParams.get("search")?.trim();
+      setSearchTags(searchValue ? [searchValue] : []);
+    }, [searchParams]);
+
     const engineFamilies = useMemo(() => {
       const rows = (rawEngineFamilies ?? []) as OemEngineFamilyBrowseRow[];
       const filtered = rows.filter((engine) => {
@@ -124,8 +139,15 @@ const EnginesPage = () => {
     ];
 
     const applySidebarFilters = (filters: Record<string, string[] | undefined>, searchQuery: string) => {
-      setParsedFilters(filters);
-      setSearchTags(searchQuery.trim() ? [searchQuery.trim()] : []);
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([category, values]) => {
+        (values ?? []).forEach((value) => params.append(category, value));
+      });
+      if (searchQuery.trim()) {
+        params.set("search", searchQuery.trim());
+      }
+      const query = params.toString();
+      navigate(query ? `/engines?${query}` : "/engines");
     };
     const duplicateControl = useCollectionDuplicateControl({
       itemLabel: "engines",
@@ -291,7 +313,7 @@ const EnginesPage = () => {
                 ) : (
                   <CollectionEmptyState
                       title="No engine families found"
-                      description={searchValue ? "Try a different engine-family or variant search." : "Try adjusting your search or filters to see more results."}
+                      description={searchTags[0] ? "Try a different engine-family or variant search." : "Try adjusting your search or filters to see more results."}
                     />
                 )}
             </div>

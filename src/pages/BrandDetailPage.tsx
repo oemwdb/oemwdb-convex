@@ -55,7 +55,8 @@ const BrandDetailPage = () => {
   const { data: brandVehicles, isLoading: vehiclesLoading } = useBrandVehicles(brandTitle);
   const { data: brandWheels, isLoading: wheelsLoading } = useBrandWheels(brandTitle);
   const { data: brandEngines, isLoading: enginesLoading } = useBrandEngines(brandTitle);
-  const { data: brandColors, isLoading: colorsLoading } = useBrandColors(brandTitle);
+  const shouldLoadColors = activeTab === "colors";
+  const { data: brandColors, isLoading: colorsLoading } = useBrandColors(shouldLoadColors ? brandTitle : "");
   const { isAdmin } = useAuth();
   const showAdminAssets = isAdmin;
   const vehicleColumns = useVehicleGridColumns();

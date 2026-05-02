@@ -49,7 +49,7 @@ export const DeleteAccountDialog = ({ userEmail }: DeleteAccountDialogProps) => 
 
             toast({
                 title: "Signed Out",
-                description: "You have been signed out. To fully delete your account, use your auth provider (e.g. Clerk) settings.",
+                description: "You have been signed out. Full account deletion still needs a Convex mutation.",
             });
 
             navigate("/");

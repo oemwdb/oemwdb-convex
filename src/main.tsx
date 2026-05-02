@@ -13,6 +13,7 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const CLERK_AUTH_REDIRECT_URL = "/";
 const { controlUrl, workshopUrl } = getBackendUrlConfig();
 
 declare global {
@@ -31,13 +32,18 @@ function ConvexBackendBridge({
   children: React.ReactNode;
 }) {
   const { activeTarget } = useBackendTarget();
+  const sameBackendUrl = workshopUrl === controlUrl;
   const client =
-    activeTarget === "workshop" && workshopClient
+    activeTarget === "workshop" && workshopClient && !sameBackendUrl
       ? workshopClient
       : controlClient;
+  const authStorageNamespace =
+    activeTarget === "workshop" && sameBackendUrl
+      ? "oemwdb-control"
+      : `oemwdb-${activeTarget}`;
 
   return (
-    <ConvexProviderWithClerk client={client} useAuth={useAuth}>
+    <ConvexProviderWithClerk key={authStorageNamespace} client={client} useAuth={useAuth}>
       {children}
     </ConvexProviderWithClerk>
   );
@@ -65,7 +71,14 @@ if (!PUBLISHABLE_KEY) {
   window.__OEMWDB_REACT_ROOT__ = reactRoot;
   reactRoot.render(
     <RootErrorBoundary>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+      <ClerkProvider
+        publishableKey={PUBLISHABLE_KEY}
+        afterSignOutUrl={CLERK_AUTH_REDIRECT_URL}
+        signInFallbackRedirectUrl={CLERK_AUTH_REDIRECT_URL}
+        signInForceRedirectUrl={CLERK_AUTH_REDIRECT_URL}
+        signUpFallbackRedirectUrl={CLERK_AUTH_REDIRECT_URL}
+        signUpForceRedirectUrl={CLERK_AUTH_REDIRECT_URL}
+      >
         <BrowserRouter>
           <BackendTargetProvider>
             <ConvexBackendBridge controlClient={controlClient} workshopClient={workshopClient}>

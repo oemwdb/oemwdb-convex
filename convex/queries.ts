@@ -162,6 +162,281 @@ function resolveVehicleImageFields(
   };
 }
 
+function compareCollectionAssetImages(
+  a: {
+    isPrimary?: boolean | null;
+    sortOrder?: number | null;
+    createdAt?: string | null;
+  },
+  b: {
+    isPrimary?: boolean | null;
+    sortOrder?: number | null;
+    createdAt?: string | null;
+  },
+) {
+  const primaryCompare = Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary));
+  if (primaryCompare !== 0) return primaryCompare;
+
+  const aSort = typeof a.sortOrder === "number" ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+  const bSort = typeof b.sortOrder === "number" ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+  if (aSort !== bSort) return aSort - bSort;
+
+  const aCreatedAt = Date.parse(a.createdAt ?? "") || 0;
+  const bCreatedAt = Date.parse(b.createdAt ?? "") || 0;
+  return bCreatedAt - aCreatedAt;
+}
+
+type CollectionAssetImageRow = {
+  id: string;
+  url: string;
+  imageType: string;
+  role: string | null;
+  visibility: string | null;
+  sortOrder: number | null;
+  isPrimary: boolean;
+  createdAt: string | null;
+  isSynthetic: boolean;
+  storageId: string | null;
+  fileStorageId: string | null;
+};
+
+function normalizeCollectionAssetImage(
+  row: {
+    _id: string;
+    url: string;
+    image_type: string;
+    storage_id?: string;
+    file_storage_id?: Id<"oem_file_storage">;
+    role?: string;
+    visibility?: string;
+    sort_order?: number;
+    is_primary?: boolean;
+    created_at?: string;
+  },
+  primaryUrlByType: Map<string, string>,
+): CollectionAssetImageRow {
+  const url = cleanOptionalString(row.url) ?? "";
+  return {
+    id: String(row._id),
+    url,
+    imageType: row.image_type,
+    role: cleanOptionalString(row.role) ?? null,
+    visibility: cleanOptionalString(row.visibility) ?? null,
+    sortOrder: typeof row.sort_order === "number" ? row.sort_order : null,
+    isPrimary: Boolean(row.is_primary) || primaryUrlByType.get(row.image_type) === url,
+    createdAt: cleanOptionalString(row.created_at) ?? null,
+    isSynthetic: false,
+    storageId: cleanOptionalString(row.storage_id) ?? null,
+    fileStorageId: row.file_storage_id ? String(row.file_storage_id) : null,
+  };
+}
+
+function addLegacyAssetImage(
+  rows: CollectionAssetImageRow[],
+  imageType: string,
+  url: string | null | undefined,
+) {
+  const cleanUrl = cleanOptionalString(url);
+  if (!cleanUrl) return;
+  if (rows.some((row) => row.imageType === imageType && row.url === cleanUrl)) return;
+  rows.push({
+    id: `legacy:${imageType}:${cleanUrl}`,
+    url: cleanUrl,
+    imageType,
+    role: imageType,
+    visibility: "public",
+    sortOrder: null,
+    isPrimary: true,
+    createdAt: null,
+    isSynthetic: true,
+    storageId: null,
+    fileStorageId: null,
+  });
+}
+
+export const collectionItemAssetImages = query({
+  args: {
+    itemType: v.union(
+      v.literal("brand"),
+      v.literal("vehicle"),
+      v.literal("wheel"),
+      v.literal("engine"),
+      v.literal("color"),
+      v.literal("vehicle_variant"),
+      v.literal("wheel_variant"),
+    ),
+    id: v.union(
+      v.id("oem_brands"),
+      v.id("oem_vehicles"),
+      v.id("oem_wheels"),
+      v.id("oem_engines"),
+      v.id("oem_colors"),
+      v.id("oem_vehicle_variants"),
+      v.id("oem_wheel_variants"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const rows: CollectionAssetImageRow[] = [];
+
+    switch (args.itemType) {
+      case "brand": {
+        const brand = await ctx.db.get(args.id as Id<"oem_brands">);
+        if (!brand) return [];
+        const primaryUrlByType = new Map([
+          ["brand", cleanOptionalString(brand.brand_image_url) ?? ""],
+          ["good", cleanOptionalString(brand.good_pic_url) ?? ""],
+          ["bad", cleanOptionalString(brand.bad_pic_url) ?? ""],
+        ]);
+        const imageRows = await ctx.db
+          .query("oem_brand_images")
+          .withIndex("by_brand", (q) => q.eq("brand_id", brand._id))
+          .collect();
+        rows.push(...imageRows.map((row) => normalizeCollectionAssetImage(row, primaryUrlByType)));
+        addLegacyAssetImage(rows, "brand", brand.brand_image_url);
+        addLegacyAssetImage(rows, "good", brand.good_pic_url);
+        addLegacyAssetImage(rows, "bad", brand.bad_pic_url);
+        break;
+      }
+      case "vehicle": {
+        const vehicle = await ctx.db.get(args.id as Id<"oem_vehicles">);
+        if (!vehicle) return [];
+        const primaryUrlByType = new Map([
+          ["good", cleanOptionalString(vehicle.good_pic_url) ?? ""],
+          ["bad", cleanOptionalString(vehicle.bad_pic_url) ?? ""],
+        ]);
+        const imageRows = await ctx.db
+          .query("oem_vehicle_images")
+          .withIndex("by_vehicle", (q) => q.eq("vehicle_id", vehicle._id))
+          .collect();
+        rows.push(...imageRows.map((row) => normalizeCollectionAssetImage(row, primaryUrlByType)));
+        addLegacyAssetImage(rows, "good", vehicle.good_pic_url);
+        addLegacyAssetImage(rows, "bad", vehicle.bad_pic_url);
+        break;
+      }
+      case "wheel": {
+        const wheel = await ctx.db.get(args.id as Id<"oem_wheels">);
+        if (!wheel) return [];
+        const primaryUrlByType = new Map([
+          ["good", cleanOptionalString(wheel.good_pic_url) ?? ""],
+          ["bad", cleanOptionalString(wheel.bad_pic_url) ?? ""],
+        ]);
+        const imageRows = await ctx.db
+          .query("oem_wheel_images")
+          .withIndex("by_wheel", (q) => q.eq("wheel_id", wheel._id))
+          .collect();
+        rows.push(...imageRows.map((row) => normalizeCollectionAssetImage(row, primaryUrlByType)));
+        addLegacyAssetImage(rows, "good", wheel.good_pic_url);
+        addLegacyAssetImage(rows, "bad", wheel.bad_pic_url);
+        break;
+      }
+      case "wheel_variant": {
+        const variant = await ctx.db.get(args.id as Id<"oem_wheel_variants">);
+        if (!variant) return [];
+        const primaryUrlByType = new Map([
+          ["good", cleanOptionalString(variant.good_pic_url) ?? ""],
+          ["bad", cleanOptionalString(variant.bad_pic_url) ?? ""],
+        ]);
+        const imageRows = await ctx.db
+          .query("oem_wheel_variant_images")
+          .withIndex("by_variant", (q) => q.eq("variant_id", variant._id))
+          .collect();
+        rows.push(...imageRows.map((row) => normalizeCollectionAssetImage(row, primaryUrlByType)));
+        addLegacyAssetImage(rows, "good", variant.good_pic_url);
+        addLegacyAssetImage(rows, "bad", variant.bad_pic_url);
+        break;
+      }
+      case "engine": {
+        const engine = await ctx.db.get(args.id as Id<"oem_engines">);
+        if (!engine) return [];
+        addLegacyAssetImage(rows, "good", engine.good_pic_url);
+        addLegacyAssetImage(rows, "bad", engine.bad_pic_url);
+        break;
+      }
+      case "color": {
+        const color = await ctx.db.get(args.id as Id<"oem_colors">);
+        if (!color) return [];
+        addLegacyAssetImage(rows, "good", color.good_pic_url);
+        addLegacyAssetImage(rows, "bad", color.bad_pic_url);
+        break;
+      }
+      case "vehicle_variant": {
+        const variant = await ctx.db.get(args.id as Id<"oem_vehicle_variants">);
+        if (!variant) return [];
+        addLegacyAssetImage(rows, "good", variant.good_pic_url);
+        addLegacyAssetImage(rows, "bad", variant.bad_pic_url);
+        break;
+      }
+      default:
+        return [];
+    }
+
+    return rows.sort(compareCollectionAssetImages);
+  },
+});
+
+type VehicleFitmentLookups = {
+  boltByVehicleId: Map<string, string[]>;
+  centerByVehicleId: Map<string, string[]>;
+  diameterByVehicleId: Map<string, string[]>;
+  widthByVehicleId: Map<string, string[]>;
+};
+
+function buildVehicleMetricLookup(rows: any[], field: "bolt_pattern" | "center_bore" | "diameter" | "width") {
+  const byVehicleId = new Map<string, string[]>();
+  for (const row of rows) {
+    const vehicleId = row.vehicle_id ? String(row.vehicle_id) : null;
+    const value = cleanOptionalString(row[field] ?? null);
+    if (!vehicleId || !value) continue;
+    const bucket = byVehicleId.get(vehicleId);
+    if (bucket) {
+      bucket.push(value);
+    } else {
+      byVehicleId.set(vehicleId, [value]);
+    }
+  }
+  return byVehicleId;
+}
+
+async function buildVehicleFitmentLookups(ctx: QueryCtx): Promise<VehicleFitmentLookups> {
+  const [boltRows, centerRows, diameterRows, widthRows] = await Promise.all([
+    ctx.db.query("j_vehicle_bolt_pattern").collect(),
+    ctx.db.query("j_vehicle_center_bore").collect(),
+    ctx.db.query("j_vehicle_diameter").collect(),
+    ctx.db.query("j_vehicle_width").collect(),
+  ]);
+
+  return {
+    boltByVehicleId: buildVehicleMetricLookup(boltRows, "bolt_pattern"),
+    centerByVehicleId: buildVehicleMetricLookup(centerRows, "center_bore"),
+    diameterByVehicleId: buildVehicleMetricLookup(diameterRows, "diameter"),
+    widthByVehicleId: buildVehicleMetricLookup(widthRows, "width"),
+  };
+}
+
+function joinMetricValues(values: string[] | undefined, fallback?: string | null) {
+  const canonical = uniqueSortedStrings(values ?? []).join(", ");
+  return cleanOptionalString(canonical) ?? cleanOptionalString(fallback ?? null);
+}
+
+function resolveVehicleFitmentAliases(
+  vehicle: {
+    _id: Id<"oem_vehicles">;
+    text_bolt_patterns?: string | null;
+    text_center_bores?: string | null;
+    text_diameters?: string | null;
+    text_widths?: string | null;
+  },
+  lookups: VehicleFitmentLookups,
+) {
+  const key = String(vehicle._id);
+  return {
+    bolt_pattern: joinMetricValues(lookups.boltByVehicleId.get(key), vehicle.text_bolt_patterns),
+    center_bore: joinMetricValues(lookups.centerByVehicleId.get(key), vehicle.text_center_bores),
+    diameter: joinMetricValues(lookups.diameterByVehicleId.get(key), vehicle.text_diameters),
+    width: joinMetricValues(lookups.widthByVehicleId.get(key), vehicle.text_widths),
+  };
+}
+
 const resolveVehicleVariantDoc = async (
   ctx: QueryCtx,
   id: string | Id<"oem_vehicle_variants">
@@ -364,12 +639,13 @@ export const vehiclesGetAllWithBrands = query({
   args: {},
   handler: async (ctx) => {
     try {
-      const [vehicles, brands] = await Promise.all([
+      const [vehicles, brands, fitmentLookups] = await Promise.all([
         ctx.db
           .query("oem_vehicles")
           .order("asc")
           .collect(),
         ctx.db.query("oem_brands").collect(),
+        buildVehicleFitmentLookups(ctx),
       ]);
 
       const brandById = new Map(brands.map((brand) => [String(brand._id), brand]));
@@ -392,8 +668,7 @@ export const vehiclesGetAllWithBrands = query({
           bad_pic_url: cleanOptionalString(vehicle.bad_pic_url),
           brand_name: (brand?.brand_title ?? textBrand ?? null) as string | null,
           brand_id: brand?._id ?? vehicle.brand_id ?? null,
-          bolt_pattern: (vehicle.text_bolt_patterns ?? null) as string | null,
-          center_bore: (vehicle.text_center_bores ?? null) as string | null,
+          ...resolveVehicleFitmentAliases(vehicle, fitmentLookups),
         };
       });
     } catch (error) {
@@ -411,7 +686,7 @@ export const vehiclesGetByBrand = query({
         .query("j_vehicle_brand")
         .withIndex("by_brand", (q) => q.eq("brand_id", args.brandId))
         .collect();
-      const [vehicles, imageRowEntries] = await Promise.all([
+      const [vehicles, imageRowEntries, fitmentLookups] = await Promise.all([
         Promise.all(links.map((j) => ctx.db.get("oem_vehicles", j.vehicle_id))),
         Promise.all(
           links.map(async (j) => [
@@ -420,14 +695,16 @@ export const vehiclesGetByBrand = query({
               .query("oem_vehicle_images")
               .withIndex("by_vehicle", (q) => q.eq("vehicle_id", j.vehicle_id))
               .collect(),
-          ] as const),
+            ] as const),
         ),
+        buildVehicleFitmentLookups(ctx),
       ]);
       const imageRowsByVehicleId = new Map(imageRowEntries);
       return vehicles
         .filter((v): v is NonNullable<typeof v> => v !== null)
         .map((vehicle) => ({
           ...vehicle,
+          ...resolveVehicleFitmentAliases(vehicle, fitmentLookups),
           ...resolveVehicleImageFields(vehicle, imageRowsByVehicleId),
         }));
     } catch {

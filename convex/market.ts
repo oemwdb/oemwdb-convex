@@ -69,7 +69,12 @@ async function requireAdmin(ctx: any) {
     throw new Error("Unauthorized");
   }
 
-  return identity;
+  return {
+    ...identity,
+    subject: typeof identity.subject === "string"
+      ? identity.subject.split("|")[0]
+      : identity.subject,
+  };
 }
 
 function normalizeSellerKey(rawSellerKey: string | undefined, sellerDisplayName: string | undefined) {

@@ -29,9 +29,9 @@ export function VehicleAssetsPanel({
         },
         {
           field: "bad_pic_url",
-          label: "Bad Pic",
+          label: "Bad Pics",
           value: badPicUrl,
-          uploadLabel: "Drop a reference/unprocessed vehicle image",
+          uploadLabel: "Drop reference/unprocessed vehicle images",
         },
       ]}
     />

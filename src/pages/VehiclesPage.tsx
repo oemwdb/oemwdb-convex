@@ -101,10 +101,10 @@ const VehiclesPage = () => {
     image: undefined,
     good_pic_url: v.good_pic_url || null,
     bad_pic_url: v.bad_pic_url || null,
-    bolt_pattern_ref: v.bolt_pattern,
-    center_bore_ref: v.center_bore,
-    wheel_diameter_ref: v.text_diameters,
-    wheel_width_ref: v.text_widths
+    bolt_pattern_ref: v.bolt_pattern ?? v.text_bolt_patterns,
+    center_bore_ref: v.center_bore ?? v.text_center_bores,
+    wheel_diameter_ref: v.diameter ?? v.text_diameters,
+    wheel_width_ref: v.width ?? v.text_widths
   }));
 
   // Initialize filters from URL
@@ -426,6 +426,7 @@ const VehiclesPage = () => {
               flippedCards={flippedCards}
               onFlip={toggleCardFlip}
               insertAdEvery={itemsPerLoad}
+              floatingImageShadow
               selectionMode={duplicateControl.selectionMode || deleteControl.selectionMode}
               selectedIds={duplicateControl.selectionMode ? duplicateControl.selectedIds : deleteControl.selectedIds}
               onToggleSelection={

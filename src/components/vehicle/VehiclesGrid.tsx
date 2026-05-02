@@ -19,6 +19,7 @@ interface VehiclesGridProps {
   onFlip: (name: string) => void;
   /** Insert a full-width ad after every N items (e.g. 3 * columns). Ensures full rows. */
   insertAdEvery?: number;
+  floatingImageShadow?: boolean;
   selectionMode?: boolean;
   selectedIds?: string[];
   onToggleSelection?: (id: string) => void;
@@ -30,6 +31,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
   flippedCards,
   onFlip,
   insertAdEvery,
+  floatingImageShadow = false,
   selectionMode,
   selectedIds,
   onToggleSelection,
@@ -79,6 +81,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
               }}
               isFlipped={flippedCards[flipKey] || false}
               onFlip={onFlip}
+              floatingImageShadow={floatingImageShadow}
             />
           </SelectableCollectionCard>
         );
@@ -119,6 +122,7 @@ const VehiclesGrid: React.FC<VehiclesGridProps> = ({
             }}
             isFlipped={flippedCards[getVehicleFlipKey(vehicle)] || false}
             onFlip={onFlip}
+            floatingImageShadow={floatingImageShadow}
           />
         </SelectableCollectionCard>
       ))}

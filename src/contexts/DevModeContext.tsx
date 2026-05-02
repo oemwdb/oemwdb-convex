@@ -15,10 +15,12 @@ interface DevModeContextType {
 const DevModeContext = createContext<DevModeContextType | undefined>(undefined);
 
 export const DevModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isAdmin, actualIsAuthenticated } = useAuth();
+    const { isAdmin, actualIsAuthenticated, isLoading } = useAuth();
     const [storedPerspective, setStoredPerspective] = useState<ViewerPerspective>(() => readStoredPerspective());
 
     useEffect(() => {
+        if (isLoading) return;
+
         if (!actualIsAuthenticated) {
             window.localStorage.setItem(PERSPECTIVE_STORAGE_KEY, 'basic');
             setStoredPerspective('basic');
@@ -29,7 +31,7 @@ export const DevModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
             window.localStorage.setItem(PERSPECTIVE_STORAGE_KEY, 'user');
             setStoredPerspective('user');
         }
-    }, [actualIsAuthenticated, isAdmin]);
+    }, [actualIsAuthenticated, isAdmin, isLoading]);
 
     useEffect(() => {
         const syncPerspective = () => {
@@ -45,7 +47,9 @@ export const DevModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
     }, []);
 
-    const perspective: ViewerPerspective = !actualIsAuthenticated
+    const perspective: ViewerPerspective = isLoading
+        ? storedPerspective
+        : !actualIsAuthenticated
         ? 'basic'
         : isAdmin
             ? storedPerspective

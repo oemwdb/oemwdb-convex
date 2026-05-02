@@ -11,7 +11,7 @@ import {
 
 const IMAGE_FILE_PATTERN = /\.(png|jpe?g|webp|gif|avif|heic|bmp|svg)$/i;
 export const TARGET_TYPES = ["brand", "vehicle", "wheel", "variant"] as const;
-export const IMAGE_ROLES = ["brand", "good", "bad", "hero", "gallery"] as const;
+export const IMAGE_ROLES = ["brand", "good", "bad", "hero", "gallery", "source"] as const;
 
 export type TargetType = (typeof TARGET_TYPES)[number];
 export type ImageRole = (typeof IMAGE_ROLES)[number];
@@ -263,7 +263,7 @@ export async function upsertImageRow(
 ) {
   switch (targetType) {
     case "brand": {
-      if (imageRole === "gallery") {
+      if (imageRole === "gallery" || imageRole === "source") {
         const rows = await ctx.db
           .query("oem_brand_images")
           .withIndex("by_brand", (q: any) => q.eq("brand_id", targetId))
@@ -302,7 +302,7 @@ export async function upsertImageRow(
       });
     }
     case "vehicle": {
-      if (imageRole === "gallery") {
+      if (imageRole === "gallery" || imageRole === "source") {
         const rows = await ctx.db
           .query("oem_vehicle_images")
           .withIndex("by_vehicle", (q: any) => q.eq("vehicle_id", targetId))
@@ -341,7 +341,7 @@ export async function upsertImageRow(
       });
     }
     case "wheel": {
-      if (imageRole === "gallery") {
+      if (imageRole === "gallery" || imageRole === "source") {
         const rows = await ctx.db
           .query("oem_wheel_images")
           .withIndex("by_wheel", (q: any) => q.eq("wheel_id", targetId))
@@ -380,7 +380,7 @@ export async function upsertImageRow(
       });
     }
     case "variant": {
-      if (imageRole === "gallery") {
+      if (imageRole === "gallery" || imageRole === "source") {
         const rows = await ctx.db
           .query("oem_wheel_variant_images")
           .withIndex("by_variant", (q: any) => q.eq("variant_id", targetId))

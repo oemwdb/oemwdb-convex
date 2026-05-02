@@ -59,7 +59,9 @@ import BucketsPage from "./pages/BucketsPage";
 import AdvertisingPage from "./pages/AdvertisingPage";
 import WheelRecogniserPage from "./pages/WheelRecogniserPage";
 import SchemaVisualizerPage from "./pages/SchemaVisualizerPage";
+import AssetStudioPage from "./pages/AssetStudioPage";
 import ConfiguratorPage from "./pages/ConfiguratorPage";
+import ComparePage from "./pages/ComparePage";
 
 const App = () => (
   <ThemeProvider>
@@ -89,7 +91,8 @@ const App = () => (
                 <Route path="/engines" element={<EnginesPage />} />
                 <Route path="/engines/:engineId" element={<EngineItemPage />} />
                 <Route path="/garage" element={<GaragePage />} />
-                <Route path="/configurator" element={<ConfiguratorPage />} />
+                <Route path="/configurator" element={<ProtectedRoute requireAdmin={true}><ConfiguratorPage /></ProtectedRoute>} />
+                <Route path="/compare" element={<ProtectedRoute requireAdmin={true}><ComparePage /></ProtectedRoute>} />
 
                 <Route path="/users" element={<ProtectedRoute requireAdmin={true}><UsersPage /></ProtectedRoute>} />
                 <Route path="/users/:username" element={<PublicProfilePage />} />
@@ -99,6 +102,8 @@ const App = () => (
                 <Route path="/cool-board" element={<ProtectedRoute requireAdmin={true}><CoolBoardPage /></ProtectedRoute>} />
                 <Route path="/contribute" element={<ProtectedRoute requireAdmin={true}><ContributePage /></ProtectedRoute>} />
                 <Route path="/dev" element={<ProtectedRoute requireAdmin={true}><DevPage /></ProtectedRoute>} />
+                <Route path="/dev/configurator" element={<ProtectedRoute requireAdmin={true}><ConfiguratorPage /></ProtectedRoute>} />
+                <Route path="/dev/compare" element={<ProtectedRoute requireAdmin={true}><ComparePage /></ProtectedRoute>} />
                 <Route path="/dev/billy-dash" element={<BillyDashPage />} />
                 <Route path="/dev/tables" element={<ProtectedRoute requireAdmin={true}><TablesPage /></ProtectedRoute>} />
                 <Route path="/dev/tables/:tableName/:recordId" element={<ProtectedRoute requireAdmin={true}><DatabaseRecordPage /></ProtectedRoute>} />
@@ -113,7 +118,9 @@ const App = () => (
                 <Route path="/dev/buckets" element={<ProtectedRoute requireAdmin={true}><BucketsPage /></ProtectedRoute>} />
                 <Route path="/dev/advertising" element={<ProtectedRoute requireAdmin={true}><AdvertisingPage /></ProtectedRoute>} />
                 <Route path="/dev/schema" element={<ProtectedRoute requireAdmin={true}><SchemaVisualizerPage /></ProtectedRoute>} />
+                <Route path="/dev/wheel-recognizer" element={<ProtectedRoute requireAdmin={true}><WheelRecogniserPage /></ProtectedRoute>} />
                 <Route path="/dev/wheel-recogniser" element={<ProtectedRoute requireAdmin={true}><WheelRecogniserPage /></ProtectedRoute>} />
+                <Route path="/dev/asset-studio" element={<ProtectedRoute requireAdmin={true}><AssetStudioPage /></ProtectedRoute>} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/account/*" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProfilePage />} />

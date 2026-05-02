@@ -15,10 +15,14 @@ export const moveStorageIdToPath = action({
         brandId: v.optional(v.id("oem_brands")),
         wheelId: v.optional(v.id("oem_wheels")),
         vehicleId: v.optional(v.id("oem_vehicles")),
+        role: v.optional(v.string()),
+        visibility: v.optional(v.string()),
+        sortOrder: v.optional(v.number()),
+        isPrimary: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         // 1. Record the mapping
-        await ctx.runMutation(internal.storageInternal.recordFile, {
+        const fileStorageId = await ctx.runMutation(internal.storageInternal.recordFile, {
             path: args.virtualPath,
             storageId: args.storageId,
             contentType: args.contentType,
@@ -32,7 +36,25 @@ export const moveStorageIdToPath = action({
         const storedUrl = await ctx.storage.getUrl(args.storageId);
         const mediaUrl = buildMediaUrl(convexSiteUrl, args.virtualPath, storedUrl);
 
-        return { mediaUrl };
+        if (!mediaUrl) {
+            throw new Error("Failed to build a moved asset media URL");
+        }
+
+        if (args.vehicleId && args.role && args.visibility) {
+            await ctx.runMutation(internal.storageInternal.recordVehicleImageRow, {
+                vehicle_id: args.vehicleId,
+                storage_id: args.storageId,
+                file_storage_id: fileStorageId,
+                url: mediaUrl,
+                image_type: args.role,
+                role: args.role,
+                visibility: args.visibility,
+                sort_order: args.sortOrder,
+                is_primary: args.isPrimary,
+            });
+        }
+
+        return { mediaUrl, fileStorageId };
     },
 });
 
@@ -117,9 +139,10 @@ export const uploadWheelAsset = action({
 
         const storageId = await ctx.storage.store(blob);
         const safeName = sanitizeFileName(args.fileName);
-        const virtualPath = `wheels/${args.wheelId}/${args.field}/${Date.now()}-${safeName}`;
+        const role = args.field === "good_pic_url" ? "good" : "bad";
+        const virtualPath = `wheels/${args.wheelId}/${role}/public/${Date.now()}-${safeName}`;
 
-        await ctx.runMutation(internal.storageInternal.recordFile, {
+        const fileStorageId = await ctx.runMutation(internal.storageInternal.recordFile, {
             path: virtualPath,
             storageId,
             contentType: args.contentType,
@@ -142,7 +165,7 @@ export const uploadWheelAsset = action({
             mediaUrl,
         });
 
-        return { mediaUrl, virtualPath, storageId };
+        return { mediaUrl, virtualPath, storageId, fileStorageId };
     },
 });
 
@@ -155,6 +178,10 @@ export const uploadSharedAsset = action({
         fileName: v.string(),
         virtualPath: v.string(),
         contentType: v.optional(v.string()),
+        brandId: v.optional(v.id("oem_brands")),
+        wheelId: v.optional(v.id("oem_wheels")),
+        wheelVariantId: v.optional(v.id("oem_wheel_variants")),
+        vehicleId: v.optional(v.id("oem_vehicles")),
     },
     handler: async (ctx, args) => {
         const binaryString = atob(args.fileBase64);
@@ -171,10 +198,14 @@ export const uploadSharedAsset = action({
         const safeName = sanitizeFileName(args.fileName);
         const normalizedVirtualPath = args.virtualPath.trim() || `shared/${Date.now()}-${safeName}`;
 
-        await ctx.runMutation(internal.storageInternal.recordFile, {
+        const fileStorageId = await ctx.runMutation(internal.storageInternal.recordFile, {
             path: normalizedVirtualPath,
             storageId,
             contentType: args.contentType,
+            brand_id: args.brandId,
+            wheel_id: args.wheelId,
+            variant_id: args.wheelVariantId,
+            vehicle_id: args.vehicleId,
         });
 
         const convexSiteUrl = process.env.CONVEX_SITE_URL || "";
@@ -185,7 +216,7 @@ export const uploadSharedAsset = action({
             throw new Error("Failed to build a shared asset URL");
         }
 
-        return { mediaUrl, virtualPath: normalizedVirtualPath, storageId };
+        return { mediaUrl, virtualPath: normalizedVirtualPath, storageId, fileStorageId };
     },
 });
 

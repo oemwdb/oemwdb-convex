@@ -15,6 +15,7 @@ interface HeaderMediaImageProps {
   sources: HeaderMediaSource[];
   fallback?: ReactNode;
   className?: string;
+  containerClassName?: string;
 }
 
 export default function HeaderMediaImage({
@@ -22,6 +23,7 @@ export default function HeaderMediaImage({
   sources,
   fallback,
   className = "h-full w-full",
+  containerClassName = "flex h-full w-full items-center justify-center",
 }: HeaderMediaImageProps) {
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
@@ -65,7 +67,7 @@ export default function HeaderMediaImage({
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className={containerClassName}>
       <img
         src={activeCandidate.url}
         alt={alt}

@@ -20,11 +20,18 @@ interface ItemPageHeaderRow {
   span?: "single" | "full";
 }
 
+interface ItemPageHeaderRowGroup {
+  id: string;
+  label?: string;
+  rows: ItemPageHeaderRow[];
+}
+
 interface ItemPageHeaderCardProps {
   title: string;
   subtitle?: string;
   description?: string;
   rows: ItemPageHeaderRow[];
+  rowGroups?: ItemPageHeaderRowGroup[];
   media?: ReactNode;
   mediaRatio?: number;
   mediaFrameClassName?: string;
@@ -76,6 +83,7 @@ export default function ItemPageHeaderCard({
   subtitle,
   description,
   rows,
+  rowGroups,
   media,
   mediaRatio = 1,
   mediaFrameClassName,
@@ -133,42 +141,88 @@ export default function ItemPageHeaderCard({
               ) : null}
             </div>
 
-            <div
-              className={cn(
-                "grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2",
-                rowsClassName,
-              )}
-            >
-              {rows.map((row) => {
-                const values =
-                  row.values.length > 0
-                    ? row.values
-                    : [{ label: "N/A", muted: true }];
-
-                return (
-                  <div
-                    key={row.label}
-                    className={row.span === "full" ? "sm:col-span-2" : undefined}
-                  >
-                    <div
-                      className={cn(
-                        "flex items-start gap-2 border-b border-border/60 pb-3",
-                        rowClassName,
-                      )}
-                    >
-                      <span className="min-w-[110px] font-medium text-muted-foreground">
-                        {row.label}:
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        {values.map((value, index) =>
-                          renderHeaderValue(value, `${row.label}-${value.label}-${index}`),
-                        )}
+            {rowGroups ? (
+              <div
+                className={cn(
+                  "grid grid-cols-1 gap-x-8 gap-y-4 text-sm md:grid-cols-3",
+                  rowsClassName,
+                )}
+              >
+                {rowGroups.map((group) => (
+                  <div key={group.id} className="min-w-0 space-y-2">
+                    {group.label ? (
+                      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground/75">
+                        {group.label}
                       </div>
+                    ) : null}
+                    <div className="space-y-2">
+                      {group.rows.map((row) => {
+                        const values =
+                          row.values.length > 0
+                            ? row.values
+                            : [{ label: "N/A", muted: true }];
+
+                        return (
+                          <div
+                            key={`${group.id}-${row.label}`}
+                            className={cn(
+                              "flex items-start gap-2 border-b border-border/60 pb-3",
+                              rowClassName,
+                            )}
+                          >
+                            <span className="min-w-[96px] font-medium text-muted-foreground">
+                              {row.label}:
+                            </span>
+                            <div className="flex min-w-0 flex-wrap gap-1">
+                              {values.map((value, index) =>
+                                renderHeaderValue(value, `${group.id}-${row.label}-${value.label}-${index}`),
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2",
+                  rowsClassName,
+                )}
+              >
+                {rows.map((row) => {
+                  const values =
+                    row.values.length > 0
+                      ? row.values
+                      : [{ label: "N/A", muted: true }];
+
+                  return (
+                    <div
+                      key={row.label}
+                      className={row.span === "full" ? "sm:col-span-2" : undefined}
+                    >
+                      <div
+                        className={cn(
+                          "flex items-start gap-2 border-b border-border/60 pb-3",
+                          rowClassName,
+                        )}
+                      >
+                        <span className="min-w-[110px] font-medium text-muted-foreground">
+                          {row.label}:
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {values.map((value, index) =>
+                            renderHeaderValue(value, `${row.label}-${value.label}-${index}`),
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="w-full">

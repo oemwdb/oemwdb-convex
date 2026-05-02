@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchableBreadcrumb from "@/components/navigation/SearchableBreadcrumb";
 import type { ParsedFilters } from '@/utils/filterParser';
-import BackendTargetBadge from "@/components/dashboard/BackendTargetBadge";
 
 interface HeaderProps {
   title?: string;
@@ -295,7 +294,6 @@ const Header = ({
       {!showBreadcrumb && <div className="flex-1" />}
 
       <div className="flex items-center gap-2">
-        <BackendTargetBadge />
         {children}
       </div>
 

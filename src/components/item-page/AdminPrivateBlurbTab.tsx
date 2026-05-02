@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
 import { api } from "../../../convex/_generated/api";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ItemPagePanel } from "@/components/item-page/ItemPageCommonBlocks";
 
 type EditableCollectionItemType =
   | "brand"
@@ -30,76 +28,120 @@ export function AdminPrivateBlurbTab({
   const updatePrivateBlurb = useMutation(api.mutations.adminCollectionItemPrivateBlurbUpdate);
   const normalizedValue = useMemo(() => value ?? "", [value]);
   const [draft, setDraft] = useState(normalizedValue);
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const draftRef = useRef(normalizedValue);
+  const isFocusedRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const lastSavedRef = useRef(normalizedValue);
+  const pendingSaveRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setDraft(normalizedValue);
+    if (normalizedValue === draftRef.current) {
+      lastSavedRef.current = normalizedValue;
+      setSaveState("saved");
+      return;
+    }
+
+    if (!isFocusedRef.current && draftRef.current === lastSavedRef.current) {
+      draftRef.current = normalizedValue;
+      lastSavedRef.current = normalizedValue;
+      setDraft(normalizedValue);
+      setSaveState("saved");
+    }
   }, [normalizedValue]);
 
-  const isDirty = draft !== normalizedValue;
-  const isDisabled = !convexId || isSaving;
+  const saveDraft = useCallback(
+    async (nextValue: string) => {
+      if (!convexId || nextValue === lastSavedRef.current) return;
 
-  const handleSave = async () => {
-    if (!convexId || !isDirty) return;
+      pendingSaveRef.current = nextValue;
+      if (isSavingRef.current) {
+        setSaveState("saving");
+        return;
+      }
 
-    setIsSaving(true);
-    try {
-      await updatePrivateBlurb({
-        itemType,
-        id: convexId as never,
-        privateBlurb: draft,
-      });
-      toast.success("Private blurb updated");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update private blurb.");
-    } finally {
-      setIsSaving(false);
+      isSavingRef.current = true;
+      setSaveState("saving");
+      try {
+        while (pendingSaveRef.current !== null) {
+          const valueToSave = pendingSaveRef.current;
+          pendingSaveRef.current = null;
+
+          if (valueToSave === lastSavedRef.current) continue;
+
+          await updatePrivateBlurb({
+            itemType,
+            id: convexId as never,
+            privateBlurb: valueToSave,
+          });
+          lastSavedRef.current = valueToSave;
+        }
+        setSaveState(draftRef.current === lastSavedRef.current ? "saved" : "saving");
+      } catch (error) {
+        setSaveState("error");
+        toast.error(error instanceof Error ? error.message : "Failed to auto-save private blurb.");
+      } finally {
+        isSavingRef.current = false;
+      }
+    },
+    [convexId, itemType, updatePrivateBlurb]
+  );
+
+  useEffect(() => {
+    if (!convexId) return;
+    if (draft === lastSavedRef.current) {
+      setSaveState("saved");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void saveDraft(draft);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [convexId, draft, saveDraft]);
+
+  const handleDraftChange = (nextValue: string) => {
+    draftRef.current = nextValue;
+    setDraft(nextValue);
+    if (nextValue !== lastSavedRef.current) {
+      setSaveState("saving");
     }
   };
 
   return (
-    <ItemPagePanel title="Private blurb">
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Admin-only persistent notes for handoff, audit state, and item-specific context.
-        </p>
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-black/30">
-          <Textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                event.preventDefault();
-                void handleSave();
-              }
-            }}
-            placeholder="Add admin-only working notes, audit state, source caveats, or handoff context..."
-            className="min-h-[320px] resize-y border-0 bg-transparent px-4 py-4 font-mono text-[13px] leading-6 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
+    <div className="overflow-hidden rounded-md border border-border bg-black">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-zinc-500">
+        <div className="flex items-center gap-3">
+          <span className="text-sky-300">&gt; you</span>
+          <span className="text-amber-300">&lt; ai</span>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            Supports multi-line notes. Use Cmd/Ctrl + Enter to save.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setDraft(normalizedValue)}
-              disabled={isDisabled || !isDirty}
-            >
-              Reset
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={isDisabled || !isDirty}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </div>
+        <span
+          className={
+            saveState === "error"
+              ? "text-red-300"
+              : saveState === "saving"
+                ? "text-zinc-400"
+                : "text-emerald-300"
+          }
+        >
+          {saveState === "error" ? "save failed" : saveState === "saving" ? "saving" : "saved"}
+        </span>
       </div>
-    </ItemPagePanel>
+      <Textarea
+        value={draft}
+        onChange={(event) => handleDraftChange(event.target.value)}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
+        onBlur={() => {
+          isFocusedRef.current = false;
+          void saveDraft(draftRef.current);
+        }}
+        placeholder={"> your note\n< ai note"}
+        spellCheck={false}
+        className="min-h-[460px] resize-y rounded-none border-0 bg-transparent px-4 py-4 font-mono text-[13px] leading-6 text-zinc-100 shadow-none selection:bg-sky-500/25 placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:ring-offset-0"
+      />
+    </div>
   );
 }

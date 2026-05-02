@@ -1,7 +1,5 @@
 import ItemPageHeaderCard from "@/components/item-page/ItemPageHeaderCard";
 import HeaderMediaImage from "@/components/item-page/HeaderMediaImage";
-import { useDevMode } from "@/hooks/useDevMode";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface VehicleHeaderProps {
   name: string;
@@ -23,6 +21,12 @@ interface VehicleHeaderProps {
     wheel_diameter_ref?: string[];
     wheel_width_ref?: string[];
   };
+  dimensions?: {
+    vehicle_length_mm?: number | null;
+    vehicle_width_mm?: number | null;
+    vehicle_height_mm?: number | null;
+    wheelbase_mm?: number | null;
+  };
 }
 
 const valueItems = (values?: string[], hrefBuilder?: (value: string) => string) =>
@@ -30,6 +34,11 @@ const valueItems = (values?: string[], hrefBuilder?: (value: string) => string) 
     label: value,
     href: hrefBuilder ? hrefBuilder(value) : undefined,
   }));
+
+const numberValueItem = (value?: number | null, suffix = "") =>
+  typeof value === "number" && Number.isFinite(value)
+    ? [{ label: `${value.toLocaleString()}${suffix}` }]
+    : [];
 
 export default function VehicleHeader({
   name,
@@ -44,31 +53,28 @@ export default function VehicleHeader({
   itemId,
   convexId,
   specs,
+  dimensions,
 }: VehicleHeaderProps) {
-  const { isDevMode } = useDevMode();
-  const { isAdmin } = useAuth();
-  const preferBadPic = isAdmin && isDevMode;
-  const sources = preferBadPic
-    ? [
-        {
-          value: badPicUrl,
-          bucketHint: "BADPICS",
-          fitMode: "contain" as const,
-          imageClassName: "max-h-[86%] max-w-[86%]",
-        },
-        { value: goodPicUrl, bucketHint: "oemwdb images", fitMode: "cover" as const },
-        { value: image, bucketHint: "oemwdb images", fitMode: "cover" as const },
-      ]
-    : [
-        { value: goodPicUrl, bucketHint: "oemwdb images", fitMode: "cover" as const },
-        {
-          value: badPicUrl,
-          bucketHint: "BADPICS",
-          fitMode: "contain" as const,
-          imageClassName: "max-h-[86%] max-w-[86%]",
-        },
-        { value: image, bucketHint: "oemwdb images", fitMode: "cover" as const },
-      ];
+  const sources = [
+    {
+      value: goodPicUrl,
+      bucketHint: "oemwdb images",
+      fitMode: "contain" as const,
+      imageClassName: "max-h-full max-w-full",
+    },
+    {
+      value: badPicUrl,
+      bucketHint: "BADPICS",
+      fitMode: "contain" as const,
+      imageClassName: "max-h-full max-w-full",
+    },
+    {
+      value: image,
+      bucketHint: "oemwdb images",
+      fitMode: "contain" as const,
+      imageClassName: "max-h-full max-w-full",
+    },
+  ];
 
   return (
     <ItemPageHeaderCard
@@ -79,57 +85,87 @@ export default function VehicleHeader({
       itemType="vehicle"
       convexId={convexId}
       media={
-        <HeaderMediaImage
-          alt={name}
-          sources={sources}
-        />
+        <div className="relative h-full w-full">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-[10%] left-1/2 h-5 w-[68%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.32)_42%,rgba(0,0,0,0)_72%)] blur-[1px]"
+          />
+          <HeaderMediaImage
+            alt={name}
+            sources={sources}
+            className="relative z-10 h-full w-full object-contain"
+            containerClassName="relative z-10 flex h-full w-full items-center justify-center px-2 pb-[8%] pt-1"
+          />
+        </div>
       }
-      mediaFrameClassName="border-transparent"
+      mediaFrameClassName="overflow-visible rounded-none border-0 bg-transparent shadow-none"
       mediaRatio={1.8}
       layoutClassName="lg:grid-cols-[minmax(0,1fr)_420px]"
-      rowsClassName="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2"
+      rowsClassName="grid grid-cols-1 gap-x-8 gap-y-4 text-sm md:grid-cols-3"
       rowClassName="pb-2"
-      rows={[
+      rows={[]}
+      rowGroups={[
         {
-          label: "Bolt Pattern",
-          values: valueItems(
-            specs?.bolt_pattern_ref,
-            (value) => `/vehicles?boltPattern=${encodeURIComponent(value)}`,
-          ),
+          id: "fitment",
+          label: "Fitment",
+          rows: [
+            {
+              label: "Bolt Pattern",
+              values: valueItems(
+                specs?.bolt_pattern_ref,
+                (value) => `/vehicles?boltPattern=${encodeURIComponent(value)}`,
+              ),
+            },
+            {
+              label: "Center Bore",
+              values: valueItems(
+                specs?.center_bore_ref,
+                (value) => `/vehicles?centerBore=${encodeURIComponent(value)}`,
+              ),
+            },
+          ],
         },
         {
-          label: "Center Bore",
-          values: valueItems(
-            specs?.center_bore_ref,
-            (value) => `/vehicles?centerBore=${encodeURIComponent(value)}`,
-          ),
+          id: "wheels",
+          label: "Wheels",
+          rows: [
+            {
+              label: "Wheel Sizes",
+              values: valueItems(
+                specs?.wheel_diameter_ref,
+                (value) => `/wheels?diameter=${encodeURIComponent(value)}`,
+              ),
+            },
+            {
+              label: "Widths",
+              values: valueItems(
+                specs?.wheel_width_ref,
+                (value) => `/wheels?width=${encodeURIComponent(value)}`,
+              ),
+            },
+          ],
         },
         {
-          label: "Wheel Sizes",
-          values: valueItems(
-            specs?.wheel_diameter_ref,
-            (value) => `/wheels?diameter=${encodeURIComponent(value)}`,
-          ),
-        },
-        {
-          label: "Widths",
-          values: valueItems(
-            specs?.wheel_width_ref,
-            (value) => `/wheels?width=${encodeURIComponent(value)}`,
-          ),
-        },
-        {
-          label: "Segment",
-          values: segment && segment !== "-" ? [{ label: segment }] : [],
-        },
-        {
-          label: "Drive",
-          values: drive && drive !== "-" ? [{ label: drive }] : [],
-        },
-        {
-          label: "Engines",
-          span: "full",
-          values: engines.slice(0, 6).map((engine) => ({ label: engine })),
+          id: "vehicle-dimensions",
+          label: "Vehicle Dimensions",
+          rows: [
+            {
+              label: "Length",
+              values: numberValueItem(dimensions?.vehicle_length_mm, "mm"),
+            },
+            {
+              label: "Width",
+              values: numberValueItem(dimensions?.vehicle_width_mm, "mm"),
+            },
+            {
+              label: "Height",
+              values: numberValueItem(dimensions?.vehicle_height_mm, "mm"),
+            },
+            {
+              label: "Wheelbase",
+              values: numberValueItem(dimensions?.wheelbase_mm, "mm"),
+            },
+          ],
         },
       ]}
     />

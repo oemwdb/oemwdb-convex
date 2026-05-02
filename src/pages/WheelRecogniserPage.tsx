@@ -228,7 +228,7 @@ export default function WheelRecogniserPage() {
 
   if (optionsResource.isInitialLoading) {
     return (
-      <DashboardLayout title="Wheel Recogniser" showFilterButton={false} disableContentPadding={true}>
+      <DashboardLayout title="Wheel Recognizer" showFilterButton={false} disableContentPadding={true}>
         <div className="flex h-full items-center justify-center p-2">
           <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
         </div>
@@ -238,10 +238,10 @@ export default function WheelRecogniserPage() {
 
   if (optionsResource.isBackendUnavailable) {
     return (
-      <DashboardLayout title="Wheel Recogniser" showFilterButton={false} disableContentPadding={true}>
+      <DashboardLayout title="Wheel Recognizer" showFilterButton={false} disableContentPadding={true}>
         <div className="h-full overflow-y-auto p-2">
           <ConvexBackendUnavailableCard
-            title="Wheel recogniser is not deployed on cloud dev yet"
+            title="Wheel recognizer is not deployed on cloud dev yet"
             description="The canonical `wheelRecogniser.formOptionsGet` query is missing from the cloud dev Convex deployment."
             error={optionsResource.error}
           />
@@ -252,13 +252,13 @@ export default function WheelRecogniserPage() {
 
   if (optionsResource.error) {
     return (
-      <DashboardLayout title="Wheel Recogniser" showFilterButton={false} disableContentPadding={true}>
+      <DashboardLayout title="Wheel Recognizer" showFilterButton={false} disableContentPadding={true}>
         <div className="h-full overflow-y-auto p-2">
           <Card className="border-border/60 bg-card/95">
             <CardContent className="space-y-3 p-8 text-center">
               <CircleSlash2 className="mx-auto h-12 w-12 text-muted-foreground/60" />
               <div className="space-y-2">
-                <h2 className="text-lg font-semibold text-foreground">Could not load wheel recogniser options</h2>
+                <h2 className="text-lg font-semibold text-foreground">Could not load wheel recognizer options</h2>
                 <p className="text-sm text-muted-foreground">{getConvexErrorMessage(optionsResource.error)}</p>
               </div>
             </CardContent>
@@ -270,7 +270,7 @@ export default function WheelRecogniserPage() {
 
   return (
     <DashboardLayout
-      title="Wheel Recogniser"
+      title="Wheel Recognizer"
       showFilterButton={false}
       disableContentPadding={true}
       headerActions={
@@ -279,7 +279,7 @@ export default function WheelRecogniserPage() {
           label={
             submittedCriteria !== null && !resultsResource.isIdle
               ? "Refreshing recognition results"
-              : "Refreshing wheel recogniser"
+              : "Refreshing wheel recognizer"
           }
         />
       }
@@ -599,7 +599,7 @@ export default function WheelRecogniserPage() {
             </Card>
           ) : resultsResource.isBackendUnavailable ? (
             <ConvexBackendUnavailableCard
-              title="Wheel recogniser search is not deployed on cloud dev yet"
+              title="Wheel recognizer search is not deployed on cloud dev yet"
               description="The canonical `wheelRecogniser.search` query is missing from the cloud dev Convex deployment."
               error={resultsResource.error}
             />

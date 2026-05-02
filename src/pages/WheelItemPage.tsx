@@ -3,11 +3,14 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useWheelByName } from "@/hooks/useWheels";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "../../convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CircleSlash2, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers, Package2, DollarSign, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, Loader2, CircleSlash2, MessageSquare, Image, ImageOff, ShoppingCart, Award, Info, TrendingUp, Car, Megaphone, Layers, Package2, DollarSign, MapPin, Link2, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 import { useNavigation } from "@/contexts/NavigationContext";
 
 // Import our components
@@ -36,6 +39,22 @@ function buildEbaySearchUrl(query: string) {
   return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_sacat=6000`;
 }
 
+function firstDisplayPartNumber(value: unknown) {
+  if (typeof value !== "string") return null;
+  return (
+    value
+      .split(/[,;\n|]/)
+      .map((part) => part.trim())
+      .find((part) => {
+        if (!part) return false;
+        if (/^(?:n\/?a|none|unknown|\?\?\?)$/i.test(part)) return false;
+        if (/^not visible in source$/i.test(part)) return false;
+        if (/^option code:/i.test(part)) return false;
+        return true;
+      }) ?? null
+  );
+}
+
 function splitSpecValues(value: unknown): string[] {
   if (typeof value !== "string") return [];
   return [...new Set(
@@ -44,6 +63,194 @@ function splitSpecValues(value: unknown): string[] {
       .map((part) => part.trim())
       .filter(Boolean)
   )];
+}
+
+type VehicleLinkCandidate = {
+  _id: Id<"oem_vehicles">;
+  id?: string | null;
+  slug?: string | null;
+  vehicle_title?: string | null;
+  model_name?: string | null;
+  generation?: string | null;
+  brand_name?: string | null;
+  text_brands?: string | null;
+  text_bolt_patterns?: string | null;
+  text_diameters?: string | null;
+  text_widths?: string | null;
+};
+
+function normalizeSearchText(value: unknown) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function vehicleSearchTerm(raw: string) {
+  const trimmed = raw.trim();
+  const routeMatch = trimmed.match(/\/vehicles\/([^/?#]+)/i);
+  if (routeMatch?.[1]) return decodeURIComponent(routeMatch[1]);
+  return trimmed;
+}
+
+function vehicleDisplayName(vehicle: VehicleLinkCandidate) {
+  return (
+    vehicle.vehicle_title?.trim() ||
+    [vehicle.model_name, vehicle.generation].filter(Boolean).join(" ").trim() ||
+    vehicle.slug?.trim() ||
+    vehicle.id?.trim() ||
+    String(vehicle._id)
+  );
+}
+
+function vehicleBrandName(vehicle: VehicleLinkCandidate) {
+  return vehicle.brand_name?.trim() || vehicle.text_brands?.trim() || "Unknown brand";
+}
+
+function ManualVehicleLinkPanel({
+  wheelId,
+  linkedVehicleIds,
+}: {
+  wheelId: Id<"oem_wheels">;
+  linkedVehicleIds: string[];
+}) {
+  const { isAdmin } = useAuth();
+  const [searchValue, setSearchValue] = useState("");
+  const [savingVehicleId, setSavingVehicleId] = useState<string | null>(null);
+  const vehicles = useQuery(api.queries.vehiclesGetAllWithBrands, isAdmin ? {} : "skip") as
+    | VehicleLinkCandidate[]
+    | undefined;
+  const linkVehicle = useMutation(api.mutations.wheelVehicleLink);
+  const linkedIds = useMemo(() => new Set(linkedVehicleIds.filter(Boolean)), [linkedVehicleIds]);
+  const searchTerm = vehicleSearchTerm(searchValue);
+  const normalizedTerm = normalizeSearchText(searchTerm);
+
+  const candidates = useMemo(() => {
+    if (!vehicles || !normalizedTerm) return [];
+
+    return vehicles
+      .filter((vehicle) => !linkedIds.has(String(vehicle._id)))
+      .map((vehicle) => {
+        const exactMatch = [
+          String(vehicle._id),
+          vehicle.id,
+          vehicle.slug,
+        ].some((value) => String(value ?? "").toLowerCase() === searchTerm.toLowerCase());
+        const haystack = normalizeSearchText([
+          vehicle._id,
+          vehicle.id,
+          vehicle.slug,
+          vehicle.vehicle_title,
+          vehicle.model_name,
+          vehicle.generation,
+          vehicle.brand_name,
+          vehicle.text_brands,
+        ].join(" "));
+
+        return { vehicle, exactMatch, matches: exactMatch || haystack.includes(normalizedTerm) };
+      })
+      .filter((entry) => entry.matches)
+      .sort((a, b) => Number(b.exactMatch) - Number(a.exactMatch) || vehicleDisplayName(a.vehicle).localeCompare(vehicleDisplayName(b.vehicle)))
+      .slice(0, 8)
+      .map((entry) => entry.vehicle);
+  }, [linkedIds, normalizedTerm, searchTerm, vehicles]);
+
+  const handleLinkVehicle = async (vehicle: VehicleLinkCandidate) => {
+    setSavingVehicleId(String(vehicle._id));
+    try {
+      await linkVehicle({ wheel_id: wheelId, vehicle_id: vehicle._id });
+      toast({
+        title: "Vehicle linked",
+        description: `${vehicleBrandName(vehicle)} - ${vehicleDisplayName(vehicle)}`,
+      });
+      setSearchValue("");
+    } catch (error) {
+      toast({
+        title: "Could not link vehicle",
+        description: error instanceof Error ? error.message : "The fitment link was not saved.",
+      });
+    } finally {
+      setSavingVehicleId(null);
+    }
+  };
+
+  if (!isAdmin) return null;
+
+  return (
+    <Card className="border-border/70 bg-card/60">
+      <CardHeader className="flex flex-col gap-3 border-b border-border/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Link2 className="h-4 w-4 text-orange-400" />
+            Manual vehicle link
+          </CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Paste a vehicle page URL/ID or search by title, slug, brand, or generation.
+          </p>
+        </div>
+        <div className="text-xs text-muted-foreground">{linkedVehicleIds.length} linked</div>
+      </CardHeader>
+      <CardContent className="space-y-3 p-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            placeholder="Search vehicles or paste /vehicles/jn..."
+            className="pl-9"
+          />
+        </div>
+
+        {!vehicles ? (
+          <div className="flex items-center gap-2 rounded-md border border-border/60 p-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading vehicles…
+          </div>
+        ) : normalizedTerm && candidates.length === 0 ? (
+          <div className="rounded-md border border-border/60 p-3 text-sm text-muted-foreground">
+            No unlinked vehicles match that search.
+          </div>
+        ) : candidates.length > 0 ? (
+          <div className="grid gap-2">
+            {candidates.map((vehicle) => {
+              const saving = savingVehicleId === String(vehicle._id);
+              return (
+                <div
+                  key={String(vehicle._id)}
+                  className="flex flex-col gap-3 rounded-md border border-border/70 bg-background/60 p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {vehicleBrandName(vehicle)} - {vehicleDisplayName(vehicle)}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {[vehicle.slug, vehicle.text_bolt_patterns, vehicle.text_diameters, vehicle.text_widths]
+                        .filter(Boolean)
+                        .join(" | ")}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 shrink-0"
+                    disabled={savingVehicleId !== null}
+                    onClick={() => handleLinkVehicle(vehicle)}
+                  >
+                    {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-2 h-3.5 w-3.5" />}
+                    Link
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+            Start typing to find a vehicle.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 const WheelItemPage = () => {
@@ -251,6 +458,7 @@ const WheelItemPage = () => {
       renderBlock={(block) => {
         switch (block.kind) {
           case "variants": {
+            const parentOffset = wheel.wheel_offset || wheel.text_offsets || null;
             const normalizedVariants = wheelVariants.length > 0
               ? wheelVariants.map((variant) => ({
                   id: String(variant._id),
@@ -261,20 +469,16 @@ const WheelItemPage = () => {
                       .filter(Boolean)
                       .join(" x ") || `${wheel.width || "N/A"} x ${wheel.diameter || "N/A"}`,
                   pcd: variant.bolt_pattern?.trim() || wheel.bolt_pattern || "N/A",
-                  partNumber:
-                    variant.part_numbers
-                      ?.split(/[,;\n]/)
-                      .map((part) => part.trim())
-                      .find(Boolean) || "N/A",
-                  offset: variant.offset?.trim() || wheel.wheel_offset || "N/A",
+                  partNumber: firstDisplayPartNumber(variant.part_numbers) || "N/A",
+                  offset: variant.offset?.trim() || parentOffset || "N/A",
                 }))
               : [{
                   id: null,
                   color: "Standard",
                   size: `${wheel.diameter || "N/A"} x ${wheel.width || "N/A"}`,
                   pcd: wheel.bolt_pattern || "N/A",
-                  partNumber: wheel.wheel_name?.replace(/\s+/g, "") || "N/A",
-                  offset: wheel.wheel_offset || "N/A",
+                  partNumber: firstDisplayPartNumber(wheel.part_numbers) || "N/A",
+                  offset: parentOffset || "N/A",
                 }];
 
             return (
@@ -309,13 +513,13 @@ const WheelItemPage = () => {
                           </p>
                         </div>
                         <div className="pt-1">
-                          <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-3 text-[11px] font-medium transition-colors hover:border-white/90 hover:bg-transparent hover:text-foreground">
-                            <a
-                              href={buildEbaySearchUrl(
-                                [wheel.wheel_name, variant.partNumber]
-                                  .filter(Boolean)
-                                  .join(" ")
-                              )}
+	                          <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-3 text-[11px] font-medium transition-colors hover:border-white/90 hover:bg-transparent hover:text-foreground">
+	                            <a
+	                              href={buildEbaySearchUrl(
+	                                [wheel.wheel_name, variant.partNumber !== "N/A" ? variant.partNumber : null]
+	                                  .filter(Boolean)
+	                                  .join(" ")
+	                              )}
                               target="_blank"
                               rel="noreferrer"
                               title="Search this wheel variant on eBay"
@@ -347,16 +551,24 @@ const WheelItemPage = () => {
               />
             );
           case "vehicles_grid":
-            return compatibleVehicles.length > 0 ? (
-              <FitmentSection
-                wheelName={wheel.wheel_name}
-                compatibleVehicles={compatibleVehicles}
-              />
-            ) : (
-              <ItemPageEmptyState
-                title="No compatible vehicles linked yet"
-                description="No vehicle fitments are linked to this wheel on the active backend."
-              />
+            return (
+              <div className="space-y-4">
+                <ManualVehicleLinkPanel
+                  wheelId={wheel._id}
+                  linkedVehicleIds={fitmentVehicles.map((vehicle) => String(vehicle._id ?? ""))}
+                />
+                {compatibleVehicles.length > 0 ? (
+                  <FitmentSection
+                    wheelName={wheel.wheel_name}
+                    compatibleVehicles={compatibleVehicles}
+                  />
+                ) : (
+                  <ItemPageEmptyState
+                    title="No compatible vehicles linked yet"
+                    description="No vehicle fitments are linked to this wheel on the active backend."
+                  />
+                )}
+              </div>
             );
           case "gallery":
             return (

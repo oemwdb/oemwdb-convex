@@ -70,6 +70,10 @@ function mapToBrandVehicle(
     production_years?: string | null;
     bolt_pattern?: string | null;
     center_bore?: string | null;
+    diameter?: string | null;
+    width?: string | null;
+    text_bolt_patterns?: string | null;
+    text_center_bores?: string | null;
     text_diameters?: string | null;
     text_widths?: string | null;
     good_pic_url?: string | null;
@@ -86,10 +90,10 @@ function mapToBrandVehicle(
     model_name: raw.model_name ?? null,
     brand_name: brandName,
     production_years: raw.production_years ?? null,
-    bolt_pattern: raw.bolt_pattern ?? null,
-    center_bore: raw.center_bore ?? null,
-    wheel_diameter_ref: raw.text_diameters ?? null,
-    wheel_width_ref: raw.text_widths ?? null,
+    bolt_pattern: raw.bolt_pattern ?? raw.text_bolt_patterns ?? null,
+    center_bore: raw.center_bore ?? raw.text_center_bores ?? null,
+    wheel_diameter_ref: raw.diameter ?? raw.text_diameters ?? null,
+    wheel_width_ref: raw.width ?? raw.text_widths ?? null,
     good_pic_url: raw.good_pic_url ?? null,
     bad_pic_url: raw.bad_pic_url ?? null,
     status: "active",
@@ -210,7 +214,7 @@ export function useBrandEngines(brandName: string) {
 
 export function useBrandColors(brandName: string) {
   const hasBrand = Boolean(brandName.trim());
-  const colors = useQuery(api.colors.collectionGet);
+  const colors = useQuery(api.colors.collectionGet, hasBrand ? {} : "skip");
   const normalized = brandName.trim().toLowerCase();
   const rawColors = Array.isArray(colors)
     ? colors
